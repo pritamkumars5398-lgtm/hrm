@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Bell, LogOut, Menu, Search, Settings, User } from 'lucide-react'
+import Card from '@/shared/components/Card'
 import { useAuthStore, type SessionUser } from '@/features/auth/store/authStore'
 
 type TopbarProps = {
@@ -89,8 +90,7 @@ export default function Topbar({ user, onOpenSidebar }: TopbarProps) {
           </button>
 
           {openMenu === 'notifications' && (
-            /* §7.2 narrow exception: a barely-there shadow so it reads as floating */
-            <div className="absolute right-0 mt-2 w-80 overflow-hidden rounded-card border border-hairline bg-surface shadow-[0_1px_3px_rgba(28,29,26,0.08)]">
+            <Card overlay flush className="absolute right-0 mt-2 w-80">
               <p className="border-b border-hairline px-4 py-2.5 text-[12px] font-semibold">
                 Notifications
               </p>
@@ -105,7 +105,7 @@ export default function Topbar({ user, onOpenSidebar }: TopbarProps) {
                   </li>
                 ))}
               </ul>
-            </div>
+            </Card>
           )}
         </div>
 
@@ -125,7 +125,7 @@ export default function Topbar({ user, onOpenSidebar }: TopbarProps) {
           </button>
 
           {openMenu === 'profile' && (
-            <div className="absolute right-0 mt-2 w-56 overflow-hidden rounded-card border border-hairline bg-surface shadow-[0_1px_3px_rgba(28,29,26,0.08)]">
+            <Card overlay flush className="absolute right-0 mt-2 w-56">
               <div className="border-b border-hairline px-4 py-3">
                 <p className="truncate text-[13px] font-medium">{user.name}</p>
                 <p className="truncate text-[12px] text-muted">{user.email}</p>
@@ -162,7 +162,7 @@ export default function Topbar({ user, onOpenSidebar }: TopbarProps) {
                   Sign out
                 </button>
               </div>
-            </div>
+            </Card>
           )}
         </div>
       </div>

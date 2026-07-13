@@ -14,32 +14,13 @@ import Button from '@/shared/components/Button'
 import Input from '@/shared/components/Input'
 import Select from '@/shared/components/Select'
 import Modal from '@/shared/components/Modal'
+import Card from '@/shared/components/Card'
+import { RoleBadge } from '@/shared/components/Badge'
 import { useAuthStore } from '@/features/auth/store/authStore'
 import { TeamError, teamService, type InvitableRole, type Member } from '@/services/teamService'
 import { useTeamStore } from './store/teamStore'
 
 type InviteForm = { email: string; role: InvitableRole | '' }
-
-const ROLE_LABEL: Record<string, string> = {
-  OWNER: 'Owner',
-  HR: 'HR',
-  MANAGER: 'Manager',
-}
-
-function RoleBadge({ role }: { role: string }) {
-  const tone =
-    role === 'OWNER'
-      ? 'bg-pine-tint text-pine-deep'
-      : role === 'HR'
-        ? 'bg-[#F6EEDC] text-[#7A5712]'
-        : 'bg-wash text-muted'
-
-  return (
-    <span className={`inline-flex rounded-full px-2 py-0.5 text-[11px] font-medium ${tone}`}>
-      {ROLE_LABEL[role] ?? role}
-    </span>
-  )
-}
 
 /** Shown after an invite is created — there is no SMTP, so the link is copied by hand (§11.3). */
 function InviteLinkPanel({ link }: { link: string }) {
@@ -194,7 +175,7 @@ export default function TeamMembersPage() {
 
       {/* Invite — Owner and HR only (§10) */}
       {canManage && (
-        <section className="mt-6 rounded-card border border-hairline bg-surface p-5">
+        <Card className="mt-6 p-5">
           <h2 className="text-[14px] font-semibold">Invite someone</h2>
           <p className="mt-1 text-[13px] text-muted">
             They'll join with the role you pick here — they cannot change it themselves.
@@ -248,12 +229,12 @@ export default function TeamMembersPage() {
           </form>
 
           {inviteLink && <InviteLinkPanel link={inviteLink} />}
-        </section>
+        </Card>
       )}
 
       {/* Pending invites */}
       {canManage && (
-        <section className="mt-6 overflow-hidden rounded-card border border-hairline bg-surface">
+        <Card flush className="mt-6">
           <div className="border-b border-hairline px-4 py-3">
             <h2 className="text-[13px] font-semibold">
               Pending invites{' '}
@@ -328,11 +309,11 @@ export default function TeamMembersPage() {
                 })}
               </ul>
             ))}
-        </section>
+        </Card>
       )}
 
       {/* Members */}
-      <section className="mt-6 overflow-hidden rounded-card border border-hairline bg-surface">
+      <Card flush className="mt-6">
         <div className="border-b border-hairline px-4 py-3">
           <h2 className="text-[13px] font-semibold">
             Members{' '}
@@ -400,7 +381,7 @@ export default function TeamMembersPage() {
             ))}
           </ul>
         )}
-      </section>
+      </Card>
 
       <Modal
         open={pendingRemoval !== null}

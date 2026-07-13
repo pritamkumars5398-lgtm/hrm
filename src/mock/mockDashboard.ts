@@ -1,4 +1,12 @@
 import { MOCK_ORGANIZATION_ID } from './mockUsers'
+import { mockEmployees } from './mockEmployees'
+
+// Derived, not typed by hand: a dashboard that says 248 while the directory shows
+// 38 is the kind of thing a client notices immediately.
+const headcount = mockEmployees.length
+const onLeave = mockEmployees.filter((e) => e.status === 'ON_LEAVE').length
+const active = mockEmployees.filter((e) => e.status !== 'INACTIVE').length
+const presentToday = active - onLeave
 
 export type DashboardStat = {
   id: string
@@ -23,28 +31,28 @@ export const mockDashboardStats: DashboardStat[] = [
     id: 'st-headcount',
     organizationId: MOCK_ORGANIZATION_ID,
     label: 'Employees',
-    value: '248',
-    delta: '+4 this month',
+    value: String(headcount),
+    delta: '+3 this month',
   },
   {
     id: 'st-present',
     organizationId: MOCK_ORGANIZATION_ID,
     label: 'Present today',
-    value: '231',
-    delta: '93.1%',
+    value: String(presentToday),
+    delta: `${Math.round((presentToday / active) * 100)}%`,
   },
   {
     id: 'st-leave',
     organizationId: MOCK_ORGANIZATION_ID,
     label: 'On leave',
-    value: '9',
-    delta: '3 pending approval',
+    value: String(onLeave),
+    delta: '1 pending approval',
   },
   {
     id: 'st-payroll',
     organizationId: MOCK_ORGANIZATION_ID,
     label: 'March payroll',
-    value: '£847,204',
+    value: '£182,400',
     delta: 'Ready to review',
     // A Manager has no business seeing the company's total payroll cost.
     restrictedTo: ['OWNER'],

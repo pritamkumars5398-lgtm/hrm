@@ -22,9 +22,21 @@
   --color-pine-deep: #163a2f;
   --color-pine-tint: #e8efeb;
 
-  /* Supporting status hues (badges/charts only, never decoration) */
+  /* Supporting status hues (badges/charts only, never decoration).
+     Each has a tint (background) and a deep (text on that tint) so a badge
+     never needs a raw hex value. */
   --color-clay: #9c4221;
+  --color-clay-tint: #f7ebe5;
+  --color-clay-deep: #7a3419;
+
   --color-ochre: #a9791c;
+  --color-ochre-tint: #f6eedc;
+  --color-ochre-deep: #7a5712;
+
+  /* The ONLY shadow in the system. §7.2 forbids shadow-for-elevation; this is the
+     narrow exception for floating overlays (menus, popovers, modals) where a
+     border alone does not read as "above" the page. Never use it on a card. */
+  --shadow-overlay: 0 1px 3px rgba(28, 29, 26, 0.08);
 
   --font-display: 'Fraunces', Georgia, 'Times New Roman', serif;
   --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
