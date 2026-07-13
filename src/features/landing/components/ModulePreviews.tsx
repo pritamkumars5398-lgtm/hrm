@@ -1,4 +1,5 @@
 import { ArrowUpRight, Check, Download, X } from 'lucide-react'
+import Badge, { type BadgeTone } from '@/shared/components/Badge'
 
 /*
   Small, honest mock-ups of each module's real UI, drawn with DOM only — no
@@ -7,22 +8,6 @@ import { ArrowUpRight, Check, Download, X } from 'lucide-react'
 */
 
 const cell = 'px-4 py-3 text-[13px]'
-
-function Chip({ tone, children }: { tone: 'pine' | 'ochre' | 'muted'; children: string }) {
-  const tones = {
-    pine: 'bg-pine-tint text-pine-deep',
-    ochre: 'bg-[#F6EEDC] text-[#7A5712]',
-    muted: 'bg-wash text-muted',
-  }
-  // Chips stay pill-shaped — a real convention, not decorative rounding (§7.2)
-  return (
-    <span
-      className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium ${tones[tone]}`}
-    >
-      {children}
-    </span>
-  )
-}
 
 function Avatar({ initials }: { initials: string }) {
   return (
@@ -39,7 +24,11 @@ export function EmployeesPreview() {
     { name: 'Marta Lindqvist', initials: 'ML', dept: 'Engineering', status: 'Active' as const },
     { name: 'Dan Whitfield', initials: 'DW', dept: 'Sales', status: 'Probation' as const },
   ]
-  const tone = { Active: 'pine', 'On leave': 'ochre', Probation: 'muted' } as const
+  const tone: Record<string, BadgeTone> = {
+    Active: 'success',
+    'On leave': 'warning',
+    Probation: 'neutral',
+  }
 
   return (
     <div>
@@ -63,7 +52,7 @@ export function EmployeesPreview() {
               </td>
               <td className={`${cell} text-muted`}>{r.dept}</td>
               <td className={`${cell} text-right`}>
-                <Chip tone={tone[r.status]}>{r.status}</Chip>
+                <Badge tone={tone[r.status]}>{r.status}</Badge>
               </td>
             </tr>
           ))}

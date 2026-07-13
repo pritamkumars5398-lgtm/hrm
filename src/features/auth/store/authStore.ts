@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import type { Role, User } from '@/services/authService'
+import { authService, type Role, type User } from '@/services/authService'
 
 /** What the rest of the app is allowed to know about the signed-in person. */
 export type SessionUser = {
@@ -17,6 +17,10 @@ type AuthState = {
   user: SessionUser | null
   isAuthenticated: boolean
   setSession: (user: User) => void
+  /** Called once Company Details creates the org and makes this user its Owner (§11.2). */
+  attachOrganization: (organizationId: string, jobTitle?: string) => void
+  /** Clears the server's httpOnly cookie as well as local state. */
+  logout: () => Promise<void>
   clearSession: () => void
 }
 
@@ -30,6 +34,27 @@ export const useAuthStore = create<AuthState>()(
         // Never let the mock password into the store, let alone into localStorage.
         const { password: _password, ...safe } = user
         set({ user: safe, isAuthenticated: true })
+      },
+
+      attachOrganization: (organizationId, jobTitle) =>
+        set((state) =>
+          state.user
+            ? {
+                user: {
+                  ...state.user,
+                  organizationId,
+                  role: 'OWNER',
+                  jobTitle: jobTitle ?? state.user.jobTitle,
+                },
+              }
+            : state,
+        ),
+
+      logout: async () => {
+        // The cookie is httpOnly, so only the server can clear it — dropping local
+        // state alone would leave a valid session sitting in the browser.
+        await authService.logout()
+        set({ user: null, isAuthenticated: false })
       },
 
       clearSession: () => set({ user: null, isAuthenticated: false }),

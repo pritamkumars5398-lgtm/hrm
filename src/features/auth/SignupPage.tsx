@@ -4,10 +4,11 @@ import { useForm } from 'react-hook-form'
 import { AlertCircle, ArrowRight, Check, Loader2 } from 'lucide-react'
 import Button from '@/shared/components/Button'
 import Input from '@/shared/components/Input'
-import { AuthError, authService } from '@/services/authService'
+import { AuthError, authService, type User } from '@/services/authService'
 import { useAuthStore } from './store/authStore'
 import AuthLayout from './components/AuthLayout'
 import GoogleButton from './components/GoogleButton'
+import GoogleSignInDialog from './components/GoogleSignInDialog'
 
 type SignupForm = {
   fullName: string
@@ -31,6 +32,16 @@ export default function SignupPage() {
   const navigate = useNavigate()
   const setSession = useAuthStore((s) => s.setSession)
   const [formError, setFormError] = useState<string | null>(null)
+  const [googleOpen, setGoogleOpen] = useState(false)
+
+  /**
+   * A Google user who already has a company goes straight to it; a brand-new one
+   * still owes us the onboarding wizard, which is what creates the org (§11.2).
+   */
+  const enter = (user: User) => {
+    setSession(user)
+    navigate(user.organizationId ? '/dashboard' : '/onboarding', { replace: true })
+  }
 
   const {
     register,
@@ -45,10 +56,8 @@ export default function SignupPage() {
   const onSubmit = handleSubmit(async (values) => {
     setFormError(null)
     try {
-      const user = await authService.signup(values)
-      setSession(user)
       // Signing up creates a person, not yet a company — the wizard does that (§11.2).
-      navigate('/onboarding', { replace: true })
+      enter(await authService.signup(values))
     } catch (err) {
       setFormError(
         err instanceof AuthError ? err.message : 'Something went wrong. Please try again.',
@@ -74,7 +83,7 @@ export default function SignupPage() {
         <GoogleButton
           label="Sign up with Google"
           disabled={isSubmitting}
-          onClick={() => setFormError('Google Sign-In is not wired up yet — use email instead.')}
+          onClick={() => setGoogleOpen(true)}
         />
 
         <div className="my-4 flex items-center gap-3">
@@ -183,6 +192,12 @@ export default function SignupPage() {
           .
         </p>
       </form>
+
+      <GoogleSignInDialog
+        open={googleOpen}
+        onClose={() => setGoogleOpen(false)}
+        onSignedIn={enter}
+      />
     </AuthLayout>
   )
 }
