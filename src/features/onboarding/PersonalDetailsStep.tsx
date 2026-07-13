@@ -1,4 +1,4 @@
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Navigate } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { ArrowRight } from 'lucide-react'
 import Button from '@/shared/components/Button'
@@ -32,6 +32,11 @@ export default function PersonalDetailsStep() {
     goTo(2)
     navigate('/onboarding/company')
   })
+
+  // If you already have a workspace, you have no business in the onboarding flow.
+  if (user?.organizationId) {
+    return <Navigate to="/dashboard" replace />
+  }
 
   return (
     <WizardShell
