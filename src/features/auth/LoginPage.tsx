@@ -66,6 +66,7 @@ export default function LoginPage() {
     <AuthLayout
       title="Sign in to Keystone"
       subtitle="Pick up where your company left off."
+      compact
       footer={
         <>
           Don't have a workspace yet?{' '}
@@ -88,7 +89,7 @@ export default function LoginPage() {
           }}
         />
 
-        <div className="my-6 flex items-center gap-3">
+        <div className="my-4 flex items-center gap-3">
           <span className="h-px flex-1 bg-hairline" />
           <span className="text-[12px] text-muted">or with email</span>
           <span className="h-px flex-1 bg-hairline" />
@@ -97,14 +98,14 @@ export default function LoginPage() {
         {formError && (
           <div
             role="alert"
-            className="mb-5 flex gap-2.5 rounded-ctl border border-clay/30 bg-clay/5 p-3"
+            className="mb-4 flex gap-2.5 rounded-ctl border border-clay/30 bg-clay/5 p-2.5"
           >
             <AlertCircle size={15} className="mt-px shrink-0 text-clay" />
             <p className="text-[13px] leading-relaxed text-clay">{formError}</p>
           </div>
         )}
 
-        <div className="space-y-4">
+        <div className="space-y-3">
           <Input
             label="Work email"
             type="email"
@@ -126,10 +127,10 @@ export default function LoginPage() {
               error={errors.password?.message}
               {...register('password', { required: 'Enter your password.' })}
             />
-            <div className="mt-2 text-right">
+            <div className="mt-1 text-right">
               <Link
                 to="/forgot-password"
-                className="text-[13px] text-muted hover:text-ink"
+                className="text-[12px] text-muted hover:text-ink"
               >
                 Forgot password?
               </Link>
@@ -137,7 +138,7 @@ export default function LoginPage() {
           </div>
         </div>
 
-        <Button type="submit" size="lg" className="mt-6 w-full" disabled={isSubmitting}>
+        <Button type="submit" size="lg" className="mt-4 w-full" disabled={isSubmitting}>
           {isSubmitting ? (
             <>
               <Loader2 size={16} className="animate-spin" />
@@ -159,19 +160,20 @@ export default function LoginPage() {
       />
 
       {/* Demo affordance — lets a reviewer switch roles without knowing the seeds. */}
-      <div className="mt-6 rounded-card border border-hairline bg-wash p-4">
-        <p className="text-[12px] font-medium">Demo accounts</p>
-        <p className="mt-1 text-[12px] leading-relaxed text-muted">
-          Each role sees a different set of modules. Password is{' '}
-          <code className="tnum text-ink">{demo.password}</code>.
-        </p>
-        <div className="mt-3 flex flex-wrap gap-2">
+      <div className="mt-4 rounded-card border border-hairline bg-wash p-3">
+        <div className="flex items-center justify-between">
+          <p className="text-[12px] font-semibold text-ink">Demo accounts</p>
+          <p className="text-[11px] text-muted">
+            Password: <code className="tnum font-medium text-ink">{demo.password}</code>
+          </p>
+        </div>
+        <div className="mt-2.5 flex flex-wrap gap-1.5">
           {demo.accounts.map((a) => (
             <button
               key={a.email}
               type="button"
               onClick={() => applyDemoAccount(a.email)}
-              className="rounded-ctl border border-hairline-strong bg-surface px-2.5 py-1 text-[12px] font-medium transition-colors hover:border-pine hover:text-pine"
+              className="rounded-ctl border border-hairline-strong bg-surface px-2 py-0.5 text-[11px] font-medium transition-colors hover:border-pine hover:text-pine"
             >
               {a.role.charAt(0) + a.role.slice(1).toLowerCase()}
             </button>

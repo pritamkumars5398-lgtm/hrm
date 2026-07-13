@@ -78,6 +78,7 @@ export default function SignupPage() {
     <AuthLayout
       title="Create your company workspace"
       subtitle="You'll be the owner. Invite your HR team and managers once you're in."
+      compact
       footer={
         <>
           Already have a workspace?{' '}
@@ -97,7 +98,7 @@ export default function SignupPage() {
           }}
         />
 
-        <div className="my-6 flex items-center gap-3">
+        <div className="my-4 flex items-center gap-3">
           <span className="h-px flex-1 bg-hairline" />
           <span className="text-[12px] text-muted">or with email</span>
           <span className="h-px flex-1 bg-hairline" />
@@ -106,14 +107,14 @@ export default function SignupPage() {
         {formError && (
           <div
             role="alert"
-            className="mb-5 flex gap-2.5 rounded-ctl border border-clay/30 bg-clay/5 p-3"
+            className="mb-4 flex gap-2.5 rounded-ctl border border-clay/30 bg-clay/5 p-2.5"
           >
             <AlertCircle size={15} className="mt-px shrink-0 text-clay" />
             <p className="text-[13px] leading-relaxed text-clay">{formError}</p>
           </div>
         )}
 
-        <div className="space-y-4">
+        <div className="space-y-3">
           <Input
             label="Full name"
             autoComplete="name"
@@ -151,7 +152,7 @@ export default function SignupPage() {
             />
 
             {password && !errors.password && (
-              <div className="mt-2.5 flex items-center gap-2.5">
+              <div className="mt-2 flex items-center gap-2.5">
                 <div className="flex flex-1 gap-1" aria-hidden="true">
                   {[1, 2, 3, 4].map((n) => (
                     <span
@@ -168,7 +169,7 @@ export default function SignupPage() {
           </div>
         </div>
 
-        <Button type="submit" size="lg" className="mt-6 w-full" disabled={isSubmitting}>
+        <Button type="submit" size="lg" className="mt-4 w-full" disabled={isSubmitting}>
           {isSubmitting ? (
             <>
               <Loader2 size={16} className="animate-spin" />
@@ -182,16 +183,16 @@ export default function SignupPage() {
           )}
         </Button>
 
-        <ul className="mt-5 space-y-1.5">
+        <div className="mt-3.5 flex flex-wrap items-center justify-between gap-1.5 text-[11px] text-muted">
           {['14-day free trial', 'No card required', 'Cancel any time'].map((p) => (
-            <li key={p} className="flex items-center gap-2 text-[12px] text-muted">
-              <Check size={13} className="shrink-0 text-pine" aria-hidden="true" />
+            <span key={p} className="flex items-center gap-1">
+              <Check size={12} className="shrink-0 text-pine" aria-hidden="true" />
               {p}
-            </li>
+            </span>
           ))}
-        </ul>
+        </div>
 
-        <p className="mt-5 text-[12px] leading-relaxed text-muted">
+        <p className="mt-4 text-[11px] leading-relaxed text-muted">
           By continuing you agree to our{' '}
           <a href="#terms" className="text-ink underline underline-offset-2">
             Terms
