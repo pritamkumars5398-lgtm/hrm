@@ -9,6 +9,8 @@ import { useAuthStore } from './store/authStore'
 import AuthLayout from './components/AuthLayout'
 import GoogleButton from './components/GoogleButton'
 import GoogleSignInDialog from './components/GoogleSignInDialog'
+import { useGoogleSignIn } from './hooks/useGoogleSignIn'
+import { hasGoogleOAuth } from '@/config/env'
 
 type LoginForm = {
   email: string
@@ -19,7 +21,14 @@ export default function LoginPage() {
   const navigate = useNavigate()
   const setSession = useAuthStore((s) => s.setSession)
   const [formError, setFormError] = useState<string | null>(null)
+  
+  // For the simulated fallback only
   const [googleOpen, setGoogleOpen] = useState(false)
+
+  // Real GIS flow
+  const { buttonWrapperRef } = useGoogleSignIn({
+    onSuccess: (user) => enter(user),
+  })
 
   const {
     register,
@@ -70,7 +79,13 @@ export default function LoginPage() {
         <GoogleButton
           label="Continue with Google"
           disabled={isSubmitting}
-          onClick={() => setGoogleOpen(true)}
+          buttonWrapperRef={buttonWrapperRef}
+          onClick={() => {
+            // If the real GIS button is rendering, clicking our button just
+            // clicks the invisible iframe above it. This onClick only fires
+            // in the fallback scenario.
+            if (!hasGoogleOAuth) setGoogleOpen(true)
+          }}
         />
 
         <div className="my-6 flex items-center gap-3">

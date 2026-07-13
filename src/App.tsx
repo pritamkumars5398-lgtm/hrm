@@ -13,19 +13,13 @@ import DashboardHome from '@/features/dashboard/DashboardHome'
 import TeamMembersPage from '@/features/team/TeamMembersPage'
 import EmployeesPage from '@/features/employees/EmployeesPage'
 import AttendancePage from '@/features/attendance/AttendancePage'
-import ModulePlaceholder from '@/shared/components/ModulePlaceholder'
+import LeavePage from '@/features/leave/LeavePage'
+import PayrollPage from '@/features/payroll/PayrollPage'
+import PerformancePage from '@/features/performance/PerformancePage'
+import DocumentsPage from '@/features/documents/DocumentsPage'
+import ReportsPage from '@/features/reports/ReportsPage'
+import SettingsPage from '@/features/settings/SettingsPage'
 import ComingSoon from '@/shared/components/ComingSoon'
-import type { ModuleKey } from '@/shared/config/navigation'
-
-/** Modules whose screens are not built yet — each is guarded by role all the same. */
-const PENDING_MODULES: Array<{ path: string; module: ModuleKey; title: string }> = [
-  { path: 'leave', module: 'leave', title: 'Leave Management' },
-  { path: 'payroll', module: 'payroll', title: 'Payroll' },
-  { path: 'performance', module: 'performance', title: 'Performance' },
-  { path: 'documents', module: 'documents', title: 'Documents' },
-  { path: 'reports', module: 'reports', title: 'Reports' },
-  { path: 'settings', module: 'settings', title: 'Settings' },
-]
 
 export default function App() {
   return (
@@ -90,17 +84,59 @@ export default function App() {
           }
         />
 
-        {PENDING_MODULES.map(({ path, module, title }) => (
-          <Route
-            key={path}
-            path={path}
-            element={
-              <RequireModule module={module}>
-                <ModulePlaceholder title={title} />
-              </RequireModule>
-            }
-          />
-        ))}
+        <Route
+          path="leave"
+          element={
+            <RequireModule module="leave">
+              <LeavePage />
+            </RequireModule>
+          }
+        />
+
+        <Route
+          path="payroll"
+          element={
+            <RequireModule module="payroll">
+              <PayrollPage />
+            </RequireModule>
+          }
+        />
+
+        <Route
+          path="performance"
+          element={
+            <RequireModule module="performance">
+              <PerformancePage />
+            </RequireModule>
+          }
+        />
+
+        <Route
+          path="documents"
+          element={
+            <RequireModule module="documents">
+              <DocumentsPage />
+            </RequireModule>
+          }
+        />
+
+        <Route
+          path="reports"
+          element={
+            <RequireModule module="reports">
+              <ReportsPage />
+            </RequireModule>
+          }
+        />
+
+        <Route
+          path="settings"
+          element={
+            <RequireModule module="settings">
+              <SettingsPage />
+            </RequireModule>
+          }
+        />
       </Route>
 
       <Route path="/reset-password" element={<ComingSoon title="Set a new password" />} />

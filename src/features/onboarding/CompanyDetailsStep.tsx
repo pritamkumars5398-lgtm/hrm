@@ -55,8 +55,12 @@ export default function CompanyDetailsStep() {
 
       // This is the moment the workspace exists and this person owns it (§11.2).
       attachOrganization(org.id, personal.jobTitle)
-      reset()
       navigate('/dashboard', { replace: true })
+      
+      // Clear the onboarding store on the next tick. If we do it synchronously,
+      // the component re-renders immediately, sees `!personal`, and executes the 
+      // declarative `<Navigate to="/onboarding" />` before the dashboard transition.
+      setTimeout(reset, 0)
     } catch (err) {
       setFormError(
         err instanceof OrganizationError

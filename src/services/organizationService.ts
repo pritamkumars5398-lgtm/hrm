@@ -65,6 +65,28 @@ export const organizationService = {
     return org
   },
 
+  /** Company profile edits from Settings. Owner-only — the server enforces it too. */
+  async update(patch: {
+    name?: string
+    address?: string
+    industry?: string
+  }): Promise<Organization> {
+    if (hasBackend) {
+      try {
+        const { data } = await apiClient.patch<Organization>('/organizations/me', patch)
+        return data
+      } catch (error) {
+        throw new OrganizationError(
+          apiErrorMessage(error, 'We could not save your company details.'),
+        )
+      }
+    }
+
+    await delay()
+    Object.assign(mockOrganization, patch)
+    return mockOrganization
+  },
+
   async getMine(): Promise<Organization | null> {
     if (hasBackend) {
       try {

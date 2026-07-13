@@ -1,6 +1,7 @@
 import { NavLink } from 'react-router-dom'
 import Logo from '@/shared/components/Logo'
 import { navItemsFor, type NavItem } from '@/shared/config/navigation'
+import { useRoleMatrix } from '@/features/settings/store/permissionsStore'
 import type { Role } from '@/services/authService'
 
 type SidebarProps = {
@@ -54,7 +55,9 @@ function NavSection({ items, onNavigate }: { items: NavItem[]; onNavigate?: () =
  * no hardcoded list here: change ROLE_MODULES and this changes with it.
  */
 export default function Sidebar({ role, organizationName, onNavigate }: SidebarProps) {
-  const items = navItemsFor(role)
+  // Live matrix — editing Settings → Roles & Permissions changes this immediately.
+  const matrix = useRoleMatrix()
+  const items = navItemsFor(matrix, role)
   const main = items.filter((i) => i.group === 'main')
   const admin = items.filter((i) => i.group === 'admin')
 

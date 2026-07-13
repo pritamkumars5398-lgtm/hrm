@@ -9,6 +9,8 @@ import { useAuthStore } from './store/authStore'
 import AuthLayout from './components/AuthLayout'
 import GoogleButton from './components/GoogleButton'
 import GoogleSignInDialog from './components/GoogleSignInDialog'
+import { useGoogleSignIn } from './hooks/useGoogleSignIn'
+import { hasGoogleOAuth } from '@/config/env'
 
 type SignupForm = {
   fullName: string
@@ -32,7 +34,14 @@ export default function SignupPage() {
   const navigate = useNavigate()
   const setSession = useAuthStore((s) => s.setSession)
   const [formError, setFormError] = useState<string | null>(null)
+  
+  // For the simulated fallback only
   const [googleOpen, setGoogleOpen] = useState(false)
+
+  // Real GIS flow
+  const { buttonWrapperRef } = useGoogleSignIn({
+    onSuccess: (user) => enter(user),
+  })
 
   /**
    * A Google user who already has a company goes straight to it; a brand-new one
@@ -82,7 +91,10 @@ export default function SignupPage() {
         <GoogleButton
           label="Sign up with Google"
           disabled={isSubmitting}
-          onClick={() => setGoogleOpen(true)}
+          buttonWrapperRef={buttonWrapperRef}
+          onClick={() => {
+            if (!hasGoogleOAuth) setGoogleOpen(true)
+          }}
         />
 
         <div className="my-6 flex items-center gap-3">

@@ -15,7 +15,12 @@ export type LoginPayload = {
   password: string
 }
 
-/** Stands in for the profile Google returns after a successful OAuth exchange. */
+/**
+ * Stands in for the profile Google returns after a successful OAuth exchange.
+ * `credential` is only used by the simulated (no-client-ID) path — the real
+ * path receives a signed id_token from the GIS SDK and sends it straight to
+ * the backend without this type being involved.
+ */
 export type GoogleAccount = {
   email: string
   name: string
@@ -105,38 +110,72 @@ export const authService = {
   },
 
   /**
-   * Simulated OAuth. The real flow redirects to Google, returns an id_token, and
-   * the backend verifies it against Google's certs before trusting the email.
-   * This signature is already the final one — only the body changes.
+   * Real GIS flow: receives a signed id_token `credential` from the GIS SDK
+   * and sends it straight to the backend, which verifies it against Google's
+   * public JWKS. The email/name the server trusts are extracted server-side.
+   *
+   * Simulated flow (no VITE_GOOGLE_CLIENT_ID): receives a GoogleAccount from
+   * the fake chooser dialog and sends email+name directly — this is only safe
+   * because the simulated flow never runs against real credentials.
    */
-  async loginWithGoogle({ email, name }: GoogleAccount): Promise<User> {
+  async loginWithGoogle(params: { credential: string } | GoogleAccount): Promise<User> {
     if (hasBackend) {
       try {
-        const { data } = await apiClient.post<User>('/auth/google', { email, name })
+        // Both paths hit the same endpoint. The real path sends { credential };
+        // the simulated path sends { email, name } for the mock backend handler.
+        const body =
+          'credential' in params
+            ? { credential: params.credential }
+            : { email: params.email, name: params.name }
+        const { data } = await apiClient.post<User>('/auth/google', body)
         return data
       } catch (error) {
         throw new AuthError(apiErrorMessage(error, 'Google Sign-In failed.'))
       }
     }
 
-    await delay()
-    const existing = findByEmail(email)
-    if (existing) return existing
+    // Mock path (no backend configured) — simulated chooser only.
+    if (!('credential' in params)) {
+      await delay()
+      const existing = findByEmail(params.email)
+      if (existing) return existing
 
-    const user: User = {
-      id: `usr-${crypto.randomUUID().slice(0, 8)}`,
-      organizationId: null,
-      email: email.trim().toLowerCase(),
-      // A Google-authenticated account has no local password.
-      password: '',
-      name,
-      jobTitle: '',
-      role: 'OWNER',
-      avatarInitials: initialsOf(name),
+      const user: User = {
+        id: `usr-${crypto.randomUUID().slice(0, 8)}`,
+        organizationId: null,
+        email: params.email.trim().toLowerCase(),
+        password: '',
+        name: params.name,
+        jobTitle: '',
+        role: 'OWNER',
+        avatarInitials: initialsOf(params.name),
+      }
+      runtimeUsers.push(user)
+      return user
     }
 
-    runtimeUsers.push(user)
-    return user
+    throw new AuthError('Google Sign-In requires the backend to be running.')
+  },
+
+  /**
+   * Requires the current password even though you are already signed in — it
+   * stops someone at an unlocked laptop from silently taking the account over.
+   */
+  async changePassword(payload: {
+    currentPassword: string
+    newPassword: string
+  }): Promise<void> {
+    if (hasBackend) {
+      try {
+        await apiClient.post('/auth/change-password', payload)
+        return
+      } catch (error) {
+        throw new AuthError(apiErrorMessage(error, 'We could not change your password.'))
+      }
+    }
+
+    await delay()
+    throw new AuthError('Changing your password needs the backend running.')
   },
 
   /** Restores the session from the httpOnly cookie on a page refresh. */

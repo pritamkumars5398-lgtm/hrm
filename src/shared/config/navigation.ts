@@ -47,15 +47,18 @@ export const NAV_ITEMS: NavItem[] = [
   { key: 'settings', label: 'Settings', path: '/dashboard/settings', icon: Settings, group: 'admin' },
 ]
 
+export type RoleMatrix = Record<Role, ModuleKey[]>
+
 /**
- * The draft matrix from §10. Treat as adjustable, not final — Settings →
- * Roles & Permissions becomes the surface that edits this.
+ * The draft defaults from §10 — the starting point, not the live value.
  *
- * This is the single source of truth for who sees what. The sidebar filters
- * from it AND the router guards from it, so typing a URL you lack access to
- * gets you nowhere — a sidebar that merely hides a link is not access control.
+ * Settings → Roles & Permissions edits a copy of this held in `permissionsStore`,
+ * and the sidebar AND the route guard both read from that store. So changing the
+ * matrix changes what a role can reach, immediately and everywhere. Use
+ * `useRoleMatrix()` to read the live matrix; this constant is only the default
+ * and the "reset" target.
  */
-export const ROLE_MODULES: Record<Role, ModuleKey[]> = {
+export const DEFAULT_ROLE_MODULES: RoleMatrix = {
   OWNER: [
     'dashboard',
     'employees',
@@ -75,10 +78,22 @@ export const ROLE_MODULES: Record<Role, ModuleKey[]> = {
   MANAGER: ['dashboard', 'attendance', 'leave', 'performance', 'documents'],
 }
 
-export function canAccess(role: Role, moduleKey: ModuleKey): boolean {
-  return ROLE_MODULES[role].includes(moduleKey)
+/**
+ * Modules nobody can be locked out of.
+ *
+ * `dashboard` is every role's landing page — removing it strands them on a page
+ * they cannot see. The Owner keeps everything unconditionally, so an admin cannot
+ * revoke their own Settings access and lock themselves out of the very screen
+ * that would undo it.
+ */
+export const ALWAYS_GRANTED: ModuleKey[] = ['dashboard']
+
+export function canAccess(matrix: RoleMatrix, role: Role, moduleKey: ModuleKey): boolean {
+  if (role === 'OWNER') return true
+  if (ALWAYS_GRANTED.includes(moduleKey)) return true
+  return matrix[role].includes(moduleKey)
 }
 
-export function navItemsFor(role: Role): NavItem[] {
-  return NAV_ITEMS.filter((item) => canAccess(role, item.key))
+export function navItemsFor(matrix: RoleMatrix, role: Role): NavItem[] {
+  return NAV_ITEMS.filter((item) => canAccess(matrix, role, item.key))
 }
