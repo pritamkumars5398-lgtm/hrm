@@ -1,0 +1,85 @@
+@import 'tailwindcss';
+
+/*
+  Keystone design tokens — see CLAUDE.md §7.
+  Base: graphite neutrals. Accent: a single muted deep pine.
+  Surfaces are separated by 1px hairlines and background steps — never by shadow.
+*/
+@theme {
+  /* Neutrals — page, section step, card, hairline */
+  --color-paper: #fbfbfa;
+  --color-wash: #f3f3f0;
+  --color-surface: #ffffff;
+  --color-hairline: #e4e4e1;
+  --color-hairline-strong: #d3d3ce;
+
+  /* Text */
+  --color-ink: #1c1d1a;
+  --color-muted: #6b6d66;
+
+  /* Accent — used sparingly: primary actions and data highlights only */
+  --color-pine: #1f4d3f;
+  --color-pine-deep: #163a2f;
+  --color-pine-tint: #e8efeb;
+
+  /* Supporting status hues (badges/charts only, never decoration) */
+  --color-clay: #9c4221;
+  --color-ochre: #a9791c;
+
+  --font-display: 'Fraunces', Georgia, 'Times New Roman', serif;
+  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+
+  /* §7.2 — radius capped at 6–8px */
+  --radius-ctl: 6px;
+  --radius-card: 8px;
+}
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+
+  body {
+    background-color: var(--color-paper);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  /* Keyboard focus must always be visible — §18 */
+  :focus-visible {
+    outline: 2px solid var(--color-pine);
+    outline-offset: 2px;
+    border-radius: 2px;
+  }
+
+  ::selection {
+    background-color: var(--color-pine-tint);
+    color: var(--color-pine-deep);
+  }
+}
+
+@utility font-display {
+  font-family: var(--font-display);
+  font-optical-sizing: auto;
+}
+
+/* Numeric columns in tables and stat tiles must not jitter */
+@utility tnum {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum';
+}
