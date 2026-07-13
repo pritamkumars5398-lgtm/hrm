@@ -4,10 +4,11 @@ import { useForm } from 'react-hook-form'
 import { AlertCircle, ArrowRight, Loader2 } from 'lucide-react'
 import Button from '@/shared/components/Button'
 import Input from '@/shared/components/Input'
-import { AuthError, authService } from '@/services/authService'
+import { AuthError, authService, type User } from '@/services/authService'
 import { useAuthStore } from './store/authStore'
 import AuthLayout from './components/AuthLayout'
 import GoogleButton from './components/GoogleButton'
+import GoogleSignInDialog from './components/GoogleSignInDialog'
 
 type LoginForm = {
   email: string
@@ -18,6 +19,7 @@ export default function LoginPage() {
   const navigate = useNavigate()
   const setSession = useAuthStore((s) => s.setSession)
   const [formError, setFormError] = useState<string | null>(null)
+  const [googleOpen, setGoogleOpen] = useState(false)
 
   const {
     register,
@@ -28,13 +30,16 @@ export default function LoginPage() {
 
   const demo = authService.getDemoCredentials()
 
+  /** Someone who has not finished the wizard has no company yet (§11.2). */
+  const enter = (user: User) => {
+    setSession(user)
+    navigate(user.organizationId ? '/dashboard' : '/onboarding', { replace: true })
+  }
+
   const onSubmit = handleSubmit(async (values) => {
     setFormError(null)
     try {
-      const user = await authService.login(values)
-      setSession(user)
-      // Someone who has not finished the wizard has no company yet (§11.2).
-      navigate(user.organizationId ? '/dashboard' : '/onboarding', { replace: true })
+      enter(await authService.login(values))
     } catch (err) {
       setFormError(
         err instanceof AuthError ? err.message : 'Something went wrong. Please try again.',
@@ -65,7 +70,7 @@ export default function LoginPage() {
         <GoogleButton
           label="Continue with Google"
           disabled={isSubmitting}
-          onClick={() => setFormError('Google Sign-In is not wired up yet — use a demo account.')}
+          onClick={() => setGoogleOpen(true)}
         />
 
         <div className="my-6 flex items-center gap-3">
@@ -131,6 +136,12 @@ export default function LoginPage() {
           )}
         </Button>
       </form>
+
+      <GoogleSignInDialog
+        open={googleOpen}
+        onClose={() => setGoogleOpen(false)}
+        onSignedIn={enter}
+      />
 
       {/* Demo affordance — lets a reviewer switch roles without knowing the seeds. */}
       <div className="mt-6 rounded-card border border-hairline bg-wash p-4">

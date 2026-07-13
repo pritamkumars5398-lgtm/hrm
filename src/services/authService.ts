@@ -1,3 +1,5 @@
+import { hasBackend } from '@/config/env'
+import { apiClient, apiErrorMessage } from './apiClient'
 import { DEMO_PASSWORD, mockUsers, type Role, type User } from '@/mock/mockUsers'
 
 export type { Role, User }
@@ -13,41 +15,75 @@ export type LoginPayload = {
   password: string
 }
 
+/** Stands in for the profile Google returns after a successful OAuth exchange. */
+export type GoogleAccount = {
+  email: string
+  name: string
+  /** Prototype-only hint shown in the simulated chooser. */
+  note: string
+}
+
 /** Thrown for expected, displayable failures — a wrong password, a taken email. */
 export class AuthError extends Error {}
 
 const LATENCY_MS = 700
 const delay = () => new Promise((r) => setTimeout(r, LATENCY_MS))
 
-/** Session users the demo creates at runtime, alongside the seeded ones. */
+/** Session users the mock demo creates at runtime, alongside the seeded ones. */
 const runtimeUsers: User[] = []
 
 const findByEmail = (email: string) =>
   [...mockUsers, ...runtimeUsers].find((u) => u.email.toLowerCase() === email.trim().toLowerCase())
 
+function initialsOf(fullName: string): string {
+  const parts = fullName.trim().split(/\s+/).filter(Boolean)
+  if (parts.length === 0) return '?'
+  const first = parts[0]![0]!
+  const last = parts.length > 1 ? parts[parts.length - 1]![0] : ''
+  return (first + last).toUpperCase()
+}
+
 /**
- * Mock implementation. In Phase 2 each method becomes an axios call to the
- * NestJS auth module — the signatures and thrown AuthError stay identical, so
- * no component changes (§9).
+ * Talks to the NestJS auth module when VITE_API_BASE_URL is set, and falls back
+ * to mock data when it is not — so the Vercel demo runs with no backend at all,
+ * while local development runs against the real thing. Components never know
+ * which path they got (§9).
  */
 export const authService = {
-  async login({ email, password }: LoginPayload): Promise<User> {
-    await delay()
-
-    const user = findByEmail(email)
-    // Deliberately identical message for unknown-email and wrong-password —
-    // telling an attacker which one was wrong is an account-enumeration leak.
-    if (!user || user.password !== password) {
-      throw new AuthError('That email and password combination does not match an account.')
+  async login(payload: LoginPayload): Promise<User> {
+    if (hasBackend) {
+      try {
+        const { data } = await apiClient.post<User>('/auth/login', payload)
+        return data
+      } catch (error) {
+        throw new AuthError(
+          apiErrorMessage(error, 'That email and password combination does not match an account.'),
+        )
+      }
     }
 
+    await delay()
+    const user = findByEmail(payload.email)
+    // Deliberately identical message for unknown-email and wrong-password —
+    // telling an attacker which one was wrong is an account-enumeration leak.
+    if (!user || user.password !== payload.password) {
+      throw new AuthError('That email and password combination does not match an account.')
+    }
     return user
   },
 
-  async signup({ fullName, email, password }: SignupPayload): Promise<User> {
-    await delay()
+  async signup(payload: SignupPayload): Promise<User> {
+    if (hasBackend) {
+      try {
+        const { data } = await apiClient.post<User>('/auth/signup', payload)
+        return data
+      } catch (error) {
+        throw new AuthError(apiErrorMessage(error, 'We could not create your account.'))
+      }
+    }
 
-    if (findByEmail(email)) {
+    await delay()
+    if (findByEmail(payload.email)) {
       throw new AuthError('An account with this email already exists. Try signing in instead.')
     }
 
@@ -56,31 +92,82 @@ export const authService = {
     const user: User = {
       id: `usr-${crypto.randomUUID().slice(0, 8)}`,
       organizationId: null,
-      email: email.trim().toLowerCase(),
-      password,
-      name: fullName.trim(),
+      email: payload.email.trim().toLowerCase(),
+      password: payload.password,
+      name: payload.fullName.trim(),
       jobTitle: '',
       role: 'OWNER',
-      avatarInitials: initialsOf(fullName),
+      avatarInitials: initialsOf(payload.fullName),
     }
 
     runtimeUsers.push(user)
     return user
   },
 
-  /** Placeholder — real OAuth lands with the Google Sign-In item (§4). */
-  async loginWithGoogle(): Promise<User> {
+  /**
+   * Simulated OAuth. The real flow redirects to Google, returns an id_token, and
+   * the backend verifies it against Google's certs before trusting the email.
+   * This signature is already the final one — only the body changes.
+   */
+  async loginWithGoogle({ email, name }: GoogleAccount): Promise<User> {
+    if (hasBackend) {
+      try {
+        const { data } = await apiClient.post<User>('/auth/google', { email, name })
+        return data
+      } catch (error) {
+        throw new AuthError(apiErrorMessage(error, 'Google Sign-In failed.'))
+      }
+    }
+
     await delay()
-    throw new AuthError('Google Sign-In is not wired up yet — use a demo account below.')
+    const existing = findByEmail(email)
+    if (existing) return existing
+
+    const user: User = {
+      id: `usr-${crypto.randomUUID().slice(0, 8)}`,
+      organizationId: null,
+      email: email.trim().toLowerCase(),
+      // A Google-authenticated account has no local password.
+      password: '',
+      name,
+      jobTitle: '',
+      role: 'OWNER',
+      avatarInitials: initialsOf(name),
+    }
+
+    runtimeUsers.push(user)
+    return user
+  },
+
+  /** Restores the session from the httpOnly cookie on a page refresh. */
+  async me(): Promise<User | null> {
+    if (!hasBackend) return null
+
+    try {
+      const { data } = await apiClient.get<User>('/auth/me')
+      return data
+    } catch {
+      // 401 simply means "not signed in" — not an error worth surfacing.
+      return null
+    }
+  },
+
+  async logout(): Promise<void> {
+    if (hasBackend) {
+      try {
+        await apiClient.post('/auth/logout')
+      } catch {
+        // Even if the call fails, the client clears its own session below.
+      }
+    }
   },
 
   /**
-   * Resolves whether or not the email exists. Confirming which addresses have
-   * accounts would be the same enumeration leak that `login` avoids, so the
-   * caller always shows the same "check your inbox" screen.
+   * Resolves whether or not the email exists — confirming which addresses have
+   * accounts would be the same enumeration leak `login` avoids.
    *
-   * No email is actually sent in this phase (§11.3 — no SMTP). When an account
-   * does match, we hand back a mock reset link so the flow is demoable.
+   * No email is sent in this phase (§11.3 — no SMTP), so a matching account
+   * hands back a mock link to keep the flow demoable.
    */
   async requestPasswordReset({ email }: { email: string }): Promise<{ resetLink: string | null }> {
     await delay()
@@ -92,18 +179,19 @@ export const authService = {
     return { resetLink: `${window.location.origin}/reset-password?token=${token}` }
   },
 
+  /** The accounts the simulated chooser offers. Not a real Google session. */
+  getSimulatedGoogleAccounts(): GoogleAccount[] {
+    return [
+      { email: 'owner@demo.com', name: 'Priya Nair', note: 'Existing Owner account' },
+      { email: 'hr@demo.com', name: 'Marta Lindqvist', note: 'Existing HR account' },
+      { email: 'ada@newco.com', name: 'Ada Lovelace', note: 'New — creates a workspace' },
+    ]
+  },
+
   getDemoCredentials() {
     return {
       password: DEMO_PASSWORD,
       accounts: mockUsers.map((u) => ({ email: u.email, role: u.role, name: u.name })),
     }
   },
-}
-
-function initialsOf(fullName: string): string {
-  const parts = fullName.trim().split(/\s+/).filter(Boolean)
-  if (parts.length === 0) return '?'
-  const first = parts[0]![0]!
-  const last = parts.length > 1 ? parts[parts.length - 1]![0]! : ''
-  return (first + last).toUpperCase()
 }
