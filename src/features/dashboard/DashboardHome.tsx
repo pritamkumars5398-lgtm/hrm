@@ -13,7 +13,7 @@ const ACTIVITY_ICON = {
 } as const
 
 function greetingFor(hour: number): string {
-  if (hour < 12) return 'Good morning'
+  if (hour < 12) return 'Very Good morning'
   if (hour < 18) return 'Good afternoon'
   return 'Good evening'
 }
@@ -100,16 +100,16 @@ export default function DashboardHome() {
           <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {status === 'ready' && data
               ? data.stats.map((stat) => (
-                  <div key={stat.id} className="rounded-card border border-hairline bg-surface p-4">
-                    <p className="text-[12px] text-muted">{stat.label}</p>
-                    <p className="tnum font-display mt-1.5 text-[26px] leading-none font-semibold">
-                      {stat.value}
-                    </p>
-                    {stat.delta && (
-                      <p className="tnum mt-2 text-[12px] text-pine">{stat.delta}</p>
-                    )}
-                  </div>
-                ))
+                <div key={stat.id} className="rounded-card border border-hairline bg-surface p-4">
+                  <p className="text-[12px] text-muted">{stat.label}</p>
+                  <p className="tnum font-display mt-1.5 text-[26px] leading-none font-semibold">
+                    {stat.value}
+                  </p>
+                  {stat.delta && (
+                    <p className="tnum mt-2 text-[12px] text-pine">{stat.delta}</p>
+                  )}
+                </div>
+              ))
               : [0, 1, 2, 3].map((i) => <StatSkeleton key={i} />)}
           </div>
 
