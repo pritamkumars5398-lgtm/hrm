@@ -19,7 +19,6 @@ import {
 import Button from '@/shared/components/Button'
 import { useAuthStore } from '@/features/auth/store/authStore'
 import { useDashboardStore } from './store/dashboardStore'
-import type { ActivityItem } from '@/services/dashboardService'
 
 const ACTIVITY_ICON = {
   leave: CalendarDays,
