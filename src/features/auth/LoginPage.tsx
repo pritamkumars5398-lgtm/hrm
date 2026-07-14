@@ -26,7 +26,7 @@ export default function LoginPage() {
   const [googleOpen, setGoogleOpen] = useState(false)
 
   // Real GIS flow
-  const { buttonWrapperRef } = useGoogleSignIn({
+  const { signIn } = useGoogleSignIn({
     onSuccess: (user) => enter(user),
   })
 
@@ -80,12 +80,9 @@ export default function LoginPage() {
         <GoogleButton
           label="Continue with Google"
           disabled={isSubmitting}
-          buttonWrapperRef={buttonWrapperRef}
           onClick={() => {
-            // If the real GIS button is rendering, clicking our button just
-            // clicks the invisible iframe above it. This onClick only fires
-            // in the fallback scenario.
-            if (!hasGoogleOAuth) setGoogleOpen(true)
+            if (hasGoogleOAuth) signIn()
+            else setGoogleOpen(true)
           }}
         />
 
