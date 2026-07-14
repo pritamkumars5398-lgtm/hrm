@@ -7,6 +7,8 @@ import { useAuthStore, type SessionUser } from '@/features/auth/store/authStore'
 type TopbarProps = {
   user: SessionUser
   onOpenSidebar: () => void
+  sidebarCollapsed?: boolean
+  onToggleSidebar?: () => void
 }
 
 const NOTIFICATIONS = [
@@ -38,7 +40,12 @@ function useDismiss(onDismiss: () => void) {
   return ref
 }
 
-export default function Topbar({ user, onOpenSidebar }: TopbarProps) {
+export default function Topbar({
+  user,
+  onOpenSidebar,
+  sidebarCollapsed = false,
+  onToggleSidebar,
+}: TopbarProps) {
   const navigate = useNavigate()
   const logout = useAuthStore((s) => s.logout)
 
@@ -52,6 +59,7 @@ export default function Topbar({ user, onOpenSidebar }: TopbarProps) {
 
   return (
     <header className="sticky top-0 z-30 flex h-16 shrink-0 items-center gap-3 border-b border-hairline bg-paper px-4 sm:px-6">
+      {/* Mobile Menu button */}
       <button
         type="button"
         onClick={onOpenSidebar}
@@ -60,6 +68,18 @@ export default function Topbar({ user, onOpenSidebar }: TopbarProps) {
       >
         <Menu size={17} />
       </button>
+
+      {/* Desktop Collapse Toggle button */}
+      {onToggleSidebar && (
+        <button
+          type="button"
+          onClick={onToggleSidebar}
+          aria-label={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          className="hidden size-9 items-center justify-center rounded-ctl border border-hairline text-muted transition-colors hover:bg-wash hover:text-ink lg:inline-flex"
+        >
+          <Menu size={17} className={`transition-transform duration-200 ${sidebarCollapsed ? 'rotate-180' : ''}`} />
+        </button>
+      )}
 
       <div className="relative hidden max-w-sm flex-1 sm:block">
         <Search
