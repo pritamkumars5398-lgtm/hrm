@@ -13,6 +13,7 @@ export default function DashboardLayout() {
   const { pathname } = useLocation()
 
   const [drawerOpen, setDrawerOpen] = useState(false)
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [organization, setOrganization] = useState<Organization | null>(null)
   const reduced = useReducedMotion()
 
@@ -45,9 +46,9 @@ export default function DashboardLayout() {
   return (
     <div className="flex min-h-dvh">
       {/* Desktop rail */}
-      <aside className="hidden w-60 shrink-0 lg:block">
-        <div className="fixed inset-y-0 w-60">
-          <Sidebar role={user.role} organizationName={organizationName} />
+      <aside className={`hidden shrink-0 lg:block transition-all duration-200 ${sidebarCollapsed ? 'w-16' : 'w-60'}`}>
+        <div className={`fixed inset-y-0 z-20 transition-all duration-200 ${sidebarCollapsed ? 'w-16' : 'w-60'}`}>
+          <Sidebar role={user.role} organizationName={organizationName} collapsed={sidebarCollapsed} />
         </div>
       </aside>
 
@@ -78,6 +79,7 @@ export default function DashboardLayout() {
               <Sidebar
                 role={user.role}
                 organizationName={organizationName}
+                collapsed={false}
                 onNavigate={() => setDrawerOpen(false)}
               />
               <button
@@ -94,7 +96,12 @@ export default function DashboardLayout() {
       </AnimatePresence>
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <Topbar user={user} onOpenSidebar={() => setDrawerOpen(true)} />
+        <Topbar
+          user={user}
+          onOpenSidebar={() => setDrawerOpen(true)}
+          sidebarCollapsed={sidebarCollapsed}
+          onToggleSidebar={() => setSidebarCollapsed(!sidebarCollapsed)}
+        />
 
         <main className="flex-1 bg-wash">
           <div className="border-b border-hairline bg-paper px-4 py-3 sm:px-6">
