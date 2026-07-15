@@ -97,68 +97,66 @@ export default function Topbar({
 
       <div ref={ref} className="ml-auto flex items-center gap-1.5">
         {/* Workspace Switcher — always visible so users can add a company */}
-        {user.memberships.length >= 1 && (
-          <div className="relative mr-1">
-            <button
-              type="button"
-              onClick={() => setOpenMenu((m) => (m === 'workspaces' ? null : 'workspaces'))}
-              aria-label="Switch workspace"
-              aria-expanded={openMenu === 'workspaces'}
-              className="flex items-center gap-2 rounded-ctl border border-hairline bg-surface px-3 py-1.5 text-[13px] font-medium transition-colors hover:border-pine hover:bg-wash"
-            >
-              <Building size={14} className="text-muted" />
-              <span className="truncate max-w-[120px]">
-                {user.memberships.find((m) => m.organizationId === user.activeOrganizationId)?.organizationName || 'Workspace'}
-              </span>
-              <ChevronDown size={14} className="text-muted" />
-            </button>
+        <div className="relative mr-1">
+          <button
+            type="button"
+            onClick={() => setOpenMenu((m) => (m === 'workspaces' ? null : 'workspaces'))}
+            aria-label="Switch workspace"
+            aria-expanded={openMenu === 'workspaces'}
+            className="flex items-center gap-2 rounded-ctl border border-hairline bg-surface px-3 py-1.5 text-[13px] font-medium transition-colors hover:border-pine hover:bg-wash"
+          >
+            <Building size={14} className="text-muted" />
+            <span className="truncate max-w-[120px]">
+              {user.memberships.find((m) => m.organizationId === user.activeOrganizationId)?.organizationName || 'Workspace'}
+            </span>
+            <ChevronDown size={14} className="text-muted" />
+          </button>
 
-            {openMenu === 'workspaces' && (
-              <Card overlay flush className="absolute right-0 mt-2 w-64 z-50">
-                <p className="border-b border-hairline px-4 py-2.5 text-[12px] font-semibold text-muted tracking-wider">
-                  Workspaces
-                </p>
-                <ul className="py-1">
-                  {user.memberships.map((m) => {
-                    const isActive = m.organizationId === user.activeOrganizationId
-                    return (
-                      <li key={m.organizationId}>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            useAuthStore.getState().setActiveOrg(m.organizationId)
-                            setOpenMenu(null)
-                            // Force reload to refresh data for new workspace
-                            window.location.href = '/dashboard'
-                          }}
-                          className={`flex w-full items-center justify-between px-4 py-2.5 text-left text-[13px] transition-colors hover:bg-wash ${
-                            isActive ? 'bg-pine-tint/30 font-medium text-pine-deep' : 'text-ink'
-                          }`}
-                        >
-                          <span className="truncate">{m.organizationName || 'Unknown Company'}</span>
-                          {isActive && <Check size={14} className="text-pine shrink-0" />}
-                        </button>
-                      </li>
-                    )
-                  })}
-                </ul>
-                <div className="border-t border-hairline p-1">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setOpenMenu(null)
-                      navigate('/dashboard/add-company')
-                    }}
-                    className="flex w-full items-center gap-2.5 rounded-ctl px-3 py-2 text-left text-[13px] text-pine transition-colors hover:bg-pine-tint/30"
-                  >
-                    <Plus size={15} />
-                    Add Company
-                  </button>
-                </div>
-              </Card>
-            )}
-          </div>
-        )}
+          {openMenu === 'workspaces' && (
+            <Card overlay flush className="absolute right-0 mt-2 w-64 z-50">
+              <p className="border-b border-hairline px-4 py-2.5 text-[12px] font-semibold text-muted tracking-wider">
+                Workspaces
+              </p>
+              <ul className="py-1">
+                {user.memberships.map((m) => {
+                  const isActive = m.organizationId === user.activeOrganizationId
+                  return (
+                    <li key={m.organizationId}>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          useAuthStore.getState().setActiveOrg(m.organizationId)
+                          setOpenMenu(null)
+                          // Force reload to refresh data for new workspace
+                          window.location.href = '/dashboard'
+                        }}
+                        className={`flex w-full items-center justify-between px-4 py-2.5 text-left text-[13px] transition-colors hover:bg-wash ${
+                          isActive ? 'bg-pine-tint/30 font-medium text-pine-deep' : 'text-ink'
+                        }`}
+                      >
+                        <span className="truncate">{m.organizationName || 'Unknown Company'}</span>
+                        {isActive && <Check size={14} className="text-pine shrink-0" />}
+                      </button>
+                    </li>
+                  )
+                })}
+              </ul>
+              <div className="border-t border-hairline p-1">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setOpenMenu(null)
+                    navigate('/dashboard/add-company')
+                  }}
+                  className="flex w-full items-center gap-2.5 rounded-ctl px-3 py-2 text-left text-[13px] text-pine transition-colors hover:bg-pine-tint/30"
+                >
+                  <Plus size={15} />
+                  Add Company
+                </button>
+              </div>
+            </Card>
+          )}
+        </div>
 
         {/* Notifications */}
         <div className="relative">
