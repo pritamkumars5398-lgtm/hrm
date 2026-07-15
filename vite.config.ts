@@ -40,6 +40,7 @@ function localApiPlugin(env: Record<string, string>): Plugin {
             }
 
             // Dynamic import so nodemailer stays out of the browser bundle.
+            // @ts-ignore
             const { default: nodemailer } = await import('nodemailer')
 
             const transporter = nodemailer.createTransport({

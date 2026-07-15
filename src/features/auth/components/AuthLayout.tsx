@@ -8,7 +8,6 @@ type AuthLayoutProps = {
   subtitle: ReactNode
   children: ReactNode
   footer: ReactNode
-  compact?: boolean
   /** When true: form is LEFT, illustration is RIGHT (used for Login) */
   reverse?: boolean
   /** Custom illustration image path (defaults to /hrm-illustration.png) */
@@ -228,7 +227,6 @@ export default function AuthLayout({
   subtitle,
   children,
   footer,
-  compact = false,
   reverse = false,
   image = '/hrm-illustration.png',
 }: AuthLayoutProps) {

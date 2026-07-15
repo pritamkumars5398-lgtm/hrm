@@ -70,7 +70,6 @@ export default function LoginPage() {
     <AuthLayout
       title="Welcome back "
       subtitle="Sign in to your Keystone workspace and pick up where you left off."
-      compact
       reverse
       image="/hrm-login.png"
       footer={

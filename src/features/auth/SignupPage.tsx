@@ -79,7 +79,6 @@ export default function SignupPage() {
     <AuthLayout
       title="Create your workspace "
       subtitle="You'll be the owner. Invite your HR team and managers once you're in."
-      compact
       footer={
         <>
           Already have a workspace?{' '}
