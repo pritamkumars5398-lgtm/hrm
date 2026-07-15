@@ -14,7 +14,7 @@ type SidebarProps = {
 
 const ROLE_LABEL: Record<Role, string> = {
   OWNER: 'Owner',
-  HR: 'HR',
+  HR: 'HR Manager',
   MANAGER: 'Manager',
 }
 
@@ -28,7 +28,7 @@ function NavSection({
   onNavigate?: () => void
 }) {
   return (
-    <ul className="space-y-0.5">
+    <ul className="space-y-1">
       {items.map((item) => {
         const Icon = item.icon
         return (
@@ -39,26 +39,35 @@ function NavSection({
               onClick={onNavigate}
               title={collapsed ? item.label : undefined}
               className={({ isActive }) =>
-                `group flex items-center transition-colors ${
+                `group flex items-center relative transition-all duration-200 ${
                   isActive
-                    ? 'bg-pine font-medium text-white'
-                    : 'text-muted hover:bg-pine-tint/50 hover:text-pine'
+                    ? 'bg-gradient-to-r from-pine to-pine-deep font-semibold text-white shadow-sm shadow-pine/10'
+                    : 'text-muted hover:bg-wash hover:text-ink'
                 } ${
                   collapsed
-                    ? 'h-9 w-9 justify-center rounded-ctl mx-auto p-0'
-                    : 'gap-2.5 rounded-ctl px-2.5 py-2 text-[13.5px]'
+                    ? 'h-9 w-9 justify-center rounded-full mx-auto p-0'
+                    : 'gap-3 rounded-ctl px-3 py-2.5 text-[13.5px]'
                 }`
               }
             >
               {({ isActive }) => (
                 <>
+                  {/* Left Active vertical highlight strip */}
+                  {isActive && !collapsed && (
+                    <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 bg-white rounded-r-full" />
+                  )}
+                  
                   <Icon
                     size={16}
-                    className={`transition-colors ${
+                    className={`transition-all duration-200 group-hover:scale-110 ${
                       isActive ? 'text-white' : 'text-muted group-hover:text-pine'
                     }`}
                   />
-                  {!collapsed && <span>{item.label}</span>}
+                  {!collapsed && (
+                    <span className="transition-transform duration-200 group-hover:translate-x-0.5">
+                      {item.label}
+                    </span>
+                  )}
                 </>
               )}
             </NavLink>
@@ -85,6 +94,14 @@ export default function Sidebar({
   const main = items.filter((i) => i.group === 'main')
   const admin = items.filter((i) => i.group === 'admin')
 
+  // Generate initials for organization selector
+  const orgInitials = organizationName
+    .split(' ')
+    .map((w) => w[0])
+    .join('')
+    .slice(0, 2)
+    .toUpperCase() || 'KS'
+
   return (
     <div className="flex h-full flex-col border-r border-hairline bg-paper">
       <div className={`flex h-16 shrink-0 items-center border-b border-hairline px-4 ${collapsed ? 'justify-center' : ''}`}>
@@ -92,11 +109,25 @@ export default function Sidebar({
       </div>
 
       {!collapsed && (
-        <div className="border-b border-hairline px-4 py-3">
-          <p className="truncate text-[13px] font-medium">{organizationName}</p>
-          <p className="mt-0.5 text-[11px] text-muted">
-            Signed in as <span className="text-pine">{ROLE_LABEL[role]}</span>
-          </p>
+        <div className="border-b border-hairline bg-wash/10 px-4 py-3.5 flex items-center gap-3">
+          {/* Workspace Avatar box */}
+          <div className="size-8 rounded-ctl flex items-center justify-center text-[12px] font-bold text-white bg-gradient-to-br from-pine to-pine-deep shadow-inner shrink-0 select-none">
+            {orgInitials}
+          </div>
+          
+          <div className="flex-1 min-w-0">
+            <p className="truncate text-[13px] font-bold text-ink leading-none">{organizationName}</p>
+            <div className="flex items-center gap-1.5 mt-1">
+              <span className="text-[9.5px] font-semibold text-muted uppercase tracking-wider">Role:</span>
+              <span className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-[9px] font-bold border ${
+                role === 'OWNER' ? 'bg-indigo-50 text-indigo-700 border-indigo-200/50' :
+                role === 'HR' ? 'bg-emerald-50 text-emerald-700 border-emerald-200/50' :
+                'bg-amber-50 text-amber-700 border-amber-200/50'
+              }`}>
+                {ROLE_LABEL[role]}
+              </span>
+            </div>
+          </div>
         </div>
       )}
 
@@ -108,7 +139,7 @@ export default function Sidebar({
             {collapsed ? (
               <hr className="my-4 border-hairline" />
             ) : (
-              <p className="mt-6 mb-2 px-2.5 text-[10px] font-semibold tracking-[0.12em] text-muted uppercase">
+              <p className="mt-6 mb-2 px-3 text-[10px] font-bold tracking-widest text-muted/70 uppercase select-none">
                 Administration
               </p>
             )}

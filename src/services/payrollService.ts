@@ -13,19 +13,19 @@ export class PayrollError extends Error {}
 const LATENCY_MS = 600
 const delay = () => new Promise((r) => setTimeout(r, LATENCY_MS))
 
-/** Pence → "£1,234.56". Formatting lives in one place so no screen invents its own. */
+/** Pence → "₹1,23,456.78". Formatting lives in one place so no screen invents its own. */
 export function formatMoney(pence: number): string {
-  return new Intl.NumberFormat('en-GB', {
+  return new Intl.NumberFormat('en-IN', {
     style: 'currency',
-    currency: 'GBP',
+    currency: 'INR',
   }).format(pence / 100)
 }
 
-/** Compact form for big headline figures — "£182.4k". */
+/** Compact form for big headline figures — "₹182.4k". */
 export function formatMoneyCompact(pence: number): string {
-  return new Intl.NumberFormat('en-GB', {
+  return new Intl.NumberFormat('en-IN', {
     style: 'currency',
-    currency: 'GBP',
+    currency: 'INR',
     notation: 'compact',
     maximumFractionDigits: 1,
   }).format(pence / 100)

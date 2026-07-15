@@ -51,13 +51,28 @@ export const useAuthStore = create<AuthState>()(
         ),
 
       logout: async () => {
+        // Clear all welcome keys from sessionStorage on logout so they trigger on next login
+        for (let i = sessionStorage.length - 1; i >= 0; i--) {
+          const key = sessionStorage.key(i)
+          if (key && key.startsWith('welcome_shown_')) {
+            sessionStorage.removeItem(key)
+          }
+        }
         // The cookie is httpOnly, so only the server can clear it — dropping local
         // state alone would leave a valid session sitting in the browser.
         await authService.logout()
         set({ user: null, isAuthenticated: false })
       },
 
-      clearSession: () => set({ user: null, isAuthenticated: false }),
+      clearSession: () => {
+        for (let i = sessionStorage.length - 1; i >= 0; i--) {
+          const key = sessionStorage.key(i)
+          if (key && key.startsWith('welcome_shown_')) {
+            sessionStorage.removeItem(key)
+          }
+        }
+        set({ user: null, isAuthenticated: false })
+      },
     }),
     {
       name: 'keystone.session',

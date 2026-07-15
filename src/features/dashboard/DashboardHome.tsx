@@ -15,6 +15,7 @@ import {
   CheckCircle2,
   FileUp,
   Clock,
+  MoreVertical,
 } from 'lucide-react'
 import Button from '@/shared/components/Button'
 import { useAuthStore } from '@/features/auth/store/authStore'
@@ -56,32 +57,29 @@ const getStatStyle = (id: string, label: string) => {
       label: 'Total Employees',
       Icon: UserPlus,
       iconColor: 'text-teal-600',
-      iconBg: 'bg-teal-50',
-      deltaPrefix: '↑ ',
-      deltaColor: 'text-teal-600',
-      showProgress: false,
+      iconBg: 'bg-teal-50/80 border border-teal-100/50',
+      deltaColor: 'text-emerald-700 bg-emerald-50/60 border border-emerald-100/30',
+      sparkline: 'teal',
     }
   }
   if (normId.includes('present') || normLabel.includes('present')) {
     return {
       label: 'Present Today',
       Icon: Activity,
-      iconColor: 'text-teal-600',
-      iconBg: 'bg-teal-50',
-      deltaPrefix: '',
-      deltaColor: 'text-muted',
-      showProgress: true,
+      iconColor: 'text-emerald-600',
+      iconBg: 'bg-emerald-50/80 border border-emerald-100/50',
+      deltaColor: 'text-muted-deep bg-wash/60 border border-hairline/60',
+      sparkline: 'emerald',
     }
   }
   if (normId.includes('leave') || normLabel.includes('leave')) {
     return {
       label: 'On Leave',
       Icon: CalendarDays,
-      iconColor: 'text-orange-500',
-      iconBg: 'bg-orange-50',
-      deltaPrefix: '',
-      deltaColor: 'text-orange-600',
-      showProgress: false,
+      iconColor: 'text-orange-600',
+      iconBg: 'bg-orange-50/80 border border-orange-100/50',
+      deltaColor: 'text-orange-700 bg-orange-50/60 border border-orange-100/30',
+      sparkline: 'orange',
     }
   }
   if (normId.includes('payroll') || normLabel.includes('payroll')) {
@@ -89,10 +87,9 @@ const getStatStyle = (id: string, label: string) => {
       label: 'March Payroll',
       Icon: Banknote,
       iconColor: 'text-indigo-600',
-      iconBg: 'bg-indigo-50',
-      deltaPrefix: '',
-      deltaColor: 'text-indigo-600',
-      showProgress: false,
+      iconBg: 'bg-indigo-50/80 border border-indigo-100/50',
+      deltaColor: 'text-indigo-700 bg-indigo-50/60 border border-indigo-100/30',
+      sparkline: 'purple',
     }
   }
 
@@ -100,10 +97,9 @@ const getStatStyle = (id: string, label: string) => {
     label: label,
     Icon: Star,
     iconColor: 'text-purple-600',
-    iconBg: 'bg-purple-50',
-    deltaPrefix: '↑ ',
-    deltaColor: 'text-purple-600',
-    showProgress: false,
+    iconBg: 'bg-purple-50/80 border border-purple-100/50',
+    deltaColor: 'text-purple-700 bg-purple-50/60 border border-purple-100/30',
+    sparkline: 'purple',
   }
 }
 
@@ -295,29 +291,84 @@ export default function DashboardHome() {
                   const style = getStatStyle(stat.id, stat.label)
                   const StatIcon = style.Icon
                   return (
-                    <div key={stat.id} className="rounded-card border border-hairline bg-surface p-4 flex gap-4 items-start">
-                      <div className={`p-2.5 rounded-full shrink-0 flex items-center justify-center ${style.iconBg}`}>
-                        <StatIcon className={`size-5 ${style.iconColor}`} />
+                    <div key={stat.id} className="group relative rounded-card border border-hairline bg-surface p-4 flex flex-col justify-between transition-all duration-300 hover:-translate-y-1.5 hover:shadow-lg hover:border-hairline-strong overflow-hidden h-[155px]">
+                      <div className="flex items-start justify-between w-full">
+                        <div className={`p-2.5 rounded-full shrink-0 flex items-center justify-center transition-transform duration-300 group-hover:scale-105 ${style.iconBg}`}>
+                          <StatIcon className={`size-5 ${style.iconColor}`} />
+                        </div>
+                        <button type="button" className="text-muted hover:text-ink transition-colors p-1 rounded-ctl hover:bg-wash cursor-pointer">
+                          <MoreVertical size={16} />
+                        </button>
                       </div>
-                      <div className="min-w-0 flex-1">
-                        <p className="text-[12px] text-muted font-medium leading-none">{style.label}</p>
-                        <p className="tnum font-display mt-2.5 text-[26px] leading-none font-bold text-ink">
-                          {stat.value}
-                        </p>
-                        {style.showProgress ? (
-                          <div className="mt-2.5">
-                            <div className="flex items-center justify-between text-[11px] text-muted font-medium">
-                              <span>{stat.delta || '95% attendance'}</span>
-                            </div>
-                            <div className="mt-1.5 h-1.5 w-full rounded-full bg-hairline overflow-hidden">
-                              <div className="h-full bg-[#10b981] rounded-full" style={{ width: '95%' }} />
-                            </div>
-                          </div>
-                        ) : stat.delta ? (
-                          <p className={`tnum mt-2.5 text-[11.5px] font-semibold ${style.deltaColor}`}>
-                            {style.deltaPrefix}{stat.delta}
+                      
+                      <div className="min-w-0 flex-1 mt-3">
+                        <p className="text-[11px] text-muted font-bold uppercase tracking-wider leading-none">{style.label}</p>
+                        <div className="flex items-baseline justify-between mt-2">
+                          <p className="tnum font-display text-[26px] leading-none font-bold text-ink">
+                            {stat.value}
                           </p>
-                        ) : null}
+                          {stat.delta && (
+                            <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold border leading-none ${style.deltaColor}`}>
+                              {stat.delta}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Sparkline Graph */}
+                      <div className="absolute bottom-0 inset-x-0 h-10 overflow-hidden pointer-events-none rounded-b-card">
+                        {style.sparkline === 'teal' && (
+                          <svg viewBox="0 0 100 30" className="w-full h-full" preserveAspectRatio="none">
+                            <defs>
+                              <linearGradient id="spark-teal" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="0%" stopColor="#0d9488" stopOpacity="0.15" />
+                                <stop offset="100%" stopColor="#0d9488" stopOpacity="0.0" />
+                              </linearGradient>
+                            </defs>
+                            <path d="M 0,26 C 15,28 30,14 45,16 C 60,18 75,6 90,8 C 95,9 98,4 100,3" fill="none" stroke="#0d9488" strokeWidth="2" strokeLinecap="round" />
+                            <path d="M 0,26 C 15,28 30,14 45,16 C 60,18 75,6 90,8 C 95,9 98,4 100,3 L 100,30 L 0,30 Z" fill="url(#spark-teal)" />
+                            <circle cx="100" cy="3" r="1.5" fill="#0d9488" />
+                          </svg>
+                        )}
+                        {style.sparkline === 'emerald' && (
+                          <svg viewBox="0 0 100 30" className="w-full h-full" preserveAspectRatio="none">
+                            <defs>
+                              <linearGradient id="spark-emerald" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="0%" stopColor="#10b981" stopOpacity="0.15" />
+                                <stop offset="100%" stopColor="#10b981" stopOpacity="0.0" />
+                              </linearGradient>
+                            </defs>
+                            <path d="M 0,16 C 10,8 20,24 30,16 C 40,8 50,24 60,16 C 70,8 80,24 90,16 C 95,12 98,16 100,12" fill="none" stroke="#10b981" strokeWidth="2" strokeLinecap="round" />
+                            <path d="M 0,16 C 10,8 20,24 30,16 C 40,8 50,24 60,16 C 70,8 80,24 90,16 C 95,12 98,16 100,12 L 100,30 L 0,30 Z" fill="url(#spark-emerald)" />
+                            <circle cx="100" cy="12" r="1.5" fill="#10b981" />
+                          </svg>
+                        )}
+                        {style.sparkline === 'orange' && (
+                          <svg viewBox="0 0 100 30" className="w-full h-full" preserveAspectRatio="none">
+                            <defs>
+                              <linearGradient id="spark-orange" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="0%" stopColor="#f97316" stopOpacity="0.15" />
+                                <stop offset="100%" stopColor="#f97316" stopOpacity="0.0" />
+                              </linearGradient>
+                            </defs>
+                            <path d="M 0,28 C 15,28 30,28 45,12 C 55,4 65,22 80,24 C 90,25 97,27 100,28" fill="none" stroke="#f97316" strokeWidth="2" strokeLinecap="round" />
+                            <path d="M 0,28 C 15,28 30,28 45,12 C 55,4 65,22 80,24 C 90,25 97,27 100,28 L 100,30 L 0,30 Z" fill="url(#spark-orange)" />
+                            <circle cx="100" cy="28" r="1.5" fill="#f97316" />
+                          </svg>
+                        )}
+                        {style.sparkline === 'purple' && (
+                          <svg viewBox="0 0 100 30" className="w-full h-full" preserveAspectRatio="none">
+                            <defs>
+                              <linearGradient id="spark-purple" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="0%" stopColor="#8b5cf6" stopOpacity="0.15" />
+                                <stop offset="100%" stopColor="#8b5cf6" stopOpacity="0.0" />
+                              </linearGradient>
+                            </defs>
+                            <path d="M 0,14 C 15,12 30,22 45,18 C 60,10 75,8 90,6 C 95,5 98,6 100,5" fill="none" stroke="#8b5cf6" strokeWidth="2" strokeLinecap="round" />
+                            <path d="M 0,14 C 15,12 30,22 45,18 C 60,10 75,8 90,6 C 95,5 98,6 100,5 L 100,30 L 0,30 Z" fill="url(#spark-purple)" />
+                            <circle cx="100" cy="5" r="1.5" fill="#8b5cf6" />
+                          </svg>
+                        )}
                       </div>
                     </div>
                   )
