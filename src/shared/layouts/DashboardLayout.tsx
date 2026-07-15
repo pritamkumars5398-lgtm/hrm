@@ -48,7 +48,7 @@ export default function DashboardLayout() {
       {/* Desktop rail */}
       <aside className={`hidden shrink-0 lg:block transition-all duration-200 ${sidebarCollapsed ? 'w-16' : 'w-60'}`}>
         <div className={`fixed inset-y-0 z-20 transition-all duration-200 ${sidebarCollapsed ? 'w-16' : 'w-60'}`}>
-          <Sidebar role={user.role} organizationName={organizationName} collapsed={sidebarCollapsed} />
+          <Sidebar permissions={user.permissions} role={user.role} organizationName={organizationName} collapsed={sidebarCollapsed} />
         </div>
       </aside>
 
@@ -77,6 +77,7 @@ export default function DashboardLayout() {
               className="relative h-full w-60"
             >
               <Sidebar
+                permissions={user.permissions}
                 role={user.role}
                 organizationName={organizationName}
                 collapsed={false}

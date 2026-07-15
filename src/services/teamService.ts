@@ -6,6 +6,16 @@ import type { User } from './authService'
 
 export type { Invite, InvitableRole, InviteStatus }
 
+/**
+ * Maps the UI's human-readable role presets to the granular permission arrays
+ * the backend expects. Keeps the form simple while the API stays flexible.
+ */
+export const ROLE_PERMISSIONS: Record<InvitableRole | 'EMPLOYEE', string[]> = {
+  HR: ['employees.*', 'attendance.*', 'leave.*', 'documents.*', 'reports.view', 'team.invite', 'team.view'],
+  MANAGER: ['attendance.view', 'leave.approve', 'performance.view', 'documents.view'],
+  EMPLOYEE: ['attendance.view', 'leave.view', 'performance.view', 'documents.view'],
+}
+
 /** A member is a user of the org, minus anything secret. */
 export type Member = Omit<User, 'password'>
 
@@ -22,6 +32,45 @@ export type AcceptInvitePayload = {
   phone: string
   jobTitle: string
   password: string
+}
+
+export type FinancialDetails = {
+  accName: string
+  accNumber: string
+  bankName: string
+  ifscCode: string
+}
+
+export type EducationDetail = {
+  degree: string
+  institution: string
+  year: string
+}
+
+export type FamilyDetail = {
+  name: string
+  relationship: string
+  contactNumber?: string
+}
+
+/** Everything the Add Employee form can send. Basic identity fields are required
+ *  by the form; the rest are optional so the lighter Team invite path still works. */
+export type InvitePayload = {
+  email: string
+  role: InvitableRole | 'EMPLOYEE'
+  firstName?: string
+  lastName?: string
+  jobTitle?: string
+  department?: string
+  startDate?: string
+  employmentType?: string
+  workLocation?: string
+  employeeId?: string
+  contactNumber?: string
+  homeAddress?: string
+  financialDetails?: FinancialDetails
+  educationDetails?: EducationDetail[]
+  familyDetails?: FamilyDetail[]
 }
 
 export class TeamError extends Error {}
@@ -69,15 +118,33 @@ export const teamService = {
     return mockInviteState
   },
 
-  async invite(payload: { email: string; role: InvitableRole }): Promise<{
+  async invite(payload: InvitePayload): Promise<{
     invite: Invite
     inviteLink: string
+    tempPassword: string | null
   }> {
     if (hasBackend) {
       try {
-        const { data } = await apiClient.post<{ invite: Invite; inviteLink: string }>(
+        const { data } = await apiClient.post<{ invite: Invite; inviteLink: string; tempPassword: string | null }>(
           '/invites',
-          payload,
+          // Backend expects permissions[], not role — map the preset here.
+          {
+            email: payload.email,
+            permissions: ROLE_PERMISSIONS[payload.role],
+            firstName: payload.firstName,
+            lastName: payload.lastName,
+            jobTitle: payload.jobTitle,
+            department: payload.department,
+            startDate: payload.startDate,
+            employmentType: payload.employmentType,
+            workLocation: payload.workLocation,
+            employeeId: payload.employeeId,
+            contactNumber: payload.contactNumber,
+            homeAddress: payload.homeAddress,
+            financialDetails: payload.financialDetails,
+            educationDetails: payload.educationDetails,
+            familyDetails: payload.familyDetails,
+          },
         )
         return data
       } catch (error) {
@@ -99,7 +166,7 @@ export const teamService = {
       id: `inv-${crypto.randomUUID().slice(0, 8)}`,
       organizationId: mockMemberState[0]!.organizationId!,
       email,
-      role: payload.role,
+      role: payload.role as InvitableRole,
       status: 'PENDING',
       invitedBy: 'usr-1',
       createdAt: new Date().toISOString(),
@@ -107,7 +174,7 @@ export const teamService = {
     }
 
     mockInviteState = [invite, ...mockInviteState]
-    return { invite, inviteLink: mockLink(invite.id) }
+    return { invite, inviteLink: mockLink(invite.id), tempPassword: 'demo-temp-password' }
   },
 
   async resendInvite(id: string): Promise<{ invite: Invite; inviteLink: string }> {

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import {
   AlertCircle,
   ArrowDown,
@@ -74,6 +75,7 @@ const initialsColor = (initials: string) => {
 
 export default function EmployeesPage() {
   const { status, result, query, error, fetch, setQuery, toggleSort, reset } = useEmployeeStore()
+  const navigate = useNavigate()
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [searchInput, setSearchInput] = useState(query.search)
 
@@ -119,6 +121,11 @@ export default function EmployeesPage() {
           <p className="mt-1 text-[13.5px] text-muted">
             {hasFilters ? 'Showing filtered results from company directory.' : 'Manage and view your company directory.'}
           </p>
+        </div>
+        <div>
+          <Button onClick={() => navigate('/dashboard/employees/new')}>
+            Add Employee
+          </Button>
         </div>
       </div>
 
@@ -348,7 +355,11 @@ export default function EmployeesPage() {
         </Card>
       )}
 
-      <EmployeeDrawer employeeId={selectedId} onClose={() => setSelectedId(null)} />
+      <EmployeeDrawer
+        employeeId={selectedId}
+        onClose={() => setSelectedId(null)}
+        onChanged={() => void fetch()}
+      />
     </div>
   )
 }

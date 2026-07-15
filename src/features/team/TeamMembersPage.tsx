@@ -18,12 +18,13 @@ import Card from '@/shared/components/Card'
 import { RoleBadge } from '@/shared/components/Badge'
 import { useAuthStore } from '@/features/auth/store/authStore'
 import { TeamError, teamService, type InvitableRole, type Member } from '@/services/teamService'
+import { sendInviteEmail } from '@/services/emailService'
 import { useTeamStore } from './store/teamStore'
 
 type InviteForm = { email: string; role: InvitableRole | '' }
 
 /** Shown after an invite is created — there is no SMTP, so the link is copied by hand (§11.3). */
-function InviteLinkPanel({ link }: { link: string }) {
+function InviteLinkPanel({ link, tempPassword }: { link: string; tempPassword: string | null }) {
   const [copied, setCopied] = useState(false)
 
   const copy = async () => {
@@ -34,14 +35,15 @@ function InviteLinkPanel({ link }: { link: string }) {
 
   return (
     <div className="mt-4 rounded-ctl border border-pine/30 bg-pine-tint/40 p-3.5">
-      <p className="text-[12px] font-medium text-pine-deep">Invite created</p>
+      <p className="text-[12px] font-medium text-pine-deep">Invite created — email sent ✓</p>
       <p className="mt-1 text-[12px] leading-relaxed text-muted">
-        No email is sent in this phase — copy the link and send it to them yourself.
+        An invite email with the temporary password has been sent to their address. You can also share these credentials manually:
       </p>
 
       <div className="mt-2.5 flex items-center gap-2">
         <code className="flex-1 truncate rounded-ctl border border-hairline bg-surface px-2.5 py-1.5 text-[12px] text-muted">
-          {link}
+          Link: {link}
+          {tempPassword && <><br/>Temp Password: {tempPassword}</>}
         </code>
         <button
           type="button"
@@ -73,6 +75,7 @@ export default function TeamMembersPage() {
   const { status, members, invites, error, load, upsertInvite, dropMember } = useTeamStore()
 
   const [inviteLink, setInviteLink] = useState<string | null>(null)
+  const [inviteTempPassword, setInviteTempPassword] = useState<string | null>(null)
   const [formError, setFormError] = useState<string | null>(null)
   const [busyId, setBusyId] = useState<string | null>(null)
   const [pendingRemoval, setPendingRemoval] = useState<Member | null>(null)
@@ -94,15 +97,29 @@ export default function TeamMembersPage() {
   const onInvite = handleSubmit(async (values) => {
     setFormError(null)
     setInviteLink(null)
+    setInviteTempPassword(null)
 
     try {
-      const { invite, inviteLink: link } = await teamService.invite({
+      const { invite, inviteLink: link, tempPassword } = await teamService.invite({
         email: values.email,
         role: values.role as InvitableRole,
       })
 
+      // Fire-and-forget — email failure shows a soft warning but doesn't block the invite.
+      if (tempPassword) {
+        sendInviteEmail({
+          to: values.email,
+          name: values.email.split('@')[0],
+          link,
+          tempPassword,
+        }).then((result) => {
+          if (!result.ok) console.warn('[TeamMembers] Email send failed:', result.error)
+        })
+      }
+
       upsertInvite(invite)
       setInviteLink(link)
+      setInviteTempPassword(tempPassword)
       reset()
     } catch (err) {
       setFormError(err instanceof TeamError ? err.message : 'We could not send that invite.')
@@ -228,7 +245,7 @@ export default function TeamMembersPage() {
             </div>
           </form>
 
-          {inviteLink && <InviteLinkPanel link={inviteLink} />}
+          {inviteLink && <InviteLinkPanel link={inviteLink} tempPassword={inviteTempPassword} />}
         </Card>
       )}
 

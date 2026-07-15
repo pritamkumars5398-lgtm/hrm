@@ -11,7 +11,6 @@ import {
   UserPlus,
   type LucideIcon,
 } from 'lucide-react'
-import type { Role } from '@/services/authService'
 
 export type ModuleKey =
   | 'dashboard'
@@ -47,35 +46,23 @@ export const NAV_ITEMS: NavItem[] = [
   { key: 'settings', label: 'Settings', path: '/dashboard/settings', icon: Settings, group: 'admin' },
 ]
 
-export type RoleMatrix = Record<Role, ModuleKey[]>
+export type PermissionMatrix = Record<ModuleKey, string[]>
 
 /**
- * The draft defaults from §10 — the starting point, not the live value.
- *
- * Settings → Roles & Permissions edits a copy of this held in `permissionsStore`,
- * and the sidebar AND the route guard both read from that store. So changing the
- * matrix changes what a role can reach, immediately and everywhere. Use
- * `useRoleMatrix()` to read the live matrix; this constant is only the default
- * and the "reset" target.
+ * Maps each module to the granular permissions that grant access to it.
+ * If a user holds ANY of the listed permissions, they can access the module.
  */
-export const DEFAULT_ROLE_MODULES: RoleMatrix = {
-  OWNER: [
-    'dashboard',
-    'employees',
-    'attendance',
-    'leave',
-    'payroll',
-    'performance',
-    'documents',
-    'reports',
-    'team',
-    'settings',
-  ],
-  // HR: no Payroll, no full Settings. Team Members is invite-only, not config.
-  HR: ['dashboard', 'employees', 'attendance', 'leave', 'documents', 'reports', 'team'],
-  // Manager: their team's attendance and leave approvals, plus performance. No
-  // Payroll, no Settings, Documents view-only.
-  MANAGER: ['dashboard', 'attendance', 'leave', 'performance', 'documents'],
+export const PERMISSION_MODULES: PermissionMatrix = {
+  dashboard: [], // Handled by ALWAYS_GRANTED
+  employees: ['employees.view', 'employees.manage'],
+  attendance: ['attendance.view', 'attendance.manage'],
+  leave: ['leave.view', 'leave.approve'],
+  payroll: ['payroll.view', 'payroll.manage'],
+  performance: ['performance.view', 'performance.manage'],
+  documents: ['documents.view', 'documents.manage'],
+  reports: ['reports.view'],
+  team: ['team.view', 'team.invite', 'team.managePermissions'],
+  settings: ['settings.manage'],
 }
 
 /**
@@ -88,12 +75,28 @@ export const DEFAULT_ROLE_MODULES: RoleMatrix = {
  */
 export const ALWAYS_GRANTED: ModuleKey[] = ['dashboard']
 
-export function canAccess(matrix: RoleMatrix, role: Role, moduleKey: ModuleKey): boolean {
-  if (role === 'OWNER') return true
+export function canAccess(permissions: string[] | undefined, moduleKey: ModuleKey): boolean {
+  const perms = permissions ?? []
+  if (perms.includes('*')) return true
   if (ALWAYS_GRANTED.includes(moduleKey)) return true
-  return matrix[role].includes(moduleKey)
+  
+  const requiredPerms = PERMISSION_MODULES[moduleKey] || []
+  return requiredPerms.some((p) => perms.includes(p))
 }
 
-export function navItemsFor(matrix: RoleMatrix, role: Role): NavItem[] {
-  return NAV_ITEMS.filter((item) => canAccess(matrix, role, item.key))
+export function navItemsFor(permissions: string[] | undefined): NavItem[] {
+  return NAV_ITEMS.filter((item) => canAccess(permissions, item.key))
+}
+
+/**
+ * Does this permission set grant a specific key? Mirrors the backend's
+ * PermissionsGuard exactly: full access (`*`), the exact key, or the namespace
+ * wildcard (`employees.*` grants `employees.manage`). Use this to gate protected
+ * actions inside a module (Edit/Delete buttons, Approve, etc.).
+ */
+export function hasPermission(permissions: string[] | undefined, key: string): boolean {
+  const perms = permissions ?? []
+  if (perms.includes('*') || perms.includes(key)) return true
+  const namespace = key.split('.')[0]
+  return perms.includes(`${namespace}.*`)
 }
