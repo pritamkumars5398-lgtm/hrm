@@ -66,7 +66,7 @@ export const performanceService = {
   },
 
   async submitReview(
-    role: Role,
+    _role: Role,
     viewerName: string,
     recordId: string,
     payload: { rating: number; summary: string },

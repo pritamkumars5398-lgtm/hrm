@@ -15,5 +15,10 @@ export default function RequireAuth({ children }: { children: ReactNode }) {
     return <Navigate to="/login" replace state={{ from: location.pathname }} />
   }
 
+  const user = useAuthStore.getState().user
+  if (user?.requiresPasswordReset && location.pathname !== '/reset-password') {
+    return <Navigate to="/reset-password" replace />
+  }
+
   return <>{children}</>
 }

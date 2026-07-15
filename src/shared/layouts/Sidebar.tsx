@@ -1,11 +1,11 @@
 import { NavLink } from 'react-router-dom'
 import Logo from '@/shared/components/Logo'
 import { navItemsFor, type NavItem } from '@/shared/config/navigation'
-import { useRoleMatrix } from '@/features/settings/store/permissionsStore'
 import type { Role } from '@/services/authService'
 
 type SidebarProps = {
-  role: Role
+  permissions: string[]
+  role: Role // For display only
   organizationName: string
   collapsed?: boolean
   /** Closes the drawer after navigating on mobile. */
@@ -83,14 +83,13 @@ function NavSection({
  * no hardcoded list here: change ROLE_MODULES and this changes with it.
  */
 export default function Sidebar({
+  permissions,
   role,
   organizationName,
   collapsed = false,
   onNavigate,
 }: SidebarProps) {
-  // Live matrix — editing Settings → Roles & Permissions changes this immediately.
-  const matrix = useRoleMatrix()
-  const items = navItemsFor(matrix, role)
+  const items = navItemsFor(permissions)
   const main = items.filter((i) => i.group === 'main')
   const admin = items.filter((i) => i.group === 'admin')
 

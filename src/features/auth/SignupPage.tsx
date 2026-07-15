@@ -39,7 +39,7 @@ export default function SignupPage() {
   const [googleOpen, setGoogleOpen] = useState(false)
 
   // Real GIS flow
-  const { buttonWrapperRef } = useGoogleSignIn({
+  const { signIn } = useGoogleSignIn({
     onSuccess: (user) => enter(user),
   })
 
@@ -92,9 +92,9 @@ export default function SignupPage() {
         <GoogleButton
           label="Sign up with Google"
           disabled={isSubmitting}
-          buttonWrapperRef={buttonWrapperRef}
           onClick={() => {
-            if (!hasGoogleOAuth) setGoogleOpen(true)
+            if (hasGoogleOAuth) signIn()
+            else setGoogleOpen(true)
           }}
         />
 

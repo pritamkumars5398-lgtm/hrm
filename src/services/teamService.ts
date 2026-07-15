@@ -6,22 +6,58 @@ import type { User } from './authService'
 
 export type { Invite, InvitableRole, InviteStatus }
 
+/**
+ * Maps the UI's human-readable role presets to the granular permission arrays
+ * the backend expects. Keeps the form simple while the API stays flexible.
+ */
+export const ROLE_PERMISSIONS: Record<InvitableRole | 'EMPLOYEE', string[]> = {
+  HR: ['employees.*', 'attendance.*', 'leave.*', 'documents.*', 'reports.view', 'team.invite', 'team.view'],
+  MANAGER: ['attendance.view', 'leave.approve', 'performance.view', 'documents.view'],
+  EMPLOYEE: ['attendance.view', 'leave.view', 'performance.view', 'documents.view'],
+}
+
 /** A member is a user of the org, minus anything secret. */
 export type Member = Omit<User, 'password'>
 
-export type InvitePreview = {
-  email: string
-  role: string
-  organizationName: string
-  invitedByName: string
+export type FinancialDetails = {
+  accName: string
+  accNumber: string
+  bankName: string
+  ifscCode: string
 }
 
-export type AcceptInvitePayload = {
-  token: string
-  fullName: string
-  phone: string
-  jobTitle: string
-  password: string
+export type EducationDetail = {
+  degree: string
+  institution: string
+  year: string
+}
+
+export type FamilyDetail = {
+  name: string
+  relationship: string
+  contactNumber?: string
+}
+
+/** Everything the Add Employee form can send. Basic identity fields are required
+ *  by the form; the rest are optional so the lighter Team invite path still works. */
+export type InvitePayload = {
+  email: string
+  role: InvitableRole | 'EMPLOYEE'
+  /** Which screen triggered it — only 'employee-management' creates an Employee HR record. */
+  source?: 'employee-management' | 'team-members'
+  firstName?: string
+  lastName?: string
+  jobTitle?: string
+  department?: string
+  startDate?: string
+  employmentType?: string
+  workLocation?: string
+  employeeId?: string
+  contactNumber?: string
+  homeAddress?: string
+  financialDetails?: FinancialDetails
+  educationDetails?: EducationDetail[]
+  familyDetails?: FamilyDetail[]
 }
 
 export class TeamError extends Error {}
@@ -33,7 +69,8 @@ const delay = () => new Promise((r) => setTimeout(r, LATENCY_MS))
 let mockInviteState: Invite[] = [...mockInvites]
 let mockMemberState: Member[] = mockUsers.map(({ password: _password, ...m }) => m)
 
-const mockLink = (id: string) => `${window.location.origin}/accept-invite?token=mock-${id}`
+// Temp-password is the credential now (not a token link) — point at the login screen.
+const mockLink = (_id: string) => `${window.location.origin}/login`
 
 /**
  * Team Members is **access-control**, so it is backed by the real backend
@@ -69,15 +106,34 @@ export const teamService = {
     return mockInviteState
   },
 
-  async invite(payload: { email: string; role: InvitableRole }): Promise<{
+  async invite(payload: InvitePayload): Promise<{
     invite: Invite
     inviteLink: string
+    tempPassword: string | null
   }> {
     if (hasBackend) {
       try {
-        const { data } = await apiClient.post<{ invite: Invite; inviteLink: string }>(
+        const { data } = await apiClient.post<{ invite: Invite; inviteLink: string; tempPassword: string | null }>(
           '/invites',
-          payload,
+          // Backend expects permissions[], not role — map the preset here.
+          {
+            email: payload.email,
+            permissions: ROLE_PERMISSIONS[payload.role],
+            source: payload.source ?? 'team-members',
+            firstName: payload.firstName,
+            lastName: payload.lastName,
+            jobTitle: payload.jobTitle,
+            department: payload.department,
+            startDate: payload.startDate,
+            employmentType: payload.employmentType,
+            workLocation: payload.workLocation,
+            employeeId: payload.employeeId,
+            contactNumber: payload.contactNumber,
+            homeAddress: payload.homeAddress,
+            financialDetails: payload.financialDetails,
+            educationDetails: payload.educationDetails,
+            familyDetails: payload.familyDetails,
+          },
         )
         return data
       } catch (error) {
@@ -99,7 +155,7 @@ export const teamService = {
       id: `inv-${crypto.randomUUID().slice(0, 8)}`,
       organizationId: mockMemberState[0]!.organizationId!,
       email,
-      role: payload.role,
+      role: payload.role as InvitableRole,
       status: 'PENDING',
       invitedBy: 'usr-1',
       createdAt: new Date().toISOString(),
@@ -107,7 +163,7 @@ export const teamService = {
     }
 
     mockInviteState = [invite, ...mockInviteState]
-    return { invite, inviteLink: mockLink(invite.id) }
+    return { invite, inviteLink: mockLink(invite.id), tempPassword: 'demo-temp-password' }
   },
 
   async resendInvite(id: string): Promise<{ invite: Invite; inviteLink: string }> {
@@ -168,67 +224,5 @@ export const teamService = {
 
     await delay()
     mockMemberState = mockMemberState.filter((m) => m.id !== id)
-  },
-
-  /** Public — the invitee has no session yet. */
-  async previewInvite(token: string): Promise<InvitePreview> {
-    if (hasBackend) {
-      try {
-        const { data } = await apiClient.get<InvitePreview>('/invites/preview', {
-          params: { token },
-        })
-        return data
-      } catch (error) {
-        throw new TeamError(apiErrorMessage(error, 'This invite link is not valid.'))
-      }
-    }
-
-    await delay()
-    const id = token.replace(/^mock-/, '')
-    const invite = mockInviteState.find((i) => i.id === id && i.status === 'PENDING')
-    if (!invite) throw new TeamError('This invite link is not valid.')
-
-    return {
-      email: invite.email,
-      role: invite.role,
-      organizationName: 'Alderway Labs',
-      invitedByName: 'Priya Nair',
-    }
-  },
-
-  async acceptInvite(payload: AcceptInvitePayload): Promise<User> {
-    if (hasBackend) {
-      try {
-        const { data } = await apiClient.post<User>('/invites/accept', payload)
-        return data
-      } catch (error) {
-        throw new TeamError(apiErrorMessage(error, 'We could not accept that invite.'))
-      }
-    }
-
-    await delay()
-    const preview = await teamService.previewInvite(payload.token)
-    const id = payload.token.replace(/^mock-/, '')
-
-    mockInviteState = mockInviteState.map((i) =>
-      i.id === id ? { ...i, status: 'ACCEPTED' as const } : i,
-    )
-
-    return {
-      id: `usr-${crypto.randomUUID().slice(0, 8)}`,
-      organizationId: mockMemberState[0]!.organizationId!,
-      email: preview.email,
-      password: '',
-      name: payload.fullName,
-      jobTitle: payload.jobTitle,
-      // Role comes from the invite, never from the invitee.
-      role: preview.role as 'HR' | 'MANAGER',
-      avatarInitials: payload.fullName
-        .split(/\s+/)
-        .map((p) => p[0])
-        .slice(0, 2)
-        .join('')
-        .toUpperCase(),
-    }
   },
 }

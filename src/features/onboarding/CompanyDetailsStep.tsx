@@ -16,7 +16,7 @@ type CompanyForm = {
   industry: string
 }
 
-export default function CompanyDetailsStep() {
+export default function CompanyDetailsStep({ isAdditional = false }: { isAdditional?: boolean }) {
   const navigate = useNavigate()
   const user = useAuthStore((s) => s.user)
   const attachOrganization = useAuthStore((s) => s.attachOrganization)
@@ -30,8 +30,8 @@ export default function CompanyDetailsStep() {
   // Landing here directly, without having done step 1, would submit a half-built
   // profile — send them back rather than letting them through.
   useEffect(() => {
-    if (!personal) goTo(1)
-  }, [personal, goTo])
+    if (!isAdditional && !personal) goTo(1)
+  }, [personal, goTo, isAdditional])
 
   const {
     register,
@@ -39,8 +39,8 @@ export default function CompanyDetailsStep() {
     formState: { errors, isSubmitting },
   } = useForm<CompanyForm>({ defaultValues: { name: '', address: '', industry: '' } })
 
-  if (user?.organizationId) return <Navigate to="/dashboard" replace />
-  if (!personal) return <Navigate to="/onboarding" replace />
+  if (!isAdditional && user?.organizationId) return <Navigate to="/dashboard" replace />
+  if (!isAdditional && !personal) return <Navigate to="/onboarding" replace />
 
   const onSubmit = handleSubmit(async (values) => {
     setFormError(null)
@@ -49,12 +49,13 @@ export default function CompanyDetailsStep() {
     try {
       const org = await organizationService.create({
         ...values,
-        jobTitle: personal.jobTitle,
+        jobTitle: isAdditional ? 'Owner' : (personal?.jobTitle || 'Owner'),
         ownerId: user.id,
       })
 
       // This is the moment the workspace exists and this person owns it (§11.2).
-      attachOrganization(org.id, personal.jobTitle)
+      attachOrganization(org.id, isAdditional ? 'Owner' : (personal?.jobTitle || 'Owner'), org.name)
+
       navigate('/dashboard', { replace: true })
     } catch (err) {
       setFormError(
@@ -70,12 +71,7 @@ export default function CompanyDetailsStep() {
     navigate('/onboarding')
   }
 
-  return (
-    <WizardShell
-      current={2}
-      title="Now, your company"
-      subtitle="This creates your workspace. You'll be its owner, and you can invite your HR team and managers straight after."
-    >
+  const formContent = (
       <form onSubmit={onSubmit} noValidate>
         {formError && (
           <div
@@ -120,8 +116,8 @@ export default function CompanyDetailsStep() {
         <div className="mt-6 flex gap-2.5 rounded-ctl border border-hairline bg-wash p-3.5">
           <Sparkles size={15} className="mt-px shrink-0 text-pine" aria-hidden="true" />
           <p className="text-[12px] leading-relaxed text-muted">
-            You'll join as <span className="font-medium text-ink">{personal.fullName}</span>,{' '}
-            <span className="font-medium text-ink">{personal.jobTitle}</span> — the{' '}
+            You'll join as <span className="font-medium text-ink">{user?.name}</span>,{' '}
+            <span className="font-medium text-ink">{isAdditional ? 'Owner' : personal?.jobTitle}</span> — the{' '}
             <span className="font-medium text-ink">Owner</span> of this workspace.
           </p>
         </div>
@@ -144,6 +140,25 @@ export default function CompanyDetailsStep() {
           </Button>
         </div>
       </form>
+  )
+
+  if (isAdditional) {
+    return (
+      <div className="mx-auto max-w-md pt-12">
+        <h1 className="mb-2 text-2xl font-bold">Add Company</h1>
+        <p className="mb-6 text-[14px] text-muted">Create an additional workspace.</p>
+        {formContent}
+      </div>
+    )
+  }
+
+  return (
+    <WizardShell
+      current={2}
+      title="Now, your company"
+      subtitle="This creates your workspace. You'll be its owner, and you can invite your HR team and managers straight after."
+    >
+      {formContent}
     </WizardShell>
   )
 }

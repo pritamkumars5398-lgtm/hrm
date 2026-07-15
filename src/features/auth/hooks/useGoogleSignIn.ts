@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useCallback } from 'react'
 import { env, hasGoogleOAuth } from '@/config/env'
 import type { User } from '@/services/authService'
 
@@ -7,18 +7,25 @@ type UseGoogleSignInOptions = {
 }
 
 /**
- * Replaces the fake dialog with the real Google Identity Services (GIS) flow.
+ * Initialises the GIS SDK once and returns a `signIn()` function that opens
+ * the Google account-chooser popup when called.
  *
- * Uses the new `accounts.google.com/gsi/client` SDK, which is loaded via a
- * script tag in `index.html`.
+ * We no longer use the invisible-button overlay trick (`renderButton` +
+ * `opacity-0`) because that approach silently breaks when the origin isn't
+ * whitelisted yet, or when the GIS iframe fails to mount. Instead we call
+ * `google.accounts.id.prompt()` directly from our own button's onClick,
+ * which is fully programmatic and works on any authorised origin.
  */
 export function useGoogleSignIn({ onSuccess }: UseGoogleSignInOptions) {
   const onSuccessRef = useRef(onSuccess)
   onSuccessRef.current = onSuccess
-  const buttonWrapperRef = useRef<HTMLDivElement>(null)
+
+  const initialized = useRef(false)
 
   useEffect(() => {
-    if (!hasGoogleOAuth || !window.google || !buttonWrapperRef.current) return
+    if (!hasGoogleOAuth || !window.google || initialized.current) return
+
+    initialized.current = true
 
     window.google.accounts.id.initialize({
       client_id: env.googleClientId!,
@@ -31,20 +38,16 @@ export function useGoogleSignIn({ onSuccess }: UseGoogleSignInOptions) {
           console.error('Google sign-in failed during backend verification:', error)
         }
       },
-    })
-
-    // GIS does not allow programmatically opening the auth popup. To use our own
-    // custom-styled button, we render the official Google button completely
-    // transparent and position it exactly over our custom button.
-    window.google.accounts.id.renderButton(buttonWrapperRef.current, {
-      type: 'standard',
-      theme: 'outline',
-      size: 'large',
-      text: 'signin_with',
-      shape: 'rectangular',
-      width: 400, // Make it wide enough to cover our button
+      // Cancel the One Tap auto-prompt — we only want explicit button clicks.
+      cancel_on_tap_outside: true,
     })
   }, [])
 
-  return { buttonWrapperRef }
+  /** Call this from your button's onClick to open the Google account chooser. */
+  const signIn = useCallback(() => {
+    if (!hasGoogleOAuth || !window.google) return
+    window.google.accounts.id.prompt()
+  }, [])
+
+  return { signIn }
 }

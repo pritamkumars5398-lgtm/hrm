@@ -3,7 +3,6 @@ import { Link } from 'react-router-dom'
 import { ShieldOff } from 'lucide-react'
 import { useAuthStore } from '../store/authStore'
 import { canAccess, type ModuleKey } from '@/shared/config/navigation'
-import { useRoleMatrix } from '@/features/settings/store/permissionsStore'
 
 /**
  * Guards a module route against a role that should not reach it. Hiding the
@@ -21,11 +20,10 @@ export default function RequireModule({
   children: ReactNode
 }) {
   const user = useAuthStore((s) => s.user)
-  const matrix = useRoleMatrix()
 
   if (!user) return null
 
-  if (!canAccess(matrix, user.role, module)) {
+  if (!canAccess(user.permissions, module)) {
     return (
       <div className="flex min-h-[60vh] items-center justify-center">
         <div className="max-w-sm text-center">

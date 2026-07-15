@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
 import { Navigate, Outlet, useLocation } from 'react-router-dom'
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
-import { X, Crown, Users, Target, CheckCircle2, Sparkles, ArrowRight } from 'lucide-react'
+import type { Variants } from 'framer-motion'
+import { X, Crown, Users, Target, CheckCircle2, Sparkles } from 'lucide-react'
 import { useAuthStore } from '@/features/auth/store/authStore'
 import { organizationService, type Organization } from '@/services/organizationService'
 import Sidebar from './Sidebar'
@@ -62,7 +63,7 @@ const ROLE_WELCOME_CONTENT: Record<'OWNER' | 'HR' | 'MANAGER', RoleContent> = {
   }
 }
 
-const containerVariants = {
+const containerVariants: Variants = {
   hidden: { opacity: 0, scale: 0.95, y: 30 },
   visible: {
     opacity: 1,
@@ -84,7 +85,7 @@ const containerVariants = {
   }
 }
 
-const itemVariants = {
+const itemVariants: Variants = {
   hidden: { opacity: 0, y: 15 },
   visible: {
     opacity: 1,
@@ -283,7 +284,7 @@ export default function DashboardLayout() {
           {/* Desktop rail */}
           <aside className={`hidden shrink-0 lg:block transition-all duration-200 ${sidebarCollapsed ? 'w-16' : 'w-60'}`}>
             <div className={`fixed inset-y-0 z-20 transition-all duration-200 ${sidebarCollapsed ? 'w-16' : 'w-60'}`}>
-              <Sidebar role={user.role} organizationName={organizationName} collapsed={sidebarCollapsed} />
+              <Sidebar permissions={user.permissions} role={user.role} organizationName={organizationName} collapsed={sidebarCollapsed} />
             </div>
           </aside>
 
@@ -312,6 +313,7 @@ export default function DashboardLayout() {
                   className="relative h-full w-60"
                 >
                   <Sidebar
+                    permissions={user.permissions}
                     role={user.role}
                     organizationName={organizationName}
                     collapsed={false}

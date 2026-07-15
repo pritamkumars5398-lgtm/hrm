@@ -12,7 +12,6 @@ import {
   Scale,
   FileSpreadsheet,
   Sparkles,
-  BookOpen,
   HelpCircle,
   Code2,
   Building2,
@@ -36,14 +35,6 @@ export default function Nav() {
 
   const [showBanner, setShowBanner] = useState(true)
   const [hoveredTab, setHoveredTab] = useState<string | null>(null)
-  const [isMac, setIsMac] = useState(true)
-
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      setIsMac(navigator.platform.toUpperCase().indexOf('MAC') >= 0)
-    }
-  }, [])
-
   // The mobile panel is a dialog-ish overlay; don't let the page scroll behind it.
   useEffect(() => {
     document.body.style.overflow = open ? 'hidden' : ''
