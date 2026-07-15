@@ -3,6 +3,7 @@ import Features from './components/Features'
 import Footer from './components/Footer'
 import Hero from './components/Hero'
 import ModuleShowcase from './components/ModuleShowcase'
+import DashboardShowcase from './components/DashboardShowcase'
 import Nav from './components/Nav'
 import Pricing from './components/Pricing'
 import Testimonials from './components/Testimonials'
@@ -24,6 +25,7 @@ export default function LandingPage() {
         <Hero />
         <Features />
         <ModuleShowcase />
+        <DashboardShowcase />
         <WhyChoose />
         <Testimonials />
         <Pricing />

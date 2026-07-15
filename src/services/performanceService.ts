@@ -23,6 +23,9 @@ export type PerformanceData = {
   distribution: Array<{ rating: number; count: number }>
 }
 
+/** Local mutable copy so ratings persist across session/refetches. */
+let performanceRecords: PerformanceRecord[] = [...mockPerformance]
+
 export const performanceService = {
   /** Mock-only (§11.4). Owner and Manager only (§10) — HR has no Performance access. */
   async get(role: Role, viewerName: string): Promise<PerformanceData> {
@@ -33,8 +36,8 @@ export const performanceService = {
     // A Manager reviews their own reports, nobody else's.
     const records =
       scope === 'company'
-        ? mockPerformance
-        : mockPerformance.filter((r) => r.managerName === viewerName)
+        ? performanceRecords
+        : performanceRecords.filter((r) => r.managerName === viewerName)
 
     const rated = records.filter((r) => r.rating !== null)
     const allGoals = records.flatMap((r) => r.goals)
@@ -60,5 +63,37 @@ export const performanceService = {
         count: rated.filter((r) => r.rating === rating).length,
       })),
     }
+  },
+
+  async submitReview(
+    role: Role,
+    viewerName: string,
+    recordId: string,
+    payload: { rating: number; summary: string },
+  ): Promise<PerformanceRecord> {
+    await delay()
+
+    const record = performanceRecords.find((r) => r.id === recordId)
+    if (!record) throw new PerformanceError('Performance record not found.')
+
+    const newReview = {
+      id: `rev-${crypto.randomUUID().slice(0, 8)}`,
+      cycle: CURRENT_CYCLE,
+      rating: payload.rating,
+      reviewer: viewerName,
+      summary: payload.summary.trim(),
+      reviewedOn: new Date().toISOString().slice(0, 10),
+    }
+
+    const updatedRecord: PerformanceRecord = {
+      ...record,
+      rating: payload.rating,
+      reviews: [newReview, ...record.reviews],
+    }
+
+    performanceRecords = performanceRecords.map((r) =>
+      r.id === recordId ? updatedRecord : r,
+    )
+    return updatedRecord
   },
 }

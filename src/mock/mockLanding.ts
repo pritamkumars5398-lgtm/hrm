@@ -14,6 +14,7 @@ export type Testimonial = {
   role: string
   company: string
   initials: string
+  avatar?: string
 }
 
 export type PricingTier = {
@@ -36,6 +37,7 @@ export const mockTestimonials: Testimonial[] = [
     role: 'Head of People',
     company: 'Alderway Labs',
     initials: 'PN',
+    avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&h=150&fit=crop&crop=face',
   },
   {
     id: 't-2',
@@ -45,6 +47,7 @@ export const mockTestimonials: Testimonial[] = [
     role: 'Operations Director',
     company: 'Bright Harbour',
     initials: 'SO',
+    avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&h=150&fit=crop&crop=face',
   },
   {
     id: 't-3',
@@ -54,6 +57,7 @@ export const mockTestimonials: Testimonial[] = [
     role: 'HR Manager',
     company: 'Nordkap Group',
     initials: 'ML',
+    avatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&h=150&fit=crop&crop=face',
   },
 ]
 

@@ -13,7 +13,7 @@ type TopbarProps = {
 
 const NOTIFICATIONS = [
   { id: 'n1', title: 'Leave request from Samuel Okafor', meta: '5 days annual · 18–22 Mar' },
-  { id: 'n2', title: 'March payroll is ready to review', meta: '248 employees · £847,204' },
+  { id: 'n2', title: 'March payroll is ready to review', meta: '248 employees · ₹8,47,204' },
   { id: 'n3', title: 'Marta Lindqvist completed onboarding', meta: 'Yesterday' },
 ]
 
