@@ -33,6 +33,8 @@ export type Employee = {
   location: string
   joinedAt: string
   managerName: string | null
+  /** Another Employee.id in the same company. Not surfaced in the UI yet. */
+  managerId?: string | null
   employmentHistory: EmploymentEvent[]
   documents: EmployeeDocument[]
   /**

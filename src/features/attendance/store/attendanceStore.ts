@@ -1,10 +1,9 @@
 import { create } from 'zustand'
 import { attendanceService, type AttendanceMonth } from '@/services/attendanceService'
-import type { Role } from '@/services/authService'
 
 type Status = 'idle' | 'loading' | 'ready' | 'error'
 
-type Viewer = { role: Role; name: string }
+type Viewer = { permissions: string[]; name: string }
 
 type AttendanceState = {
   status: Status
@@ -13,10 +12,14 @@ type AttendanceState = {
   year: number
   month: number
   selectedDate: string | null
+  /** True while a check-in/out request is in flight — disables the button. */
+  checkingInOut: boolean
 
   load: (viewer: Viewer, options?: { force?: boolean }) => Promise<void>
   goToMonth: (viewer: Viewer, delta: number) => Promise<void>
   selectDate: (viewer: Viewer, date: string) => Promise<void>
+  checkIn: (viewer: Viewer) => Promise<{ ok: boolean; error?: string }>
+  checkOut: (viewer: Viewer) => Promise<{ ok: boolean; error?: string }>
 }
 
 const now = new Date()
@@ -28,6 +31,7 @@ export const useAttendanceStore = create<AttendanceState>()((set, get) => ({
   year: now.getFullYear(),
   month: now.getMonth(),
   selectedDate: null,
+  checkingInOut: false,
 
   load: async (viewer, options) => {
     const { status } = get()
@@ -42,7 +46,7 @@ export const useAttendanceStore = create<AttendanceState>()((set, get) => ({
         year: get().year,
         month: get().month,
         selectedDate: get().selectedDate ?? undefined,
-        role: viewer.role,
+        permissions: viewer.permissions,
         viewerName: viewer.name,
       })
 
@@ -68,5 +72,31 @@ export const useAttendanceStore = create<AttendanceState>()((set, get) => ({
   selectDate: async (viewer, date) => {
     set({ selectedDate: date })
     await get().load(viewer, { force: true })
+  },
+
+  checkIn: async (viewer) => {
+    set({ checkingInOut: true })
+    try {
+      await attendanceService.checkIn()
+      await get().load(viewer, { force: true })
+      return { ok: true }
+    } catch (err) {
+      return { ok: false, error: err instanceof Error ? err.message : 'Could not check in.' }
+    } finally {
+      set({ checkingInOut: false })
+    }
+  },
+
+  checkOut: async (viewer) => {
+    set({ checkingInOut: true })
+    try {
+      await attendanceService.checkOut()
+      await get().load(viewer, { force: true })
+      return { ok: true }
+    } catch (err) {
+      return { ok: false, error: err instanceof Error ? err.message : 'Could not check out.' }
+    } finally {
+      set({ checkingInOut: false })
+    }
   },
 }))

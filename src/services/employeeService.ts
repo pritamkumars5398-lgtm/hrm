@@ -46,6 +46,7 @@ export type EmployeeUpdate = {
   startDate?: string
   employmentType?: string
   workLocation?: string
+  managerId?: string
 }
 
 const LATENCY_MS = 550

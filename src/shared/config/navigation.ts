@@ -55,7 +55,7 @@ export type PermissionMatrix = Record<ModuleKey, string[]>
 export const PERMISSION_MODULES: PermissionMatrix = {
   dashboard: [], // Handled by ALWAYS_GRANTED
   employees: ['employees.view', 'employees.manage'],
-  attendance: ['attendance.view', 'attendance.manage'],
+  attendance: [], // Handled by ALWAYS_GRANTED — self-service check-in is a baseline
   leave: ['leave.view', 'leave.approve'],
   payroll: ['payroll.view', 'payroll.manage'],
   performance: ['performance.view', 'performance.manage'],
@@ -71,9 +71,12 @@ export const PERMISSION_MODULES: PermissionMatrix = {
  * `dashboard` is every role's landing page — removing it strands them on a page
  * they cannot see. The Owner keeps everything unconditionally, so an admin cannot
  * revoke their own Settings access and lock themselves out of the very screen
- * that would undo it.
+ * that would undo it. `attendance` is here too — checking yourself in/out and
+ * seeing your own history is baseline self-service, not a granted privilege;
+ * `attendance.manage` only changes what the page shows once you're on it
+ * (company-wide vs. just you), decided server-side (§4.1).
  */
-export const ALWAYS_GRANTED: ModuleKey[] = ['dashboard']
+export const ALWAYS_GRANTED: ModuleKey[] = ['dashboard', 'attendance']
 
 export function canAccess(permissions: string[] | undefined, moduleKey: ModuleKey): boolean {
   const perms = permissions ?? []

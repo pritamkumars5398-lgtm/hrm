@@ -2,9 +2,11 @@ import { useEffect } from 'react'
 import { AlertCircle, ChevronLeft, ChevronRight, Clock, UserCheck, UserX, Users } from 'lucide-react'
 import Card from '@/shared/components/Card'
 import { useAuthStore } from '@/features/auth/store/authStore'
+import { hasPermission } from '@/shared/config/navigation'
 import { useAttendanceStore } from './store/attendanceStore'
 import AttendanceStatusBadge from './components/AttendanceStatusBadge'
 import MonthCalendar from './components/MonthCalendar'
+import CheckInOutCard from './components/CheckInOutCard'
 
 const MONTHS = [
   'January',
@@ -87,16 +89,29 @@ function StatSkeleton() {
 
 export default function AttendancePage() {
   const user = useAuthStore((s) => s.user)!
-  const { status, data, error, year, month, selectedDate, load, goToMonth, selectDate } =
-    useAttendanceStore()
+  const {
+    status,
+    data,
+    error,
+    year,
+    month,
+    selectedDate,
+    checkingInOut,
+    load,
+    goToMonth,
+    selectDate,
+    checkIn,
+    checkOut,
+  } = useAttendanceStore()
 
-  const viewer = { role: user.role, name: user.name }
+  const viewer = { permissions: user.permissions, name: user.name }
+  const canManage = hasPermission(user.permissions, 'attendance.manage')
 
   useEffect(() => {
     void load(viewer)
     // The viewer is stable for the session; re-running on identity would refetch forever.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [load, user.role, user.name])
+  }, [load, user.permissions, user.name])
 
   const isLoading = status === 'loading'
   const isCurrentMonth =
@@ -112,15 +127,9 @@ export default function AttendancePage() {
             Attendance
           </h1>
           <p className="mt-1 text-[13.5px] text-muted">
-            {data?.scope === 'team' ? (
-              <>
-                Your team —{' '}
-                <span className="tnum font-semibold text-ink">{data.headcount}</span>{' '}
-                {data.headcount === 1 ? 'person' : 'people'} reporting to you.
-              </>
-            ) : (
-              'Daily records, work hours and monthly trends.'
-            )}
+            {data?.scope === 'me'
+              ? 'Check in, check out, and see your own history.'
+              : 'Daily records, work hours and monthly trends.'}
           </p>
         </div>
 
@@ -169,17 +178,61 @@ export default function AttendancePage() {
 
       {status !== 'error' && (
         <>
-          {/* Summary cards — for the selected day */}
+          {data?.scope === 'me' && (
+            <CheckInOutCard
+              status={data.myTodayStatus}
+              loading={checkingInOut}
+              onCheckIn={() => checkIn(viewer)}
+              onCheckOut={() => checkOut(viewer)}
+            />
+          )}
+
+          {/* Summary cards — today's snapshot for the company, this month's tally for you */}
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {isLoading || !data ? (
               [0, 1, 2, 3].map((i) => <StatSkeleton key={i} />)
+            ) : data.scope === 'me' ? (
+              <>
+                <StatCard
+                  icon={UserCheck}
+                  label="Present"
+                  value={String(data.days.reduce((sum, d) => sum + d.present, 0))}
+                  hint="days this month"
+                  iconBg="bg-emerald-50 text-emerald-600"
+                  iconColor="text-emerald-600"
+                />
+                <StatCard
+                  icon={Clock}
+                  label="Late"
+                  value={String(data.days.reduce((sum, d) => sum + d.late, 0))}
+                  hint="days this month"
+                  iconBg="bg-orange-50 text-orange-600"
+                  iconColor="text-orange-600"
+                />
+                <StatCard
+                  icon={Users}
+                  label="Half day"
+                  value={String(data.days.reduce((sum, d) => sum + d.halfDay, 0))}
+                  hint="days this month"
+                  iconBg="bg-indigo-50 text-indigo-600"
+                  iconColor="text-indigo-600"
+                />
+                <StatCard
+                  icon={UserX}
+                  label="Absent"
+                  value={String(data.days.reduce((sum, d) => sum + d.absent, 0))}
+                  hint="days this month"
+                  iconBg="bg-rose-50 text-rose-600"
+                  iconColor="text-rose-600"
+                />
+              </>
             ) : (
               <>
                 <StatCard
                   icon={UserCheck}
                   label="Present"
                   value={String(data.summary.presentToday)}
-                  hint={`of ${data.headcount} ${data.scope === 'team' ? 'in team' : 'employees'}`}
+                  hint={`of ${data.headcount} employees`}
                   iconBg="bg-emerald-50 text-emerald-600"
                   iconColor="text-emerald-600"
                 />
@@ -219,7 +272,9 @@ export default function AttendancePage() {
                   Calendar — {MONTHS[month]} {year}
                 </h2>
                 <p className="mt-1 text-[12.5px] text-muted">
-                  Pick a day to see who was in. Shading shows how full the day was.
+                  {canManage
+                    ? 'Pick a day to see who was in. Shading shows how full the day was.'
+                    : 'Pick a day to see your record. Shading shows the days you were in.'}
                 </p>
               </div>
 
@@ -293,7 +348,9 @@ export default function AttendancePage() {
                           <p className="truncate text-[13.5px] font-semibold text-ink leading-tight">{record.employeeName}</p>
                           <p className="tnum mt-1 text-[11.5px] text-muted font-medium">
                             {record.clockIn
-                              ? `${record.clockIn} – ${record.clockOut} · ${record.hours}h`
+                              ? record.clockOut
+                                ? `${record.clockIn} – ${record.clockOut} · ${record.hours}h`
+                                : `${record.clockIn} – in progress`
                               : '—'}
                           </p>
                         </div>
