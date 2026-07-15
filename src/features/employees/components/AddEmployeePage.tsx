@@ -214,6 +214,7 @@ export default function AddEmployeePage() {
       const result = await teamService.invite({
         email: values.email,
         role: values.role,
+        source: 'employee-management',
         firstName: values.firstName,
         lastName: values.lastName,
         employeeId: values.employeeId,

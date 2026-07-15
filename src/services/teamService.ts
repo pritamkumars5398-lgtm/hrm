@@ -19,21 +19,6 @@ export const ROLE_PERMISSIONS: Record<InvitableRole | 'EMPLOYEE', string[]> = {
 /** A member is a user of the org, minus anything secret. */
 export type Member = Omit<User, 'password'>
 
-export type InvitePreview = {
-  email: string
-  role: string
-  organizationName: string
-  invitedByName: string
-}
-
-export type AcceptInvitePayload = {
-  token: string
-  fullName: string
-  phone: string
-  jobTitle: string
-  password: string
-}
-
 export type FinancialDetails = {
   accName: string
   accNumber: string
@@ -58,6 +43,8 @@ export type FamilyDetail = {
 export type InvitePayload = {
   email: string
   role: InvitableRole | 'EMPLOYEE'
+  /** Which screen triggered it — only 'employee-management' creates an Employee HR record. */
+  source?: 'employee-management' | 'team-members'
   firstName?: string
   lastName?: string
   jobTitle?: string
@@ -82,7 +69,8 @@ const delay = () => new Promise((r) => setTimeout(r, LATENCY_MS))
 let mockInviteState: Invite[] = [...mockInvites]
 let mockMemberState: Member[] = mockUsers.map(({ password: _password, ...m }) => m)
 
-const mockLink = (id: string) => `${window.location.origin}/accept-invite?token=mock-${id}`
+// Temp-password is the credential now (not a token link) — point at the login screen.
+const mockLink = (_id: string) => `${window.location.origin}/login`
 
 /**
  * Team Members is **access-control**, so it is backed by the real backend
@@ -131,6 +119,7 @@ export const teamService = {
           {
             email: payload.email,
             permissions: ROLE_PERMISSIONS[payload.role],
+            source: payload.source ?? 'team-members',
             firstName: payload.firstName,
             lastName: payload.lastName,
             jobTitle: payload.jobTitle,
@@ -235,67 +224,5 @@ export const teamService = {
 
     await delay()
     mockMemberState = mockMemberState.filter((m) => m.id !== id)
-  },
-
-  /** Public — the invitee has no session yet. */
-  async previewInvite(token: string): Promise<InvitePreview> {
-    if (hasBackend) {
-      try {
-        const { data } = await apiClient.get<InvitePreview>('/invites/preview', {
-          params: { token },
-        })
-        return data
-      } catch (error) {
-        throw new TeamError(apiErrorMessage(error, 'This invite link is not valid.'))
-      }
-    }
-
-    await delay()
-    const id = token.replace(/^mock-/, '')
-    const invite = mockInviteState.find((i) => i.id === id && i.status === 'PENDING')
-    if (!invite) throw new TeamError('This invite link is not valid.')
-
-    return {
-      email: invite.email,
-      role: invite.role,
-      organizationName: 'Alderway Labs',
-      invitedByName: 'Priya Nair',
-    }
-  },
-
-  async acceptInvite(payload: AcceptInvitePayload): Promise<User> {
-    if (hasBackend) {
-      try {
-        const { data } = await apiClient.post<User>('/invites/accept', payload)
-        return data
-      } catch (error) {
-        throw new TeamError(apiErrorMessage(error, 'We could not accept that invite.'))
-      }
-    }
-
-    await delay()
-    const preview = await teamService.previewInvite(payload.token)
-    const id = payload.token.replace(/^mock-/, '')
-
-    mockInviteState = mockInviteState.map((i) =>
-      i.id === id ? { ...i, status: 'ACCEPTED' as const } : i,
-    )
-
-    return {
-      id: `usr-${crypto.randomUUID().slice(0, 8)}`,
-      organizationId: mockMemberState[0]!.organizationId!,
-      email: preview.email,
-      password: '',
-      name: payload.fullName,
-      jobTitle: payload.jobTitle,
-      // Role comes from the invite, never from the invitee.
-      role: preview.role as 'HR' | 'MANAGER',
-      avatarInitials: payload.fullName
-        .split(/\s+/)
-        .map((p) => p[0])
-        .slice(0, 2)
-        .join('')
-        .toUpperCase(),
-    }
   },
 }

@@ -103,6 +103,7 @@ export default function TeamMembersPage() {
       const { invite, inviteLink: link, tempPassword } = await teamService.invite({
         email: values.email,
         role: values.role as InvitableRole,
+        source: 'team-members',
       })
 
       // Fire-and-forget — email failure shows a soft warning but doesn't block the invite.
