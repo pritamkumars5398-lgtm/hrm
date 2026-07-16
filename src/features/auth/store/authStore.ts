@@ -58,11 +58,26 @@ type AuthState = {
   clearSession: () => void
 }
 
-/** Derives a backwards-compat Role from granular permissions. */
+/**
+ * Derives a backwards-compat display Role from granular permissions — this is
+ * a label for the UI only; the real access control is the permission list
+ * itself (§10). Buckets: Owner (everything) > HR (any employees.* grant) >
+ * Manager (holds real authority over others — a .manage/.approve permission,
+ * or can invite/manage the team) > Employee (view-only baseline, matching the
+ * Employee preset in §10.3 — e.g. attendance.view + leave.view with nothing else).
+ */
 function deriveRole(permissions: string[]): Role {
   if (permissions.includes('*')) return 'OWNER'
   if (permissions.some((p) => p.startsWith('employees'))) return 'HR'
-  return 'MANAGER'
+
+  const hasManagementPower = permissions.some(
+    (p) =>
+      p.endsWith('.manage') ||
+      p.endsWith('.approve') ||
+      p === 'team.invite' ||
+      p === 'team.managePermissions',
+  )
+  return hasManagementPower ? 'MANAGER' : 'EMPLOYEE'
 }
 
 /** Maps a raw backend/mock User into SessionUser. */

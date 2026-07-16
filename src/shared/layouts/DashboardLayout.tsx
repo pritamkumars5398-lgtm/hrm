@@ -18,7 +18,7 @@ type RoleContent = {
   points: string[]
 }
 
-const ROLE_WELCOME_CONTENT: Record<'OWNER' | 'HR' | 'MANAGER', RoleContent> = {
+const ROLE_WELCOME_CONTENT: Record<'OWNER' | 'HR' | 'MANAGER' | 'EMPLOYEE', RoleContent> = {
   OWNER: {
     title: 'Workspace Control Room',
     subtitle: 'Welcome back, Owner!',
@@ -60,7 +60,87 @@ const ROLE_WELCOME_CONTENT: Record<'OWNER' | 'HR' | 'MANAGER', RoleContent> = {
       'Track active leave schedules and upcoming team absences',
       'Check department headcount and resource allocations'
     ]
+  },
+  EMPLOYEE: {
+    title: 'Your Workspace',
+    subtitle: 'Welcome back!',
+    themeClass: 'from-slate-500/10 to-blue-500/10 text-slate-700 border-slate-200/50 bg-slate-50/50',
+    icon: CheckCircle2,
+    message: 'Here is what you can do from your dashboard today:',
+    actionLabel: 'Get Started',
+    points: [
+      'Check in and out, and review your attendance history',
+      'Apply for leave and track your balance',
+      'View your payslips and company documents'
+    ]
   }
+}
+
+/** Accent colors for the welcome modal, one consistent lookup instead of a chain
+ *  of role === 'X' ? ... ternaries repeated at every usage site. */
+const ROLE_ACCENT: Record<
+  'OWNER' | 'HR' | 'MANAGER' | 'EMPLOYEE',
+  {
+    border: string
+    dot1: string
+    dot2: string
+    badgeBg: string
+    icon: string
+    gradient: string
+    glow: string
+    stroke: string
+    solidText: string
+    buttonGradient: string
+  }
+> = {
+  OWNER: {
+    border: 'border-indigo-500/30',
+    dot1: 'bg-indigo-500 text-indigo-400',
+    dot2: 'bg-purple-500 text-purple-400',
+    badgeBg: 'bg-indigo-600',
+    icon: 'text-indigo-500 animate-pulse',
+    gradient: 'from-indigo-600 to-purple-600',
+    glow: 'bg-indigo-500',
+    stroke: '#6366f1',
+    solidText: 'text-indigo-500',
+    buttonGradient: 'from-indigo-600 to-purple-600 shadow-indigo-600/15 hover:from-indigo-700 hover:to-purple-700',
+  },
+  HR: {
+    border: 'border-emerald-500/30',
+    dot1: 'bg-emerald-500 text-emerald-400',
+    dot2: 'bg-teal-500 text-teal-400',
+    badgeBg: 'bg-emerald-600',
+    icon: 'text-emerald-500 animate-pulse',
+    gradient: 'from-emerald-600 to-teal-600',
+    glow: 'bg-emerald-500',
+    stroke: '#10b981',
+    solidText: 'text-emerald-500',
+    buttonGradient: 'from-emerald-600 to-teal-600 shadow-emerald-600/15 hover:from-emerald-700 hover:to-teal-700',
+  },
+  MANAGER: {
+    border: 'border-amber-500/30',
+    dot1: 'bg-amber-500 text-amber-400',
+    dot2: 'bg-orange-500 text-orange-400',
+    badgeBg: 'bg-amber-600',
+    icon: 'text-amber-500 animate-pulse',
+    gradient: 'from-amber-600 to-orange-600',
+    glow: 'bg-amber-500',
+    stroke: '#f59e0b',
+    solidText: 'text-amber-500',
+    buttonGradient: 'from-amber-600 to-orange-600 shadow-amber-600/15 hover:from-amber-700 hover:to-orange-700',
+  },
+  EMPLOYEE: {
+    border: 'border-slate-500/30',
+    dot1: 'bg-slate-500 text-slate-400',
+    dot2: 'bg-blue-500 text-blue-400',
+    badgeBg: 'bg-slate-600',
+    icon: 'text-slate-500 animate-pulse',
+    gradient: 'from-slate-600 to-blue-600',
+    glow: 'bg-slate-500',
+    stroke: '#64748b',
+    solidText: 'text-slate-500',
+    buttonGradient: 'from-slate-600 to-blue-600 shadow-slate-600/15 hover:from-slate-700 hover:to-blue-700',
+  },
 }
 
 const containerVariants: Variants = {
@@ -156,6 +236,9 @@ export default function DashboardLayout() {
   if (!user) return <Navigate to="/login" replace />
 
   const organizationName = organization?.name ?? 'Your company'
+  const welcomeContent = ROLE_WELCOME_CONTENT[user.role]
+  const accent = ROLE_ACCENT[user.role]
+  const RoleIcon = welcomeContent.icon
 
   return (
     <AnimatePresence mode="wait">
@@ -173,14 +256,14 @@ export default function DashboardLayout() {
             initial="hidden"
             animate="visible"
             exit="exit"
-            className={`relative z-10 w-[470px] h-[470px] rounded-full bg-surface border shadow-overlay flex flex-col items-center justify-center p-11 text-center ${user.role === 'OWNER' ? 'border-indigo-500/30' : user.role === 'HR' ? 'border-emerald-500/30' : 'border-amber-500/30'}`}
+            className={`relative z-10 w-[470px] h-[470px] rounded-full bg-surface border shadow-overlay flex flex-col items-center justify-center p-11 text-center ${accent.border}`}
           >
             {/* Orbiting Satellite Rings */}
             <div className="absolute inset-3 rounded-full border border-dashed border-wash/40 animate-spin [animation-duration:22s] pointer-events-none">
-              <div className={`absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 size-2 rounded-full border border-surface shadow-[0_0_8px_currentColor] ${user.role === 'OWNER' ? 'bg-indigo-500 text-indigo-400' : user.role === 'HR' ? 'bg-emerald-500 text-emerald-400' : 'bg-amber-500 text-amber-400'}`} />
+              <div className={`absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 size-2 rounded-full border border-surface shadow-[0_0_8px_currentColor] ${accent.dot1}`} />
             </div>
             <div className="absolute inset-6 rounded-full border border-dashed border-wash/20 animate-spin [animation-duration:34s] [animation-direction:reverse] pointer-events-none">
-              <div className={`absolute bottom-0 right-1/2 translate-x-1/2 translate-y-1/2 size-1.5 rounded-full border border-surface shadow-[0_0_6px_currentColor] ${user.role === 'OWNER' ? 'bg-purple-500 text-purple-400' : user.role === 'HR' ? 'bg-teal-500 text-teal-400' : 'bg-orange-500 text-orange-400'}`} />
+              <div className={`absolute bottom-0 right-1/2 translate-x-1/2 translate-y-1/2 size-1.5 rounded-full border border-surface shadow-[0_0_6px_currentColor] ${accent.dot2}`} />
             </div>
 
             <div className="flex flex-col items-center text-center">
@@ -190,10 +273,10 @@ export default function DashboardLayout() {
                 className="relative size-16 flex items-center justify-center rounded-full border border-hairline-strong bg-wash text-[20px] font-bold text-ink shadow-sm"
               >
                 {user.avatarInitials}
-                
+
                 {/* Small overlay circle indicating secure login role */}
-                <div className={`absolute -bottom-0.5 -right-0.5 p-1 rounded-full text-white border border-surface shadow-sm ${user.role === 'OWNER' ? 'bg-indigo-600' : user.role === 'HR' ? 'bg-emerald-600' : 'bg-amber-600'}`}>
-                  {user.role === 'OWNER' ? <Crown size={11} /> : user.role === 'HR' ? <Users size={11} /> : <Target size={11} />}
+                <div className={`absolute -bottom-0.5 -right-0.5 p-1 rounded-full text-white border border-surface shadow-sm ${accent.badgeBg}`}>
+                  <RoleIcon size={11} />
                 </div>
               </motion.div>
 
@@ -201,20 +284,20 @@ export default function DashboardLayout() {
                 <span className="text-[11px] font-bold uppercase tracking-wider text-muted">
                   AI Space Configured
                 </span>
-                <Sparkles size={11} className={user.role === 'OWNER' ? 'text-indigo-500 animate-pulse' : user.role === 'HR' ? 'text-emerald-500 animate-pulse' : 'text-amber-500 animate-pulse'} />
+                <Sparkles size={11} className={accent.icon} />
               </motion.div>
 
               <motion.h2 variants={itemVariants} className="font-display text-[24px] font-bold leading-tight mt-1 text-ink">
-                Welcome back, <span className={`bg-clip-text text-transparent bg-gradient-to-r ${user.role === 'OWNER' ? 'from-indigo-600 to-purple-600' : user.role === 'HR' ? 'from-emerald-600 to-teal-600' : 'from-amber-600 to-orange-600'}`}>{user.name}</span>!
+                Welcome back, <span className={`bg-clip-text text-transparent bg-gradient-to-r ${accent.gradient}`}>{user.name}</span>!
               </motion.h2>
               <motion.p variants={itemVariants} className="text-[13px] font-semibold text-muted/80 mt-0.5">
-                {ROLE_WELCOME_CONTENT[user.role].subtitle}
+                {welcomeContent.subtitle}
               </motion.p>
             </div>
 
             {/* Pill Rows for priority scope items */}
             <motion.div variants={itemVariants} className="mt-4 space-y-1.5 max-w-[310px] w-full">
-              {ROLE_WELCOME_CONTENT[user.role].points.slice(0, 2).map((point, idx) => (
+              {welcomeContent.points.slice(0, 2).map((point, idx) => (
                 <motion.div
                   key={idx}
                   variants={itemVariants}
@@ -222,7 +305,7 @@ export default function DashboardLayout() {
                 >
                   <CheckCircle2
                     size={13}
-                    className={`shrink-0 ${user.role === 'OWNER' ? 'text-indigo-500' : user.role === 'HR' ? 'text-emerald-500' : 'text-amber-500'}`}
+                    className={`shrink-0 ${accent.solidText}`}
                   />
                   <span className="text-[12px] font-bold text-muted-deep truncate">
                     {point}
@@ -234,7 +317,7 @@ export default function DashboardLayout() {
             {/* Circular Countdown Loader Ring */}
             <motion.div variants={itemVariants} className="relative size-11 flex items-center justify-center mt-3.5">
               {/* Breath glow behind */}
-              <div className={`absolute inset-1 rounded-full blur-[4px] opacity-10 animate-ping [animation-duration:2.5s] ${user.role === 'OWNER' ? 'bg-indigo-500' : user.role === 'HR' ? 'bg-emerald-500' : 'bg-amber-500'}`} />
+              <div className={`absolute inset-1 rounded-full blur-[4px] opacity-10 animate-ping [animation-duration:2.5s] ${accent.glow}`} />
 
               <svg className="absolute inset-0 size-full transform -rotate-90">
                 <circle
@@ -249,7 +332,7 @@ export default function DashboardLayout() {
                   cx="22"
                   cy="22"
                   r="19"
-                  stroke={user.role === 'OWNER' ? '#6366f1' : user.role === 'HR' ? '#10b981' : '#f59e0b'}
+                  stroke={accent.stroke}
                   strokeWidth="2.5"
                   fill="transparent"
                   strokeDasharray={120}
@@ -267,7 +350,7 @@ export default function DashboardLayout() {
               whileHover={{ scale: 1.04, y: -0.5 }}
               whileTap={{ scale: 0.96 }}
               onClick={dismissWelcome}
-              className={`mt-4 px-7 py-2.5 rounded-full text-white text-[13px] font-bold shadow-md transition-all cursor-pointer border border-transparent bg-gradient-to-r ${user.role === 'OWNER' ? 'from-indigo-600 to-purple-600 shadow-indigo-600/15 hover:from-indigo-700 hover:to-purple-700' : user.role === 'HR' ? 'from-emerald-600 to-teal-600 shadow-emerald-600/15 hover:from-emerald-700 hover:to-teal-700' : 'from-amber-600 to-orange-600 shadow-amber-600/15 hover:from-amber-700 hover:to-orange-700'}`}
+              className={`mt-4 px-7 py-2.5 rounded-full text-white text-[13px] font-bold shadow-md transition-all cursor-pointer border border-transparent bg-gradient-to-r ${accent.buttonGradient}`}
             >
               Enter Workspace Now
             </motion.button>

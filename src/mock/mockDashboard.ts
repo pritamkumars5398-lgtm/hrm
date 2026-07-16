@@ -1,4 +1,4 @@
-import { MOCK_ORGANIZATION_ID } from './mockUsers'
+import { MOCK_ORGANIZATION_ID, type Role } from './mockUsers'
 import { mockEmployees } from './mockEmployees'
 
 // Derived, not typed by hand: a dashboard that says 248 while the directory shows
@@ -15,7 +15,7 @@ export type DashboardStat = {
   value: string
   delta: string | null
   /** Which roles may see this figure — payroll cost is not for everyone (§10). */
-  restrictedTo?: Array<'OWNER' | 'HR' | 'MANAGER'>
+  restrictedTo?: Role[]
 }
 
 export type ActivityItem = {

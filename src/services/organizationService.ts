@@ -70,6 +70,8 @@ export const organizationService = {
     name?: string
     address?: string
     industry?: string
+    /** '' clears it. */
+    leaveNotificationEmail?: string
   }): Promise<Organization> {
     if (hasBackend) {
       try {

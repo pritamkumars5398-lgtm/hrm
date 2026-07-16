@@ -16,6 +16,7 @@ const ROLE_LABEL: Record<Role, string> = {
   OWNER: 'Owner',
   HR: 'HR Manager',
   MANAGER: 'Manager',
+  EMPLOYEE: 'Employee',
 }
 
 function NavSection({
@@ -121,7 +122,8 @@ export default function Sidebar({
               <span className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-[9px] font-bold border ${
                 role === 'OWNER' ? 'bg-indigo-50 text-indigo-700 border-indigo-200/50' :
                 role === 'HR' ? 'bg-emerald-50 text-emerald-700 border-emerald-200/50' :
-                'bg-amber-50 text-amber-700 border-amber-200/50'
+                role === 'MANAGER' ? 'bg-amber-50 text-amber-700 border-amber-200/50' :
+                'bg-wash text-muted border-hairline-strong'
               }`}>
                 {ROLE_LABEL[role]}
               </span>

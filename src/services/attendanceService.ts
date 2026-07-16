@@ -1,6 +1,7 @@
 import { hasBackend } from '@/config/env'
 import { apiClient, apiErrorMessage } from './apiClient'
 import { hasPermission } from '@/shared/config/navigation'
+import type { LeaveType } from './leaveService'
 import {
   buildMonth,
   isWeekend,
@@ -28,6 +29,8 @@ export type TodayStatus = {
   checkedOut: boolean
   checkInTime: string | null
   checkOutTime: string | null
+  /** Set when today falls inside one of the caller's own approved leave requests. */
+  onLeave: { type: LeaveType } | null
 } | null
 
 export type AttendanceMonth = {
@@ -169,6 +172,9 @@ export const attendanceService = {
           checkedOut: !!myRecord.clockOut,
           checkInTime: myRecord.clockIn ?? null,
           checkOutTime: myRecord.clockOut ?? null,
+          // The mock attendance generator doesn't track which leave type — it's
+          // offline-fallback only, so this is a reasonable stand-in.
+          onLeave: myRecord.status === 'LEAVE' ? { type: 'ANNUAL' } : null,
         }
       }
     }

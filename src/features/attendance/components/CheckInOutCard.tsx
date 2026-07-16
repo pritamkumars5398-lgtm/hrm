@@ -1,17 +1,27 @@
 import { useState } from 'react'
-import { CheckCircle2, Clock, LogIn, LogOut } from 'lucide-react'
+import { CheckCircle2, Clock, LogIn, LogOut, Palmtree } from 'lucide-react'
 import Card from '@/shared/components/Card'
 import Button from '@/shared/components/Button'
 import type { AttendanceMonth } from '@/services/attendanceService'
+import type { LeaveType } from '@/services/leaveService'
 
 type Props = {
   status: AttendanceMonth['myTodayStatus']
   loading: boolean
+  /** First name, for the leave-day greeting. */
+  name: string
   onCheckIn: () => Promise<{ ok: boolean; error?: string }>
   onCheckOut: () => Promise<{ ok: boolean; error?: string }>
 }
 
-export default function CheckInOutCard({ status, loading, onCheckIn, onCheckOut }: Props) {
+const LEAVE_MESSAGE: Record<LeaveType, (name: string) => string> = {
+  SICK: (name) => `Rest well, ${name}. Today is your leave.`,
+  ANNUAL: (name) => `Today is your leave — have a nice day, ${name}.`,
+  PERSONAL: (name) => `It's your leave today. Have a nice day, ${name}.`,
+  UNPAID: (name) => `It's your leave today. Have a nice day, ${name}.`,
+}
+
+export default function CheckInOutCard({ status, loading, name, onCheckIn, onCheckOut }: Props) {
   const [error, setError] = useState<string | null>(null)
 
   if (!status) {
@@ -21,6 +31,24 @@ export default function CheckInOutCard({ status, loading, onCheckIn, onCheckOut 
           There's no employee record on file for you in this company, so there's nothing to check in
           against. Ask your Owner or HR to add one.
         </p>
+      </Card>
+    )
+  }
+
+  // On approved leave — no check-in/out needed, just a friendly note.
+  if (status.onLeave) {
+    const firstName = name.split(' ')[0] || name
+    return (
+      <Card className="p-5">
+        <div className="flex items-center gap-3.5">
+          <span className="inline-flex size-11 shrink-0 items-center justify-center rounded-full bg-pine-tint text-pine-deep">
+            <Palmtree size={20} />
+          </span>
+          <div>
+            <p className="text-[14px] font-semibold text-ink">{LEAVE_MESSAGE[status.onLeave.type](firstName)}</p>
+            <p className="mt-0.5 text-[12.5px] text-muted">No need to check in today.</p>
+          </div>
+        </div>
       </Card>
     )
   }

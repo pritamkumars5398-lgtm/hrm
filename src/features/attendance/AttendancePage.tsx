@@ -182,6 +182,7 @@ export default function AttendancePage() {
             <CheckInOutCard
               status={data.myTodayStatus}
               loading={checkingInOut}
+              name={user.name}
               onCheckIn={() => checkIn(viewer)}
               onCheckOut={() => checkOut(viewer)}
             />

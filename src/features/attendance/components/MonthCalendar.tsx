@@ -58,6 +58,7 @@ export default function MonthCalendar({
           const summary = byDate.get(iso)
           const selected = iso === selectedDate
           const weekend = summary?.isWeekend ?? [0, 6].includes(date.getDay())
+          const onLeave = Boolean(summary?.leave)
           const hasData = Boolean(summary) && !weekend && summary!.rate !== null
 
           return (
@@ -66,32 +67,44 @@ export default function MonthCalendar({
               type="button"
               onClick={() => onSelect(iso)}
               aria-label={
-                hasData
-                  ? `${dayNumber} — ${Math.round(summary!.rate! * 100)}% attendance`
-                  : `${dayNumber} — no records`
+                onLeave
+                  ? `${dayNumber} — on leave`
+                  : hasData
+                    ? `${dayNumber} — ${Math.round(summary!.rate! * 100)}% attendance`
+                    : `${dayNumber} — no records`
               }
               aria-pressed={selected}
               className={`relative flex aspect-square flex-col items-center justify-center rounded-[6px] border text-[12px] transition-colors ${
                 selected
                   ? 'border-pine bg-pine-tint font-semibold text-pine-deep'
-                  : weekend
-                    ? 'border-hairline bg-wash text-muted/60'
-                    : 'border-hairline bg-surface hover:border-pine'
+                  : onLeave
+                    ? 'border-ochre/40 bg-ochre-tint text-ochre-deep'
+                    : weekend
+                      ? 'border-hairline bg-wash text-muted/60'
+                      : 'border-hairline bg-surface hover:border-pine'
               }`}
             >
               <span className="tnum">{dayNumber}</span>
 
-              {hasData && !selected && (
-                <span
-                  className="mt-1 h-1 w-4 rounded-full bg-pine"
-                  style={{ opacity: intensity(summary!.rate!) }}
-                  aria-hidden="true"
-                />
-              )}
-              {hasData && selected && (
-                <span className="tnum mt-0.5 text-[9px] font-medium">
-                  {Math.round(summary!.rate! * 100)}%
+              {onLeave ? (
+                <span className={`mt-0.5 text-[8.5px] font-semibold uppercase tracking-wide ${selected ? 'text-pine-deep' : 'text-ochre-deep'}`}>
+                  Leave
                 </span>
+              ) : (
+                <>
+                  {hasData && !selected && (
+                    <span
+                      className="mt-1 h-1 w-4 rounded-full bg-pine"
+                      style={{ opacity: intensity(summary!.rate!) }}
+                      aria-hidden="true"
+                    />
+                  )}
+                  {hasData && selected && (
+                    <span className="tnum mt-0.5 text-[9px] font-medium">
+                      {Math.round(summary!.rate! * 100)}%
+                    </span>
+                  )}
+                </>
               )}
             </button>
           )
@@ -114,6 +127,10 @@ export default function MonthCalendar({
         <span className="flex items-center gap-1.5">
           <span className="size-2 rounded-[3px] border border-hairline bg-wash" />
           Weekend
+        </span>
+        <span className="flex items-center gap-1.5">
+          <span className="size-2 rounded-[3px] border border-ochre/40 bg-ochre-tint" />
+          Leave
         </span>
       </div>
     </div>

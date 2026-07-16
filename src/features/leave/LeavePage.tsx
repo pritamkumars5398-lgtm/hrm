@@ -24,6 +24,7 @@ import { useAuthStore } from '@/features/auth/store/authStore'
 import { LeaveError, type LeaveRequest, type LeaveStatus, type LeaveType } from '@/services/leaveService'
 import { useLeaveStore } from './store/leaveStore'
 import ApplyLeaveModal from './components/ApplyLeaveModal'
+import LeavePolicyCard from './components/LeavePolicyCard'
 import {
   LEAVE_STATUS_LABEL,
   LEAVE_STATUS_TONE,
@@ -169,7 +170,7 @@ function BalanceCard({
 
 export default function LeavePage() {
   const user = useAuthStore((s) => s.user)!
-  const { status, data, error, load, apply, decide } = useLeaveStore()
+  const { status, data, error, load, apply, decide, updatePolicy } = useLeaveStore()
 
   const [tab, setTab] = useState<LeaveStatus>('PENDING')
   const [applyOpen, setApplyOpen] = useState(false)
@@ -177,12 +178,12 @@ export default function LeavePage() {
   const [actionError, setActionError] = useState<string | null>(null)
   const [expandedId, setExpandedId] = useState<string | null>(null)
 
-  const viewer = { role: user.role, name: user.name }
+  const viewer = { permissions: user.permissions, name: user.name }
 
   useEffect(() => {
     void load(viewer)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [load, user.role, user.name])
+  }, [load, user.permissions, user.name])
 
   const isLoading = status === 'loading'
   const visible = (data?.requests ?? []).filter((r) => r.status === tab)
@@ -428,17 +429,29 @@ export default function LeavePage() {
             </span>
           </div>
           <p className="mt-1.5 text-[14px] text-muted">
-            {data?.scope === 'team'
-              ? 'Your balance, and the requests waiting on you.'
-              : 'Balances, requests and who is off across the company.'}
+            {data?.scope === 'me'
+              ? 'Request leave, and see your balance and history.'
+              : "Who's off, your leave policy, and requests to decide on."}
           </p>
         </div>
 
-        <Button onClick={() => setApplyOpen(true)} className="self-start sm:self-auto shadow-sm">
-          <Plus size={15} />
-          Request leave
-        </Button>
+        {data?.scope === 'me' && data.hasEmployeeRecord && (
+          <Button onClick={() => setApplyOpen(true)} className="self-start sm:self-auto shadow-sm">
+            <Plus size={15} />
+            Request leave
+          </Button>
+        )}
       </div>
+
+      {data?.scope === 'me' && !data.hasEmployeeRecord && (
+        <Card className="flex items-start gap-3 border-clay/30 bg-clay/5 p-5">
+          <AlertCircle size={17} className="mt-px shrink-0 text-clay" />
+          <p className="text-[13.5px] leading-relaxed text-clay">
+            There's no employee record on file for you in this company, so there's nothing to
+            apply leave against. Ask your Owner or HR to add one.
+          </p>
+        </Card>
+      )}
 
       {status === 'error' && (
         <Card className="mt-6 flex items-start gap-3 border-clay/30 bg-clay/5 p-5">
@@ -458,30 +471,26 @@ export default function LeavePage() {
 
       {status !== 'error' && (
         <>
-          {/* Header Summary / Quick Stats */}
-          {data && (
+          {/* Quick stats — company-wide glance, not shown on the personal view */}
+          {data && data.scope === 'company' && (data.pendingApprovals.length > 0 || data.upcoming.some((r) => {
+            const todayStr = new Date().toISOString().slice(0, 10)
+            return todayStr >= r.startDate && todayStr <= r.endDate
+          })) && (
             <div className="flex flex-wrap gap-4 text-[13px] bg-wash/30 border border-hairline px-4 py-3 rounded-ctl text-muted">
-              <div className="flex items-center gap-1.5">
-                <Sparkles size={14} className="text-pine" />
-                <span>Scope: <strong className="text-ink capitalize">{data.scope}</strong></span>
-              </div>
               {data.pendingApprovals.length > 0 && (
-                <>
-                  <span className="hidden sm:inline text-hairline-strong">|</span>
-                  <div className="flex items-center gap-1.5">
-                    <CheckCircle2 size={14} className="text-ochre" />
-                    <span>
-                      <strong className="text-ink">{data.pendingApprovals.length}</strong> request{data.pendingApprovals.length === 1 ? '' : 's'} waiting decision
-                    </span>
-                  </div>
-                </>
+                <div className="flex items-center gap-1.5">
+                  <CheckCircle2 size={14} className="text-ochre" />
+                  <span>
+                    <strong className="text-ink">{data.pendingApprovals.length}</strong> request{data.pendingApprovals.length === 1 ? '' : 's'} waiting decision
+                  </span>
+                </div>
               )}
               {data.upcoming.filter(r => {
                 const todayStr = new Date().toISOString().slice(0, 10)
                 return todayStr >= r.startDate && todayStr <= r.endDate
               }).length > 0 && (
                 <>
-                  <span className="hidden md:inline text-hairline-strong">|</span>
+                  {data.pendingApprovals.length > 0 && <span className="hidden sm:inline text-hairline-strong">|</span>}
                   <div className="flex items-center gap-1.5">
                     <Calendar size={14} className="text-pine" />
                     <span>
@@ -498,26 +507,33 @@ export default function LeavePage() {
             </div>
           )}
 
-          {/* Balances */}
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {isLoading || !data
-              ? [0, 1, 2, 3].map((i) => (
-                  <Card key={i} className="p-4">
-                    <div className="h-3 w-20 animate-pulse rounded bg-wash" />
-                    <div className="mt-3 h-7 w-12 animate-pulse rounded bg-wash" />
-                    <div className="mt-3 h-1.5 w-full animate-pulse rounded-full bg-wash" />
-                  </Card>
-                ))
-              : data.balances.map((b) => (
-                  <BalanceCard
-                    key={b.type}
-                    type={b.type}
-                    label={LEAVE_TYPE_SHORT[b.type]}
-                    total={b.total}
-                    used={b.used}
-                  />
-                ))}
-          </div>
+          {/* Balances — your own leave, self-service only */}
+          {(isLoading || !data || data.scope === 'me') && (
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              {isLoading || !data
+                ? [0, 1, 2, 3].map((i) => (
+                    <Card key={i} className="p-4">
+                      <div className="h-3 w-20 animate-pulse rounded bg-wash" />
+                      <div className="mt-3 h-7 w-12 animate-pulse rounded bg-wash" />
+                      <div className="mt-3 h-1.5 w-full animate-pulse rounded-full bg-wash" />
+                    </Card>
+                  ))
+                : data.balances.map((b) => (
+                    <BalanceCard
+                      key={b.type}
+                      type={b.type}
+                      label={LEAVE_TYPE_SHORT[b.type]}
+                      total={b.total}
+                      used={b.used}
+                    />
+                  ))}
+            </div>
+          )}
+
+          {/* Leave policy — company-wide setting, editable by whoever decides leave */}
+          {data && data.scope === 'company' && (
+            <LeavePolicyCard policy={data.policy} onSave={(patch) => updatePolicy(viewer, patch)} />
+          )}
 
           {actionError && (
             <div
@@ -529,9 +545,9 @@ export default function LeavePage() {
             </div>
           )}
 
-          <div className="grid gap-6 lg:grid-cols-3">
+          <div className={`grid gap-6 ${data?.scope === 'company' ? 'lg:grid-cols-3' : ''}`}>
             {/* Requests */}
-            <Card flush className="lg:col-span-2">
+            <Card flush className={data?.scope === 'company' ? 'lg:col-span-2' : ''}>
               <div className="flex items-center gap-1 border-b border-hairline px-2 py-2">
                 {TABS.map((t) => {
                   const count = (data?.requests ?? []).filter((r) => r.status === t.key).length
@@ -594,65 +610,58 @@ export default function LeavePage() {
               )}
             </Card>
 
-            {/* Who's off */}
-            <Card flush>
-              <div className="border-b border-hairline px-4 py-3">
-                <h2 className="text-[13px] font-semibold">Who's off</h2>
-                <p className="mt-0.5 text-[12px] text-muted">Approved leave, next 30 days</p>
-              </div>
-
-              {isLoading || !data ? (
-                <ul>
-                  {[0, 1].map((i) => (
-                    <li key={i} className="border-b border-hairline px-4 py-3 last:border-0">
-                      <div className="h-3.5 w-28 animate-pulse rounded bg-wash" />
-                      <div className="mt-2 h-3 w-20 animate-pulse rounded bg-wash" />
-                    </li>
-                  ))}
-                </ul>
-              ) : data.upcoming.length === 0 ? (
-                <div className="px-4 py-12 text-center">
-                  <span className="mx-auto flex size-10 items-center justify-center rounded-full bg-wash">
-                    <CalendarDays size={16} className="text-muted" aria-hidden="true" />
-                  </span>
-                  <p className="mt-3 text-[13.5px] font-medium">Everyone's in</p>
-                  <p className="mt-1 text-[12.5px] text-muted">
-                    No approved leave in the next 30 days.
-                  </p>
+            {/* Who's off — company-wide visibility, not shown on the personal view */}
+            {data && data.scope === 'company' && (
+              <Card flush>
+                <div className="border-b border-hairline px-4 py-3">
+                  <h2 className="text-[13px] font-semibold">Who's off</h2>
+                  <p className="mt-0.5 text-[12px] text-muted">Approved leave, next 30 days</p>
                 </div>
-              ) : (
-                <ul className="divide-y divide-hairline">
-                  {data.upcoming.map((r) => {
-                    const rel = getRelativeLeaveStatus(r.startDate, r.endDate)
-                    const avatarTheme = getAvatarTheme(r.employeeName)
 
-                    return (
-                      <li
-                        key={r.id}
-                        className="flex items-center gap-3 px-4 py-3 hover:bg-paper/30 transition-colors"
-                      >
-                        <span className={`inline-flex size-8 shrink-0 items-center justify-center rounded-full border text-[11px] font-semibold ${avatarTheme.bg}`}>
-                          {r.avatarInitials}
-                        </span>
-                        <div className="min-w-0 flex-1">
-                          <div className="flex items-baseline justify-between gap-1">
-                            <p className="truncate text-[13px] font-medium text-ink">{r.employeeName}</p>
-                            {rel && (
-                              <Badge tone={rel.tone} className="text-[9.5px] px-1.5 py-0.2 shrink-0">
-                                {rel.label}
-                              </Badge>
-                            )}
+                {data.upcoming.length === 0 ? (
+                  <div className="px-4 py-12 text-center">
+                    <span className="mx-auto flex size-10 items-center justify-center rounded-full bg-wash">
+                      <CalendarDays size={16} className="text-muted" aria-hidden="true" />
+                    </span>
+                    <p className="mt-3 text-[13.5px] font-medium">Everyone's in</p>
+                    <p className="mt-1 text-[12.5px] text-muted">
+                      No approved leave in the next 30 days.
+                    </p>
+                  </div>
+                ) : (
+                  <ul className="divide-y divide-hairline">
+                    {data.upcoming.map((r) => {
+                      const rel = getRelativeLeaveStatus(r.startDate, r.endDate)
+                      const avatarTheme = getAvatarTheme(r.employeeName)
+
+                      return (
+                        <li
+                          key={r.id}
+                          className="flex items-center gap-3 px-4 py-3 hover:bg-paper/30 transition-colors"
+                        >
+                          <span className={`inline-flex size-8 shrink-0 items-center justify-center rounded-full border text-[11px] font-semibold ${avatarTheme.bg}`}>
+                            {r.avatarInitials}
+                          </span>
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-baseline justify-between gap-1">
+                              <p className="truncate text-[13px] font-medium text-ink">{r.employeeName}</p>
+                              {rel && (
+                                <Badge tone={rel.tone} className="text-[9.5px] px-1.5 py-0.2 shrink-0">
+                                  {rel.label}
+                                </Badge>
+                              )}
+                            </div>
+                            <p className="tnum mt-0.5 text-[11.5px] text-muted">
+                              {formatRange(r.startDate, r.endDate)} · <span className="font-medium text-ink">{r.days}d</span>
+                            </p>
                           </div>
-                          <p className="tnum mt-0.5 text-[11.5px] text-muted">
-                            {formatRange(r.startDate, r.endDate)} · <span className="font-medium text-ink">{r.days}d</span>
-                          </p>
-                        </div>
-                      </li>
-                    )
-                  })}
-                </ul>
-              )}
-            </Card>
+                        </li>
+                      )
+                    })}
+                  </ul>
+                )}
+              </Card>
+            )}
           </div>
         </>
       )}

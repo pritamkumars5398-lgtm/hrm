@@ -1,9 +1,14 @@
+import { hasBackend } from '@/config/env'
+import { apiClient, apiErrorMessage } from './apiClient'
+import { hasPermission } from '@/shared/config/navigation'
 import {
   LEAVE_ENTITLEMENT,
   LEAVE_TYPES,
   balancesFor,
   daysBetween,
+  mockLeavePolicy,
   mockLeaveRequests,
+  updateMockLeavePolicy,
   type LeaveBalance,
   type LeaveRequest,
   type LeaveStatus,
@@ -11,7 +16,6 @@ import {
 } from '@/mock/mockLeave'
 import { mockEmployees } from '@/mock/mockEmployees'
 import { MOCK_ORGANIZATION_ID } from '@/mock/mockUsers'
-import type { Role } from './authService'
 
 export type { LeaveBalance, LeaveRequest, LeaveStatus, LeaveType }
 export { LEAVE_TYPES, LEAVE_ENTITLEMENT, daysBetween }
@@ -25,8 +29,8 @@ const delay = () => new Promise((r) => setTimeout(r, LATENCY_MS))
 let requests: LeaveRequest[] = [...mockLeaveRequests]
 
 export type Viewer = {
-  role: Role
-  /** The signed-in person's name — matched against the employee directory. */
+  permissions: string[]
+  /** The signed-in person's name — matched against the employee directory (mock path only). */
   name: string
 }
 
@@ -36,10 +40,16 @@ export type LeaveData = {
   requests: LeaveRequest[]
   /** The subset they can actually decide on. */
   pendingApprovals: LeaveRequest[]
-  scope: 'company' | 'team'
+  scope: 'company' | 'me'
   /** Approved leave overlapping the next 30 days — the "who is off" calendar. */
   upcoming: LeaveRequest[]
+  /** False when the caller has no Employee HR record — e.g. a Team-Members-only invite. */
+  hasEmployeeRecord: boolean
+  /** The company's current entitlement — editable via updatePolicy() by whoever holds leave.approve. */
+  policy: { annual: number; sick: number; personal: number }
 }
+
+export type LeavePolicyPatch = { annual?: number; sick?: number; personal?: number }
 
 export type ApplyLeavePayload = {
   type: LeaveType
@@ -51,35 +61,40 @@ export type ApplyLeavePayload = {
 const employeeFor = (name: string) => mockEmployees.find((e) => e.name === name) ?? null
 
 /**
- * Who may decide on a request.
- *
- * Owner and HR can decide company-wide. A Manager can only decide for their own
- * reports. Nobody — not even an Owner — may approve their own leave; that is the
- * one rule a leave system cannot bend.
+ * Who may decide on a request (mock path). Nobody — not even an Owner — may
+ * approve their own leave; that is the one rule a leave system cannot bend.
  */
 function canDecide(viewer: Viewer, request: LeaveRequest): boolean {
   if (request.employeeName === viewer.name) return false
   if (request.status !== 'PENDING') return false
-
-  if (viewer.role === 'OWNER' || viewer.role === 'HR') return true
-  return request.managerName === viewer.name
+  return hasPermission(viewer.permissions, 'leave.approve')
 }
 
+/**
+ * Applying for leave and seeing your own requests is a baseline every member
+ * gets — `leave.approve` only changes whether `get` also returns company-wide
+ * requests and pending approvals (decided server-side, never trusted from the
+ * client). Real API is authoritative once a backend is configured; the mock
+ * path exists for the offline/no-backend demo.
+ */
 export const leaveService = {
-  /** Mock-only (§11.4) — no API, no DB model. */
   async get(viewer: Viewer): Promise<LeaveData> {
+    if (hasBackend) {
+      try {
+        const { data } = await apiClient.get<LeaveData>('/leave')
+        return data
+      } catch (error) {
+        throw new LeaveError(apiErrorMessage(error, 'We could not load leave for your company.'))
+      }
+    }
+
     await delay()
 
     const me = employeeFor(viewer.name)
-    const scope: LeaveData['scope'] = viewer.role === 'MANAGER' ? 'team' : 'company'
+    const manage = hasPermission(viewer.permissions, 'leave.approve')
+    const scope: LeaveData['scope'] = manage ? 'company' : 'me'
 
-    // A Manager sees their team's requests plus their own — never the whole company.
-    const visible =
-      scope === 'company'
-        ? requests
-        : requests.filter(
-            (r) => r.managerName === viewer.name || r.employeeName === viewer.name,
-          )
+    const visible = manage ? requests : requests.filter((r) => r.employeeName === viewer.name)
 
     const today = new Date().toISOString().slice(0, 10)
     const horizon = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10)
@@ -96,10 +111,40 @@ export const leaveService = {
       upcoming: visible
         .filter((r) => r.status === 'APPROVED' && r.endDate >= today && r.startDate <= horizon)
         .sort((a, b) => a.startDate.localeCompare(b.startDate)),
+      hasEmployeeRecord: me !== null,
+      policy: { annual: mockLeavePolicy.ANNUAL, sick: mockLeavePolicy.SICK, personal: mockLeavePolicy.PERSONAL },
     }
   },
 
+  async updatePolicy(patch: LeavePolicyPatch): Promise<LeaveData['policy']> {
+    if (hasBackend) {
+      try {
+        const { data } = await apiClient.patch<LeaveData['policy']>('/leave/policy', patch)
+        return data
+      } catch (error) {
+        throw new LeaveError(apiErrorMessage(error, 'We could not save the leave policy.'))
+      }
+    }
+
+    await delay()
+    const updated = updateMockLeavePolicy({
+      ...(patch.annual !== undefined ? { ANNUAL: patch.annual } : {}),
+      ...(patch.sick !== undefined ? { SICK: patch.sick } : {}),
+      ...(patch.personal !== undefined ? { PERSONAL: patch.personal } : {}),
+    })
+    return { annual: updated.ANNUAL, sick: updated.SICK, personal: updated.PERSONAL }
+  },
+
   async apply(viewer: Viewer, payload: ApplyLeavePayload): Promise<LeaveRequest> {
+    if (hasBackend) {
+      try {
+        const { data } = await apiClient.post<LeaveRequest>('/leave', payload)
+        return data
+      } catch (error) {
+        throw new LeaveError(apiErrorMessage(error, 'We could not submit your leave request.'))
+      }
+    }
+
     await delay()
 
     const me = employeeFor(viewer.name)
@@ -163,6 +208,15 @@ export const leaveService = {
     id: string,
     decision: 'APPROVED' | 'REJECTED',
   ): Promise<LeaveRequest> {
+    if (hasBackend) {
+      try {
+        const { data } = await apiClient.post<LeaveRequest>(`/leave/${id}/decide`, { decision })
+        return data
+      } catch (error) {
+        throw new LeaveError(apiErrorMessage(error, 'We could not decide on that request.'))
+      }
+    }
+
     await delay()
 
     const request = requests.find((r) => r.id === id)

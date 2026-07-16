@@ -37,7 +37,7 @@ const TABS: Array<{ key: Tab; label: string; icon: typeof Building2; color: stri
   { key: 'security', label: 'Security', icon: Shield, color: 'text-rose-500' },
 ]
 
-type CompanyForm = { name: string; address: string; industry: string }
+type CompanyForm = { name: string; address: string; industry: string; leaveNotificationEmail: string }
 type PasswordForm = { currentPassword: string; newPassword: string }
 
 function Saved() {
@@ -83,7 +83,12 @@ function CompanyProfile() {
       .then((result) => {
         if (cancelled || !result) return
         setOrg(result)
-        reset({ name: result.name, address: result.address, industry: result.industry })
+        reset({
+          name: result.name,
+          address: result.address,
+          industry: result.industry,
+          leaveNotificationEmail: result.leaveNotificationEmail ?? '',
+        })
       })
       .finally(() => {
         if (!cancelled) setLoading(false)
@@ -158,6 +163,24 @@ function CompanyProfile() {
               defaultValue={org?.industry}
               error={errors.industry?.message}
               {...register('industry', { required: 'Choose an industry.' })}
+            />
+          </div>
+
+          <div className="mt-6 border-t border-hairline pt-5">
+            <h3 className="text-[13.5px] font-semibold text-ink">Leave notifications</h3>
+            <p className="mt-1 text-[12.5px] text-muted">
+              When someone applies for leave, an email goes to this address. Leave it blank to turn
+              notifications off.
+            </p>
+            <Input
+              label="Notification email"
+              type="email"
+              className="mt-3"
+              placeholder="hr@yourcompany.com"
+              error={errors.leaveNotificationEmail?.message}
+              {...register('leaveNotificationEmail', {
+                pattern: { value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/, message: 'Enter a valid email.' },
+              })}
             />
           </div>
 

@@ -56,7 +56,7 @@ export const PERMISSION_MODULES: PermissionMatrix = {
   dashboard: [], // Handled by ALWAYS_GRANTED
   employees: ['employees.view', 'employees.manage'],
   attendance: [], // Handled by ALWAYS_GRANTED — self-service check-in is a baseline
-  leave: ['leave.view', 'leave.approve'],
+  leave: [], // Handled by ALWAYS_GRANTED — applying for leave is a baseline
   payroll: ['payroll.view', 'payroll.manage'],
   performance: ['performance.view', 'performance.manage'],
   documents: ['documents.view', 'documents.manage'],
@@ -76,7 +76,7 @@ export const PERMISSION_MODULES: PermissionMatrix = {
  * `attendance.manage` only changes what the page shows once you're on it
  * (company-wide vs. just you), decided server-side (§4.1).
  */
-export const ALWAYS_GRANTED: ModuleKey[] = ['dashboard', 'attendance']
+export const ALWAYS_GRANTED: ModuleKey[] = ['dashboard', 'attendance', 'leave']
 
 export function canAccess(permissions: string[] | undefined, moduleKey: ModuleKey): boolean {
   const perms = permissions ?? []

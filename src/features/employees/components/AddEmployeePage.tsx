@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useForm, useFieldArray } from 'react-hook-form'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import {
   ArrowLeft,
   Briefcase,
@@ -32,7 +32,6 @@ type AddEmployeeForm = {
   email: string
   contactNumber: string
   homeAddress: string
-  role: 'HR' | 'MANAGER' | 'EMPLOYEE'
   jobTitle: string
   department: string
   startDate: string
@@ -160,7 +159,6 @@ export default function AddEmployeePage() {
       email: '',
       contactNumber: '',
       homeAddress: '',
-      role: 'EMPLOYEE',
       jobTitle: '',
       department: '',
       startDate: new Date().toISOString().split('T')[0],
@@ -213,7 +211,9 @@ export default function AddEmployeePage() {
     try {
       const result = await teamService.invite({
         email: values.email,
-        role: values.role,
+        // Employee Management always creates a baseline Employee — HR/Manager-level
+        // access is granted only through Team Members, never through this form.
+        role: 'EMPLOYEE',
         source: 'employee-management',
         firstName: values.firstName,
         lastName: values.lastName,
@@ -360,17 +360,20 @@ export default function AddEmployeePage() {
             id="work"
             refFn={setRef('work')}
             title="Work Info"
-            description="Role, department and access level within this company."
+            description="Role and department within this company."
           >
+            <div className="mb-4 rounded-ctl border border-hairline bg-wash/50 p-3.5 text-[13px] leading-relaxed text-muted">
+              Employees added here always get baseline <span className="font-medium text-ink">Employee</span> access
+              (their own attendance, leave, performance and documents). To grant HR or Manager-level
+              access, invite them from{' '}
+              <Link to="/dashboard/team" className="font-medium text-pine hover:text-pine-deep">
+                Team Members
+              </Link>{' '}
+              instead.
+            </div>
             <div className="grid gap-4 sm:grid-cols-2">
               <Input label="Job Title" error={errors.jobTitle?.message} {...register('jobTitle', { required: 'Required' })} />
               <Select label="Department" options={departments} {...register('department')} />
-              <Select
-                label="Access Level (Role Preset)"
-                hint="Pre-fills their permissions; editable later in Team Members."
-                options={[{ value: 'HR', label: 'HR' }, { value: 'MANAGER', label: 'Manager' }, { value: 'EMPLOYEE', label: 'Employee' }]}
-                {...register('role')}
-              />
               <Input label="Start Date" type="date" error={errors.startDate?.message} {...register('startDate', { required: 'Required' })} />
               <Select label="Employment Type" options={[{ value: 'Full-time', label: 'Full-time' }, { value: 'Part-time', label: 'Part-time' }, { value: 'Contract', label: 'Contract' }, { value: 'Intern', label: 'Intern' }]} {...register('employmentType')} />
               <Select label="Work Location" options={[{ value: 'Office', label: 'Office' }, { value: 'Remote', label: 'Remote' }, { value: 'Hybrid', label: 'Hybrid' }]} {...register('workLocation')} />
