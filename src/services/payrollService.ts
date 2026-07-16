@@ -1,64 +1,25 @@
-import {
-  buildPayslipsFor,
-  mockPayrollRuns,
-  type PayrollRun,
-  type Payslip,
-} from '@/mock/mockPayroll'
-import type { Role } from './authService'
+/**
+ * Pure money formatting only — the mock payroll-run/payslip generator that used
+ * to live here has been removed (§ payroll: no mock data). Kept because Reports
+ * still uses these two formatters for its own (still-mock, out of scope) payroll
+ * cost figure.
+ */
 
-export type { PayrollRun, Payslip }
-
-export class PayrollError extends Error {}
-
-const LATENCY_MS = 600
-const delay = () => new Promise((r) => setTimeout(r, LATENCY_MS))
-
-/** Pence → "₹1,23,456.78". Formatting lives in one place so no screen invents its own. */
-export function formatMoney(pence: number): string {
+/** Rupees → "₹1,23,456". No decimals — payroll amounts are whole rupees. */
+export function formatMoney(amount: number): string {
   return new Intl.NumberFormat('en-IN', {
     style: 'currency',
     currency: 'INR',
-  }).format(pence / 100)
+    maximumFractionDigits: 0,
+  }).format(amount)
 }
 
-/** Compact form for big headline figures — "₹182.4k". */
-export function formatMoneyCompact(pence: number): string {
+/** Compact form for big headline figures — "₹18.2L". */
+export function formatMoneyCompact(amount: number): string {
   return new Intl.NumberFormat('en-IN', {
     style: 'currency',
     currency: 'INR',
     notation: 'compact',
     maximumFractionDigits: 1,
-  }).format(pence / 100)
-}
-
-export type PayrollData = {
-  runs: PayrollRun[]
-  selected: PayrollRun
-  payslips: Payslip[]
-}
-
-export const payrollService = {
-  /**
-   * Mock-only (§11.4). Payroll is **Owner-only** (§10) — the role check is here
-   * as well as on the route, because once this is a real API, salary data must
-   * not leave the server for anyone else.
-   */
-  async get(role: Role, period?: string): Promise<PayrollData> {
-    await delay()
-
-    if (role !== 'OWNER') {
-      throw new PayrollError('Payroll is restricted to owners.')
-    }
-
-    const runs = [...mockPayrollRuns].sort((a, b) => b.period.localeCompare(a.period))
-    const selected = runs.find((r) => r.period === period) ?? runs[0]!
-
-    return {
-      runs,
-      selected,
-      payslips: buildPayslipsFor(selected.period).sort((a, b) =>
-        a.employeeName.localeCompare(b.employeeName),
-      ),
-    }
-  },
+  }).format(amount)
 }

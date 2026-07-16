@@ -6,11 +6,11 @@ type Size = 'sm' | 'md' | 'lg'
 
 const variants: Record<Variant, string> = {
   // Accent is reserved for primary actions only — §7.3
-  primary: 'bg-gradient-to-r from-[#10b981] to-[#15803d] text-white border border-[#10b981]/30 shadow-sm transition-all duration-300 hover:scale-[1.03] active:scale-[0.98] hover:shadow-md relative overflow-hidden',
+  primary: 'bg-gradient-to-r from-[#10b981] to-[#15803d] text-white border border-[#10b981]/30 transition-all duration-300 hover:scale-[1.03] active:scale-[0.98] relative overflow-hidden',
   secondary: 'bg-surface text-ink border border-hairline-strong hover:bg-wash',
   ghost: 'bg-transparent text-ink border border-transparent hover:bg-wash',
   inverse: 'bg-paper text-pine-deep border border-paper hover:bg-white',
-  premium: 'bg-gradient-to-r from-[#10b981] to-[#15803d] text-white border border-[#10b981]/30 shadow-sm transition-all duration-300 hover:scale-[1.03] active:scale-[0.98] hover:shadow-md relative overflow-hidden',
+  premium: 'bg-gradient-to-r from-[#10b981] to-[#15803d] text-white border border-[#10b981]/30 transition-all duration-300 hover:scale-[1.03] active:scale-[0.98] relative overflow-hidden',
 }
 
 const sizes: Record<Size, string> = {

@@ -5,6 +5,7 @@ import {
   Clock,
   FileText,
   LayoutDashboard,
+  Receipt,
   Settings,
   Target,
   Users,
@@ -18,6 +19,7 @@ export type ModuleKey =
   | 'attendance'
   | 'leave'
   | 'payroll'
+  | 'payslip'
   | 'performance'
   | 'documents'
   | 'reports'
@@ -39,6 +41,7 @@ export const NAV_ITEMS: NavItem[] = [
   { key: 'attendance', label: 'Attendance', path: '/dashboard/attendance', icon: Clock, group: 'main' },
   { key: 'leave', label: 'Leave', path: '/dashboard/leave', icon: CalendarDays, group: 'main' },
   { key: 'payroll', label: 'Payroll', path: '/dashboard/payroll', icon: Banknote, group: 'main' },
+  { key: 'payslip', label: 'Payslip', path: '/dashboard/payslip', icon: Receipt, group: 'main' },
   { key: 'performance', label: 'Performance', path: '/dashboard/performance', icon: Target, group: 'main' },
   { key: 'documents', label: 'Documents', path: '/dashboard/documents', icon: FileText, group: 'main' },
   { key: 'reports', label: 'Reports', path: '/dashboard/reports', icon: BarChart3, group: 'main' },
@@ -58,6 +61,7 @@ export const PERMISSION_MODULES: PermissionMatrix = {
   attendance: [], // Handled by ALWAYS_GRANTED — self-service check-in is a baseline
   leave: [], // Handled by ALWAYS_GRANTED — applying for leave is a baseline
   payroll: ['payroll.view', 'payroll.manage'],
+  payslip: [], // Handled by ALWAYS_GRANTED — seeing your own finalized payslip is a baseline
   performance: ['performance.view', 'performance.manage'],
   documents: ['documents.view', 'documents.manage'],
   reports: ['reports.view'],
@@ -74,9 +78,11 @@ export const PERMISSION_MODULES: PermissionMatrix = {
  * that would undo it. `attendance` is here too — checking yourself in/out and
  * seeing your own history is baseline self-service, not a granted privilege;
  * `attendance.manage` only changes what the page shows once you're on it
- * (company-wide vs. just you), decided server-side (§4.1).
+ * (company-wide vs. just you), decided server-side (§4.1). `payslip` is the
+ * same idea one level down from `payroll`: seeing your own finalized payslip
+ * needs no permission at all, even for someone with no payroll access.
  */
-export const ALWAYS_GRANTED: ModuleKey[] = ['dashboard', 'attendance', 'leave']
+export const ALWAYS_GRANTED: ModuleKey[] = ['dashboard', 'attendance', 'leave', 'payslip']
 
 export function canAccess(permissions: string[] | undefined, moduleKey: ModuleKey): boolean {
   const perms = permissions ?? []

@@ -1,5 +1,6 @@
+
 import { useEffect } from 'react'
-import { AlertCircle, ChevronLeft, ChevronRight, Clock, UserCheck, UserX, Users } from 'lucide-react'
+import { AlertCircle, CalendarClock, ChevronLeft, ChevronRight, Clock, UserCheck, UserX, Users } from 'lucide-react'
 import { motion } from 'framer-motion'
 import Card from '@/shared/components/Card'
 import { useAuthStore } from '@/features/auth/store/authStore'
@@ -57,31 +58,32 @@ function StatCard({
   label: string
   value: string
   hint?: string
-  type: 'present' | 'late' | 'absent' | 'hours'
+  type: 'present' | 'late' | 'absent' | 'leave' | 'hours'
 }) {
   const config = {
     present: {
       iconBg: 'bg-emerald-50 text-emerald-600 border border-emerald-100/50',
       bgGradient: 'bg-gradient-to-br from-emerald-500/[0.04] to-transparent',
-      glow: 'hover:shadow-[0_4px_20px_rgba(16,185,129,0.08)]',
       borderColor: 'border-emerald-500/10 hover:border-emerald-500/20',
     },
     late: {
       iconBg: 'bg-amber-50 text-amber-600 border border-amber-100/50',
       bgGradient: 'bg-gradient-to-br from-amber-500/[0.04] to-transparent',
-      glow: 'hover:shadow-[0_4px_20px_rgba(245,158,11,0.08)]',
       borderColor: 'border-amber-500/10 hover:border-amber-500/20',
     },
     absent: {
       iconBg: 'bg-rose-50 text-rose-600 border border-rose-100/50',
       bgGradient: 'bg-gradient-to-br from-rose-500/[0.04] to-transparent',
-      glow: 'hover:shadow-[0_4px_20px_rgba(244,63,94,0.08)]',
       borderColor: 'border-rose-500/10 hover:border-rose-500/20',
+    },
+    leave: {
+      iconBg: 'bg-ochre-tint text-ochre-deep border border-ochre/30',
+      bgGradient: 'bg-gradient-to-br from-ochre/[0.06] to-transparent',
+      borderColor: 'border-ochre/10 hover:border-ochre/20',
     },
     hours: {
       iconBg: 'bg-indigo-50 text-indigo-600 border border-indigo-100/50',
       bgGradient: 'bg-gradient-to-br from-indigo-500/[0.04] to-transparent',
-      glow: 'hover:shadow-[0_4px_20px_rgba(99,102,241,0.08)]',
       borderColor: 'border-indigo-500/10 hover:border-indigo-500/20',
     },
   }[type]
@@ -91,7 +93,7 @@ function StatCard({
       whileHover={{ y: -4, transition: { duration: 0.2 } }}
       className="h-full"
     >
-      <Card className={`p-5 h-full flex gap-4 items-start transition-all duration-300 border ${config.bgGradient} ${config.borderColor} ${config.glow}`}>
+      <Card className={`p-5 h-full flex gap-4 items-start transition-all duration-300 border ${config.bgGradient} ${config.borderColor}`}>
         <div className={`p-2.5 rounded-ctl shrink-0 flex items-center justify-center ${config.iconBg}`}>
           <Icon size={18} />
         </div>
@@ -165,7 +167,7 @@ export default function AttendancePage() {
         </div>
 
         {/* Month navigation */}
-        <div className="flex items-center gap-2 bg-surface border border-hairline/80 p-1.5 rounded-ctl shadow-sm transition-all duration-300">
+        <div className="flex items-center gap-2 bg-surface border border-hairline/80 p-1.5 rounded-ctl transition-all duration-300">
           <button
             type="button"
             onClick={() => void goToMonth(viewer, -1)}
@@ -220,7 +222,7 @@ export default function AttendancePage() {
           )}
 
           {/* Summary cards — today's snapshot for the company, this month's tally for you */}
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div className={`grid gap-4 sm:grid-cols-2 ${data?.scope === 'company' ? 'lg:grid-cols-5' : 'lg:grid-cols-4'}`}>
             {isLoading || !data ? (
               [0, 1, 2, 3].map((i) => <StatSkeleton key={i} />)
             ) : data.scope === 'me' ? (
@@ -278,6 +280,13 @@ export default function AttendancePage() {
                   type="absent"
                 />
                 <StatCard
+                  icon={CalendarClock}
+                  label="On leave"
+                  value={String(data.summary.leaveToday)}
+                  hint="approved leave"
+                  type="leave"
+                />
+                <StatCard
                   icon={Users}
                   label="Avg. hours"
                   value={data.summary.avgHours.toFixed(1)}
@@ -316,6 +325,7 @@ export default function AttendancePage() {
                     days={data.days}
                     selectedDate={selectedDate ?? data.todayDate}
                     onSelect={(date) => void selectDate(viewer, date)}
+                    scope={data.scope}
                   />
                 )}
               </div>
