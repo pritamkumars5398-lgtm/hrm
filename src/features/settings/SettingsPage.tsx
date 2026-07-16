@@ -33,7 +33,7 @@ const TABS: Array<{ key: Tab; label: string; icon: typeof Building2; color: stri
   { key: 'company', label: 'Company profile', icon: Building2, color: 'text-indigo-500' },
   { key: 'roles', label: 'Roles & Permissions', icon: Users, color: 'text-violet-500' },
   { key: 'notifications', label: 'Notifications', icon: Bell, color: 'text-amber-500' },
-  { key: 'appearance', label: 'Appearance', icon: Palette, color: 'text-pine' },
+  { key: 'appearance', label: 'Appearance', icon: Palette, color: 'text-emerald-600' },
   { key: 'security', label: 'Security', icon: Shield, color: 'text-rose-500' },
 ]
 
@@ -42,7 +42,7 @@ type PasswordForm = { currentPassword: string; newPassword: string }
 
 function Saved() {
   return (
-    <span className="inline-flex items-center gap-1.5 text-[12.5px] font-semibold text-pine bg-pine-tint px-2.5 py-1 rounded-full border border-pine/10">
+    <span className="inline-flex items-center gap-1.5 text-[12.5px] font-bold text-emerald-800 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-100/40 shadow-sm">
       <Check size={14} />
       Saved successfully
     </span>
@@ -230,7 +230,7 @@ function Notifications() {
                   aria-label={setting.label}
                   onClick={() => setEnabled((prev) => ({ ...prev, [setting.id]: !on }))}
                   className={`relative h-5.5 w-10 shrink-0 rounded-full transition-all duration-200 cursor-pointer focus:outline-none ${
-                    on ? 'bg-pine shadow-[0_0_8px_rgba(31,77,63,0.12)]' : 'bg-hairline-strong'
+                    on ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.15)]' : 'bg-hairline-strong'
                   }`}
                 >
                   <span
@@ -455,7 +455,7 @@ export default function SettingsPage() {
           <h1 className="font-display text-[26px] leading-tight font-semibold tracking-[-0.02em] text-ink">
             Settings
           </h1>
-          <span className="flex size-6 items-center justify-center rounded-full bg-pine-tint text-pine">
+          <span className="flex size-6 items-center justify-center rounded-full bg-emerald-50 text-emerald-600 border border-emerald-100/50">
             <Sparkles size={13} />
           </span>
         </div>
@@ -481,8 +481,8 @@ export default function SettingsPage() {
                     aria-current={active ? 'page' : undefined}
                     className={`flex w-full items-center gap-2.5 rounded-ctl px-3.5 py-2.5 text-[13.5px] font-semibold whitespace-nowrap transition-all duration-200 cursor-pointer ${
                       active
-                        ? 'bg-pine-tint text-pine-deep font-bold border-l-2 border-pine pl-3 rounded-l-none'
-                        : 'text-muted hover:bg-wash hover:text-ink'
+                        ? 'bg-emerald-50 text-emerald-800 font-bold border-l-[3px] border-emerald-500 pl-3 rounded-l-none'
+                        : 'text-muted hover:bg-wash hover:text-ink border-l-[3px] border-transparent pl-3'
                     }`}
                   >
                     <Icon size={15} className={active ? activeColor : 'text-muted'} />

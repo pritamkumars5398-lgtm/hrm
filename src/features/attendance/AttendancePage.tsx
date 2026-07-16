@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
 import { AlertCircle, ChevronLeft, ChevronRight, Clock, UserCheck, UserX, Users } from 'lucide-react'
+import { motion } from 'framer-motion'
 import Card from '@/shared/components/Card'
 import { useAuthStore } from '@/features/auth/store/authStore'
 import { useAttendanceStore } from './store/attendanceStore'
@@ -48,27 +49,57 @@ function StatCard({
   label,
   value,
   hint,
-  iconBg,
-  iconColor,
+  type,
 }: {
   icon: typeof Users
   label: string
   value: string
   hint?: string
-  iconBg: string
-  iconColor: string
+  type: 'present' | 'late' | 'absent' | 'hours'
 }) {
+  const config = {
+    present: {
+      iconBg: 'bg-emerald-50 text-emerald-600 border border-emerald-100/50',
+      bgGradient: 'bg-gradient-to-br from-emerald-500/[0.04] to-transparent',
+      glow: 'hover:shadow-[0_4px_20px_rgba(16,185,129,0.08)]',
+      borderColor: 'border-emerald-500/10 hover:border-emerald-500/20',
+    },
+    late: {
+      iconBg: 'bg-amber-50 text-amber-600 border border-amber-100/50',
+      bgGradient: 'bg-gradient-to-br from-amber-500/[0.04] to-transparent',
+      glow: 'hover:shadow-[0_4px_20px_rgba(245,158,11,0.08)]',
+      borderColor: 'border-amber-500/10 hover:border-amber-500/20',
+    },
+    absent: {
+      iconBg: 'bg-rose-50 text-rose-600 border border-rose-100/50',
+      bgGradient: 'bg-gradient-to-br from-rose-500/[0.04] to-transparent',
+      glow: 'hover:shadow-[0_4px_20px_rgba(244,63,94,0.08)]',
+      borderColor: 'border-rose-500/10 hover:border-rose-500/20',
+    },
+    hours: {
+      iconBg: 'bg-indigo-50 text-indigo-600 border border-indigo-100/50',
+      bgGradient: 'bg-gradient-to-br from-indigo-500/[0.04] to-transparent',
+      glow: 'hover:shadow-[0_4px_20px_rgba(99,102,241,0.08)]',
+      borderColor: 'border-indigo-500/10 hover:border-indigo-500/20',
+    },
+  }[type]
+
   return (
-    <Card className="p-4 flex gap-4 items-start">
-      <div className={`p-2.5 rounded-full shrink-0 flex items-center justify-center ${iconBg}`}>
-        <Icon className={`size-5 ${iconColor}`} />
-      </div>
-      <div className="min-w-0 flex-1">
-        <p className="text-[12px] text-muted font-medium leading-none">{label}</p>
-        <p className="tnum font-display mt-2.5 text-[26px] leading-none font-bold text-ink">{value}</p>
-        {hint && <p className="tnum mt-2 text-[11.5px] text-muted font-medium">{hint}</p>}
-      </div>
-    </Card>
+    <motion.div
+      whileHover={{ y: -4, transition: { duration: 0.2 } }}
+      className="h-full"
+    >
+      <Card className={`p-5 h-full flex gap-4 items-start transition-all duration-300 border ${config.bgGradient} ${config.borderColor} ${config.glow}`}>
+        <div className={`p-2.5 rounded-ctl shrink-0 flex items-center justify-center ${config.iconBg}`}>
+          <Icon size={18} />
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="text-[11px] uppercase tracking-wider font-extrabold text-muted/85 leading-none">{label}</p>
+          <p className="tnum font-display mt-2.5 text-[28px] leading-none font-bold text-ink">{value}</p>
+          {hint && <p className="tnum mt-2 text-[12px] text-muted font-semibold">{hint}</p>}
+        </div>
+      </Card>
+    </motion.div>
   )
 }
 
@@ -125,17 +156,17 @@ export default function AttendancePage() {
         </div>
 
         {/* Month navigation */}
-        <div className="flex items-center gap-1.5 bg-surface border border-hairline p-1 rounded-ctl">
+        <div className="flex items-center gap-2 bg-surface border border-hairline/80 p-1.5 rounded-ctl shadow-sm transition-all duration-300">
           <button
             type="button"
             onClick={() => void goToMonth(viewer, -1)}
             aria-label="Previous month"
-            className="inline-flex size-8 items-center justify-center rounded-ctl border border-hairline-strong bg-surface text-muted transition-colors hover:border-pine hover:text-pine cursor-pointer"
+            className="inline-flex size-8 items-center justify-center rounded-ctl border border-hairline bg-surface text-muted transition-all hover:border-emerald-500 hover:bg-emerald-50 hover:text-emerald-700 cursor-pointer active:scale-95"
           >
             <ChevronLeft size={14} />
           </button>
 
-          <span className="tnum min-w-32 text-center text-[12.5px] font-bold text-ink">
+          <span className="tnum min-w-32 text-center text-[13px] font-bold text-emerald-800 bg-emerald-50/50 border border-emerald-100/30 px-3 py-1 rounded-full">
             {MONTHS[month]} {year}
           </span>
 
@@ -144,7 +175,7 @@ export default function AttendancePage() {
             onClick={() => void goToMonth(viewer, 1)}
             disabled={isCurrentMonth}
             aria-label="Next month"
-            className="inline-flex size-8 items-center justify-center rounded-ctl border border-hairline-strong bg-surface text-muted transition-colors hover:border-pine hover:text-pine disabled:pointer-events-none disabled:opacity-40 cursor-pointer"
+            className="inline-flex size-8 items-center justify-center rounded-ctl border border-hairline bg-surface text-muted transition-all hover:border-emerald-500 hover:bg-emerald-50 hover:text-emerald-700 disabled:pointer-events-none disabled:opacity-40 cursor-pointer active:scale-95"
           >
             <ChevronRight size={14} />
           </button>
@@ -180,32 +211,28 @@ export default function AttendancePage() {
                   label="Present"
                   value={String(data.summary.presentToday)}
                   hint={`of ${data.headcount} ${data.scope === 'team' ? 'in team' : 'employees'}`}
-                  iconBg="bg-emerald-50 text-emerald-600"
-                  iconColor="text-emerald-600"
+                  type="present"
                 />
                 <StatCard
                   icon={Clock}
                   label="Late"
                   value={String(data.summary.lateToday)}
                   hint="arrived after 09:30"
-                  iconBg="bg-orange-50 text-orange-600"
-                  iconColor="text-orange-600"
+                  type="late"
                 />
                 <StatCard
                   icon={UserX}
                   label="Absent"
                   value={String(data.summary.absentToday)}
                   hint="no record for the day"
-                  iconBg="bg-rose-50 text-rose-600"
-                  iconColor="text-rose-600"
+                  type="absent"
                 />
                 <StatCard
                   icon={Users}
                   label="Avg. hours"
                   value={data.summary.avgHours.toFixed(1)}
                   hint="across those who worked"
-                  iconBg="bg-indigo-50 text-indigo-600"
-                  iconColor="text-indigo-600"
+                  type="hours"
                 />
               </>
             )}

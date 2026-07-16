@@ -200,9 +200,17 @@ export default function Topbar({
             aria-expanded={openMenu === 'profile'}
             className="flex items-center gap-2 rounded-ctl py-1 pr-2 pl-1 transition-colors hover:bg-wash"
           >
-            <span className="inline-flex size-7 items-center justify-center rounded-full bg-pine text-[11px] font-semibold text-white">
-              {user.avatarInitials}
-            </span>
+            {user.name.includes('Priya') ? (
+              <img
+                src="/priya_avatar.png"
+                alt={user.name}
+                className="size-7 rounded-full object-cover border border-hairline-strong shadow-sm"
+              />
+            ) : (
+              <span className="inline-flex size-7 items-center justify-center rounded-full bg-pine text-[11px] font-semibold text-white">
+                {user.avatarInitials}
+              </span>
+            )}
             <span className="hidden text-[13px] font-medium sm:block">{user.name}</span>
           </button>
 

@@ -41,7 +41,7 @@ function NavSection({
               className={({ isActive }) =>
                 `group flex items-center relative transition-all duration-200 ${
                   isActive
-                    ? 'bg-gradient-to-r from-pine to-pine-deep font-semibold text-white shadow-sm shadow-pine/10'
+                    ? 'bg-gradient-to-r from-[#10b981] to-[#15803d] font-semibold text-white shadow-sm shadow-emerald-500/10'
                     : 'text-muted hover:bg-wash hover:text-ink'
                 } ${
                   collapsed
@@ -60,7 +60,7 @@ function NavSection({
                   <Icon
                     size={16}
                     className={`transition-all duration-200 group-hover:scale-110 ${
-                      isActive ? 'text-white' : 'text-muted group-hover:text-pine'
+                      isActive ? 'text-white' : 'text-muted group-hover:text-emerald-600'
                     }`}
                   />
                   {!collapsed && (
@@ -110,7 +110,7 @@ export default function Sidebar({
       {!collapsed && (
         <div className="border-b border-hairline bg-wash/10 px-4 py-3.5 flex items-center gap-3">
           {/* Workspace Avatar box */}
-          <div className="size-8 rounded-ctl flex items-center justify-center text-[12px] font-bold text-white bg-gradient-to-br from-pine to-pine-deep shadow-inner shrink-0 select-none">
+          <div className="size-8 rounded-ctl flex items-center justify-center text-[12px] font-bold text-white bg-gradient-to-br from-[#10b981] to-[#15803d] shadow-inner shrink-0 select-none">
             {orgInitials}
           </div>
           

@@ -49,11 +49,11 @@ export default function Footer() {
             <input
               type="email"
               placeholder="Enter your email address"
-              className="h-10 w-full rounded-lg border border-hairline bg-wash/30 px-3.5 text-[13px] text-ink placeholder-muted/70 focus:border-pine/30 focus:outline-none transition-colors"
+              className="h-10 w-full rounded-lg border border-hairline bg-wash/30 px-3.5 text-[13px] text-ink placeholder-muted/70 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/10 focus:outline-none transition-all"
             />
             <button
               type="submit"
-              className="flex h-10 shrink-0 items-center justify-center rounded-lg bg-pine px-4 text-[12px] font-bold text-white shadow-sm hover:bg-pine-deep hover:scale-[1.02] active:scale-95 transition-all"
+              className="flex h-10 shrink-0 items-center justify-center rounded-lg bg-gradient-to-r from-emerald-500 to-emerald-700 px-5 text-[12.5px] font-bold text-white shadow-sm hover:from-emerald-600 hover:to-emerald-800 hover:scale-[1.02] active:scale-95 transition-all cursor-pointer"
             >
               Subscribe
             </button>

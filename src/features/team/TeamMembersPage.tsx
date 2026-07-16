@@ -66,14 +66,14 @@ function InviteLinkPanel({ link, tempPassword }: { link: string; tempPassword: s
           Link: {link}
           {tempPassword && <><br/>Temp Password: {tempPassword}</>}
         </code>
-        <button
-          type="button"
+        <Button
+          size="sm"
           onClick={() => void copy()}
-          className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-ctl bg-pine text-white px-3.5 text-[12px] font-bold transition-all hover:bg-pine-deep cursor-pointer border border-transparent shadow-sm hover:shadow"
+          className="font-bold shrink-0 shadow-sm"
         >
           {copied ? <Check size={13} className="text-white" /> : <Copy size={13} />}
           {copied ? 'Copied' : 'Copy link'}
-        </button>
+        </Button>
       </div>
     </div>
   )
@@ -337,11 +337,11 @@ export default function TeamMembersPage() {
                         <RoleBadge role={invite.role} />
 
                         <div className="flex items-center gap-1.5 pl-3">
-                          <button
-                            type="button"
+                          <Button
+                            size="sm"
                             onClick={() => void onResend(invite.id)}
                             disabled={busy}
-                            className="inline-flex h-8 items-center gap-1.5 rounded-ctl bg-pine text-white hover:bg-pine-deep transition-all cursor-pointer font-bold px-3.5 text-[12px] border border-transparent shadow-sm hover:shadow disabled:opacity-50"
+                            className="h-8 font-bold shadow-sm"
                           >
                             {busy ? (
                               <Loader2 size={13} className="animate-spin" />
@@ -349,7 +349,7 @@ export default function TeamMembersPage() {
                               <RotateCw size={13} />
                             )}
                             Resend
-                          </button>
+                          </Button>
 
                           <button
                             type="button"

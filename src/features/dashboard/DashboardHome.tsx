@@ -141,14 +141,13 @@ export default function DashboardHome() {
             </p>
           </div>
           <div className="flex gap-2">
-            <button
-              type="button"
-              className="h-9.5 inline-flex items-center gap-1.5 rounded-ctl bg-pine hover:bg-pine-deep text-white px-4 py-2 text-[13px] font-semibold transition-colors shadow-sm cursor-pointer"
+            <Button
+              className="h-9.5 font-bold"
             >
               <Plus size={14} />
               Quick Action
               <ChevronDown size={14} className="opacity-80" />
-            </button>
+            </Button>
             {status === 'ready' && (
               <Button
                 variant="secondary"
@@ -163,105 +162,13 @@ export default function DashboardHome() {
           </div>
         </div>
 
-        {/* Laptop Illustration */}
-        <div className="hidden md:block w-72 h-40 shrink-0 relative">
-          <svg viewBox="0 0 280 160" className="w-full h-full select-none" fill="none" xmlns="http://www.w3.org/2000/svg">
-            {/* Soft background glow circles */}
-            <circle cx="140" cy="80" r="70" fill="#e8efeb" fillOpacity="0.6" />
-            <circle cx="210" cy="50" r="45" fill="#f6eedc" fillOpacity="0.5" />
-            <circle cx="60" cy="110" r="50" fill="#f7ebe5" fillOpacity="0.5" />
-
-            {/* Main Dashboard Window Mockup */}
-            <g className="drop-shadow-sm">
-              <rect x="40" y="30" width="150" height="100" rx="8" fill="#ffffff" stroke="#e4e4e1" strokeWidth="1.5" />
-              {/* Window Header */}
-              <path d="M40 38V38C40 33.5781 43.5781 30 48 30H182C186.422 30 190 33.5781 190 38V42H40V38Z" fill="#f3f3f0" />
-              {/* Window Control Buttons */}
-              <circle cx="52" cy="36" r="3" fill="#ea4335" />
-              <circle cx="62" cy="36" r="3" fill="#fbbc05" />
-              <circle cx="72" cy="36" r="3" fill="#34a853" />
-              
-              {/* Sidebar mockup */}
-              <rect x="40" y="42" width="30" height="88" fill="#fbfbfa" />
-              <line x1="40.75" y1="42" x2="40.75" y2="130" stroke="#e4e4e1" strokeWidth="1.5" />
-              <line x1="70.75" y1="42" x2="70.75" y2="130" stroke="#e4e4e1" strokeWidth="1.5" />
-              {/* Sidebar items */}
-              <rect x="46" y="50" width="18" height="4" rx="2" fill="#d3d3ce" />
-              <rect x="46" y="60" width="18" height="4" rx="2" fill="#e4e4e1" />
-              <rect x="46" y="70" width="18" height="4" rx="2" fill="#e4e4e1" />
-              <rect x="46" y="80" width="18" height="4" rx="2" fill="#e4e4e1" />
-
-              {/* Chart Grid lines inside window */}
-              <line x1="80" y1="60" x2="180" y2="60" stroke="#f3f3f0" strokeWidth="1" />
-              <line x1="80" y1="80" x2="180" y2="80" stroke="#f3f3f0" strokeWidth="1" />
-              <line x1="80" y1="100" x2="180" y2="100" stroke="#f3f3f0" strokeWidth="1" />
-              <line x1="80" y1="120" x2="180" y2="120" stroke="#f3f3f0" strokeWidth="1" />
-
-              {/* Green Growth Area/Curve */}
-              <path d="M 80,105 C 100,100 110,80 125,82 C 140,84 150,65 165,65 C 172,65 176,70 180,68" fill="none" stroke="#10b981" strokeWidth="2.5" strokeLinecap="round" />
-              <path d="M 80,105 C 100,100 110,80 125,82 C 140,84 150,65 165,65 C 172,65 176,70 180,68 L 180,120 L 80,120 Z" fill="#10b981" fillOpacity="0.08" />
-              
-              {/* Miniature bars in dashboard */}
-              <rect x="85" y="110" width="8" height="10" rx="1" fill="#1f4d3f" fillOpacity="0.4" />
-              <rect x="98" y="105" width="8" height="15" rx="1" fill="#1f4d3f" fillOpacity="0.8" />
-              <rect x="111" y="113" width="8" height="7" rx="1" fill="#1f4d3f" fillOpacity="0.4" />
-            </g>
-
-            {/* Human Character standing beside chart */}
-            <g>
-              {/* Body / Torso */}
-              <path d="M210 140 C210 115 220 100 235 98 C240 105 242 115 240 140 Z" fill="#1f4d3f" />
-              {/* Neck */}
-              <rect x="220" y="90" width="6" height="8" fill="#e4d1b9" rx="1" />
-              {/* Head */}
-              <circle cx="223" cy="80" r="12" fill="#f3d3b0" />
-              {/* Hair */}
-              <path d="M211 80 C211 70 220 68 228 68 C236 68 236 76 234 82 C230 78 220 78 211 80 Z" fill="#2d1c18" />
-              {/* Arm / Sleeve pointing */}
-              <path d="M212 105 C198 100 185 86 175 88 C172 89 174 93 177 94 C186 96 195 106 206 112 Z" fill="#1f4d3f" />
-              {/* Hand */}
-              <circle cx="172" cy="88" r="4" fill="#f3d3b0" />
-
-              {/* Floating Checklist Badge beside the character */}
-              <g transform="translate(200, 20)">
-                <rect x="0" y="0" width="45" height="30" rx="6" fill="#ffffff" stroke="#e4e4e1" strokeWidth="1" />
-                {/* Mini Avatar inside badge */}
-                <circle cx="12" cy="15" r="6" fill="#e8efeb" />
-                <circle cx="12" cy="13" r="2.5" fill="#10b981" />
-                <path d="M8 19 C8 17.5 10 16.5 12 16.5 C14 16.5 16 17.5 16 19 Z" fill="#10b981" />
-                {/* Checklist Lines */}
-                <rect x="23" y="10" width="15" height="3" rx="1.5" fill="#1f4d3f" />
-                <rect x="23" y="17" width="10" height="3" rx="1.5" fill="#e4e4e1" />
-              </g>
-            </g>
-
-            {/* Potted Office Plant (Bottom Left) */}
-            <g>
-              {/* Plant Pot */}
-              <path d="M22 130 L16 150 H32 L26 130 Z" fill="#9c4221" />
-              <rect x="15" y="128" width="18" height="3" rx="1" fill="#7a3419" />
-              {/* Leaves */}
-              <path d="M24 128 C24 115 15 108 12 110 C9 112 15 122 24 128 Z" fill="#163a2f" />
-              <path d="M24 128 C24 112 30 102 34 104 C38 106 32 118 24 128 Z" fill="#1f4d3f" />
-              <path d="M24 128 C18 120 18 100 22 98 C26 96 28 112 24 128 Z" fill="#10b981" />
-              <path d="M24 128 C28 124 38 116 39 120 C40 124 30 126 24 128 Z" fill="#163a2f" />
-            </g>
-
-            {/* Floating elements */}
-            {/* Gear Icon (Administrative / System) */}
-            <g transform="translate(15, 30)">
-              <circle cx="10" cy="10" r="5" stroke="#a9791c" strokeWidth="2.5" />
-              <circle cx="10" cy="10" r="2" fill="#a9791c" />
-              <path d="M10 3 V6 M10 14 V17 M3 10 H6 M14 10 H17" stroke="#a9791c" strokeWidth="2" strokeLinecap="round" />
-            </g>
-
-            {/* Growth Trend Icon */}
-            <g transform="translate(200, 115)">
-              <circle cx="12" cy="12" r="10" fill="#f7ebe5" />
-              <path d="M8 15 L11 12 L13 14 L17 9.5" fill="none" stroke="#9c4221" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-              <path d="M14 9.5 H17 V12.5" fill="none" stroke="#9c4221" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-            </g>
-          </svg>
+        {/* Dashboard Illustration */}
+        <div className="hidden md:block w-[420px] h-52 lg:w-[460px] lg:h-56 shrink-0 relative">
+          <img
+            src="/admin.png"
+            alt="Keystone Workspace Overview"
+            className="w-full h-full object-contain select-none"
+          />
         </div>
       </div>
 
@@ -287,91 +194,91 @@ export default function DashboardHome() {
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {status === 'ready' && data
               ? statsToShow.map((stat) => {
-                  const style = getStatStyle(stat.id, stat.label)
-                  const StatIcon = style.Icon
-                  return (
-                    <div key={stat.id} className="group relative rounded-card border border-hairline bg-surface p-4 flex flex-col justify-between transition-all duration-300 hover:-translate-y-1.5 hover:shadow-lg hover:border-hairline-strong overflow-hidden h-[155px]">
-                      <div className="flex items-start justify-between w-full">
-                        <div className={`p-2.5 rounded-full shrink-0 flex items-center justify-center transition-transform duration-300 group-hover:scale-105 ${style.iconBg}`}>
-                          <StatIcon className={`size-5 ${style.iconColor}`} />
-                        </div>
-                        <button type="button" className="text-muted hover:text-ink transition-colors p-1 rounded-ctl hover:bg-wash cursor-pointer">
-                          <MoreVertical size={16} />
-                        </button>
+                const style = getStatStyle(stat.id, stat.label)
+                const StatIcon = style.Icon
+                return (
+                  <div key={stat.id} className="group relative rounded-card border border-hairline bg-surface p-4 flex flex-col justify-between transition-all duration-300 hover:-translate-y-1.5 hover:shadow-lg hover:border-hairline-strong overflow-hidden h-[155px]">
+                    <div className="flex items-start justify-between w-full">
+                      <div className={`p-2.5 rounded-full shrink-0 flex items-center justify-center transition-transform duration-300 group-hover:scale-105 ${style.iconBg}`}>
+                        <StatIcon className={`size-5 ${style.iconColor}`} />
                       </div>
-                      
-                      <div className="min-w-0 flex-1 mt-3">
-                        <p className="text-[11px] text-muted font-bold uppercase tracking-wider leading-none">{style.label}</p>
-                        <div className="flex items-baseline justify-between mt-2">
-                          <p className="tnum font-display text-[26px] leading-none font-bold text-ink">
-                            {stat.value}
-                          </p>
-                          {stat.delta && (
-                            <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold border leading-none ${style.deltaColor}`}>
-                              {stat.delta}
-                            </span>
-                          )}
-                        </div>
-                      </div>
+                      <button type="button" className="text-muted hover:text-ink transition-colors p-1 rounded-ctl hover:bg-wash cursor-pointer">
+                        <MoreVertical size={16} />
+                      </button>
+                    </div>
 
-                      {/* Sparkline Graph */}
-                      <div className="absolute bottom-0 inset-x-0 h-10 overflow-hidden pointer-events-none rounded-b-card">
-                        {style.sparkline === 'teal' && (
-                          <svg viewBox="0 0 100 30" className="w-full h-full" preserveAspectRatio="none">
-                            <defs>
-                              <linearGradient id="spark-teal" x1="0" y1="0" x2="0" y2="1">
-                                <stop offset="0%" stopColor="#0d9488" stopOpacity="0.15" />
-                                <stop offset="100%" stopColor="#0d9488" stopOpacity="0.0" />
-                              </linearGradient>
-                            </defs>
-                            <path d="M 0,26 C 15,28 30,14 45,16 C 60,18 75,6 90,8 C 95,9 98,4 100,3" fill="none" stroke="#0d9488" strokeWidth="2" strokeLinecap="round" />
-                            <path d="M 0,26 C 15,28 30,14 45,16 C 60,18 75,6 90,8 C 95,9 98,4 100,3 L 100,30 L 0,30 Z" fill="url(#spark-teal)" />
-                            <circle cx="100" cy="3" r="1.5" fill="#0d9488" />
-                          </svg>
-                        )}
-                        {style.sparkline === 'emerald' && (
-                          <svg viewBox="0 0 100 30" className="w-full h-full" preserveAspectRatio="none">
-                            <defs>
-                              <linearGradient id="spark-emerald" x1="0" y1="0" x2="0" y2="1">
-                                <stop offset="0%" stopColor="#10b981" stopOpacity="0.15" />
-                                <stop offset="100%" stopColor="#10b981" stopOpacity="0.0" />
-                              </linearGradient>
-                            </defs>
-                            <path d="M 0,16 C 10,8 20,24 30,16 C 40,8 50,24 60,16 C 70,8 80,24 90,16 C 95,12 98,16 100,12" fill="none" stroke="#10b981" strokeWidth="2" strokeLinecap="round" />
-                            <path d="M 0,16 C 10,8 20,24 30,16 C 40,8 50,24 60,16 C 70,8 80,24 90,16 C 95,12 98,16 100,12 L 100,30 L 0,30 Z" fill="url(#spark-emerald)" />
-                            <circle cx="100" cy="12" r="1.5" fill="#10b981" />
-                          </svg>
-                        )}
-                        {style.sparkline === 'orange' && (
-                          <svg viewBox="0 0 100 30" className="w-full h-full" preserveAspectRatio="none">
-                            <defs>
-                              <linearGradient id="spark-orange" x1="0" y1="0" x2="0" y2="1">
-                                <stop offset="0%" stopColor="#f97316" stopOpacity="0.15" />
-                                <stop offset="100%" stopColor="#f97316" stopOpacity="0.0" />
-                              </linearGradient>
-                            </defs>
-                            <path d="M 0,28 C 15,28 30,28 45,12 C 55,4 65,22 80,24 C 90,25 97,27 100,28" fill="none" stroke="#f97316" strokeWidth="2" strokeLinecap="round" />
-                            <path d="M 0,28 C 15,28 30,28 45,12 C 55,4 65,22 80,24 C 90,25 97,27 100,28 L 100,30 L 0,30 Z" fill="url(#spark-orange)" />
-                            <circle cx="100" cy="28" r="1.5" fill="#f97316" />
-                          </svg>
-                        )}
-                        {style.sparkline === 'purple' && (
-                          <svg viewBox="0 0 100 30" className="w-full h-full" preserveAspectRatio="none">
-                            <defs>
-                              <linearGradient id="spark-purple" x1="0" y1="0" x2="0" y2="1">
-                                <stop offset="0%" stopColor="#8b5cf6" stopOpacity="0.15" />
-                                <stop offset="100%" stopColor="#8b5cf6" stopOpacity="0.0" />
-                              </linearGradient>
-                            </defs>
-                            <path d="M 0,14 C 15,12 30,22 45,18 C 60,10 75,8 90,6 C 95,5 98,6 100,5" fill="none" stroke="#8b5cf6" strokeWidth="2" strokeLinecap="round" />
-                            <path d="M 0,14 C 15,12 30,22 45,18 C 60,10 75,8 90,6 C 95,5 98,6 100,5 L 100,30 L 0,30 Z" fill="url(#spark-purple)" />
-                            <circle cx="100" cy="5" r="1.5" fill="#8b5cf6" />
-                          </svg>
+                    <div className="min-w-0 flex-1 mt-3">
+                      <p className="text-[11px] text-muted font-bold uppercase tracking-wider leading-none">{style.label}</p>
+                      <div className="flex items-baseline justify-between mt-2">
+                        <p className="tnum font-display text-[26px] leading-none font-bold text-ink">
+                          {stat.value}
+                        </p>
+                        {stat.delta && (
+                          <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold border leading-none ${style.deltaColor}`}>
+                            {stat.delta}
+                          </span>
                         )}
                       </div>
                     </div>
-                  )
-                })
+
+                    {/* Sparkline Graph */}
+                    <div className="absolute bottom-0 inset-x-0 h-10 overflow-hidden pointer-events-none rounded-b-card">
+                      {style.sparkline === 'teal' && (
+                        <svg viewBox="0 0 100 30" className="w-full h-full" preserveAspectRatio="none">
+                          <defs>
+                            <linearGradient id="spark-teal" x1="0" y1="0" x2="0" y2="1">
+                              <stop offset="0%" stopColor="#0d9488" stopOpacity="0.15" />
+                              <stop offset="100%" stopColor="#0d9488" stopOpacity="0.0" />
+                            </linearGradient>
+                          </defs>
+                          <path d="M 0,26 C 15,28 30,14 45,16 C 60,18 75,6 90,8 C 95,9 98,4 100,3" fill="none" stroke="#0d9488" strokeWidth="2" strokeLinecap="round" />
+                          <path d="M 0,26 C 15,28 30,14 45,16 C 60,18 75,6 90,8 C 95,9 98,4 100,3 L 100,30 L 0,30 Z" fill="url(#spark-teal)" />
+                          <circle cx="100" cy="3" r="1.5" fill="#0d9488" />
+                        </svg>
+                      )}
+                      {style.sparkline === 'emerald' && (
+                        <svg viewBox="0 0 100 30" className="w-full h-full" preserveAspectRatio="none">
+                          <defs>
+                            <linearGradient id="spark-emerald" x1="0" y1="0" x2="0" y2="1">
+                              <stop offset="0%" stopColor="#10b981" stopOpacity="0.15" />
+                              <stop offset="100%" stopColor="#10b981" stopOpacity="0.0" />
+                            </linearGradient>
+                          </defs>
+                          <path d="M 0,16 C 10,8 20,24 30,16 C 40,8 50,24 60,16 C 70,8 80,24 90,16 C 95,12 98,16 100,12" fill="none" stroke="#10b981" strokeWidth="2" strokeLinecap="round" />
+                          <path d="M 0,16 C 10,8 20,24 30,16 C 40,8 50,24 60,16 C 70,8 80,24 90,16 C 95,12 98,16 100,12 L 100,30 L 0,30 Z" fill="url(#spark-emerald)" />
+                          <circle cx="100" cy="12" r="1.5" fill="#10b981" />
+                        </svg>
+                      )}
+                      {style.sparkline === 'orange' && (
+                        <svg viewBox="0 0 100 30" className="w-full h-full" preserveAspectRatio="none">
+                          <defs>
+                            <linearGradient id="spark-orange" x1="0" y1="0" x2="0" y2="1">
+                              <stop offset="0%" stopColor="#f97316" stopOpacity="0.15" />
+                              <stop offset="100%" stopColor="#f97316" stopOpacity="0.0" />
+                            </linearGradient>
+                          </defs>
+                          <path d="M 0,28 C 15,28 30,28 45,12 C 55,4 65,22 80,24 C 90,25 97,27 100,28" fill="none" stroke="#f97316" strokeWidth="2" strokeLinecap="round" />
+                          <path d="M 0,28 C 15,28 30,28 45,12 C 55,4 65,22 80,24 C 90,25 97,27 100,28 L 100,30 L 0,30 Z" fill="url(#spark-orange)" />
+                          <circle cx="100" cy="28" r="1.5" fill="#f97316" />
+                        </svg>
+                      )}
+                      {style.sparkline === 'purple' && (
+                        <svg viewBox="0 0 100 30" className="w-full h-full" preserveAspectRatio="none">
+                          <defs>
+                            <linearGradient id="spark-purple" x1="0" y1="0" x2="0" y2="1">
+                              <stop offset="0%" stopColor="#8b5cf6" stopOpacity="0.15" />
+                              <stop offset="100%" stopColor="#8b5cf6" stopOpacity="0.0" />
+                            </linearGradient>
+                          </defs>
+                          <path d="M 0,14 C 15,12 30,22 45,18 C 60,10 75,8 90,6 C 95,5 98,6 100,5" fill="none" stroke="#8b5cf6" strokeWidth="2" strokeLinecap="round" />
+                          <path d="M 0,14 C 15,12 30,22 45,18 C 60,10 75,8 90,6 C 95,5 98,6 100,5 L 100,30 L 0,30 Z" fill="url(#spark-purple)" />
+                          <circle cx="100" cy="5" r="1.5" fill="#8b5cf6" />
+                        </svg>
+                      )}
+                    </div>
+                  </div>
+                )
+              })
               : [0, 1, 2, 3].map((i) => <StatSkeleton key={i} />)}
           </div>
 

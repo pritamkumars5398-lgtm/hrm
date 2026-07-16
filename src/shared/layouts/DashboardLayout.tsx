@@ -189,10 +189,18 @@ export default function DashboardLayout() {
                 variants={itemVariants}
                 className="relative size-16 flex items-center justify-center rounded-full border border-hairline-strong bg-wash text-[20px] font-bold text-ink shadow-sm"
               >
-                {user.avatarInitials}
+                {user.name.includes('Priya') ? (
+                  <img
+                    src="/priya_avatar.png"
+                    alt={user.name}
+                    className="size-full rounded-full object-cover"
+                  />
+                ) : (
+                  user.avatarInitials
+                )}
                 
                 {/* Small overlay circle indicating secure login role */}
-                <div className={`absolute -bottom-0.5 -right-0.5 p-1 rounded-full text-white border border-surface shadow-sm ${user.role === 'OWNER' ? 'bg-indigo-600' : user.role === 'HR' ? 'bg-emerald-600' : 'bg-amber-600'}`}>
+                <div className={`absolute -bottom-0.5 -right-0.5 p-1 rounded-full text-white border border-surface shadow-sm z-10 ${user.role === 'OWNER' ? 'bg-indigo-600' : user.role === 'HR' ? 'bg-emerald-600' : 'bg-amber-600'}`}>
                   {user.role === 'OWNER' ? <Crown size={11} /> : user.role === 'HR' ? <Users size={11} /> : <Target size={11} />}
                 </div>
               </motion.div>

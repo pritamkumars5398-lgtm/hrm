@@ -38,7 +38,7 @@ const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
           } ${
             error
               ? 'border-clay focus:border-clay'
-              : 'border-hairline-strong focus:border-pine hover:border-muted/50'
+              : 'border-hairline-strong focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/10 hover:border-muted/50'
           }`}
           {...rest}
         />

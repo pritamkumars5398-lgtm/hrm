@@ -183,9 +183,9 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={isSubmitting}
-            className="w-full flex items-center justify-center gap-2.5 rounded-2xl py-3 text-[14.5px] font-bold text-white transition-all duration-200 disabled:opacity-60 active:scale-[0.98]"
+            className="w-full flex items-center justify-center gap-2.5 rounded-2xl py-3 text-[14.5px] font-bold text-white transition-all duration-200 disabled:opacity-60 hover:scale-[1.02] active:scale-[0.98] shadow-md hover:shadow-lg cursor-pointer"
             style={{
-              background: 'linear-gradient(135deg, #0d9488 0%, #0f766e 100%)',
+              background: 'linear-gradient(135deg, #10b981 0%, #15803d 100%)',
             }}
           >
             {isSubmitting ? (

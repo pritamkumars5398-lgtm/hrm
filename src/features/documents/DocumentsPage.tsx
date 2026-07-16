@@ -110,14 +110,14 @@ function DocumentCard({ doc, canManage }: { doc: CompanyDocument; canManage: boo
             <p className="truncate text-[9.5px] text-muted mt-0.5">By {doc.updatedBy}</p>
           </div>
 
-          <button
-            type="button"
+          <Button
+            size="sm"
             aria-label={`Download ${doc.name}`}
-            className={`inline-flex h-8 shrink-0 items-center gap-1.5 rounded-ctl px-3.5 text-[12px] font-bold transition-all duration-200 cursor-pointer border ${btnConfig} shadow-sm hover:shadow`}
+            className="h-8 text-[12px] font-bold shadow-sm"
           >
             <Download size={13} />
             {canManage ? 'Download' : 'View'}
-          </button>
+          </Button>
         </div>
       </Card>
     </motion.div>

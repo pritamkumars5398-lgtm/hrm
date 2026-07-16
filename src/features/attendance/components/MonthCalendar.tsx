@@ -71,25 +71,25 @@ export default function MonthCalendar({
                   : `${dayNumber} — no records`
               }
               aria-pressed={selected}
-              className={`relative flex aspect-square flex-col items-center justify-center rounded-[6px] border text-[12px] transition-colors ${
+              className={`relative flex aspect-square flex-col items-center justify-center rounded-[6px] border text-[12.5px] transition-all cursor-pointer ${
                 selected
-                  ? 'border-pine bg-pine-tint font-semibold text-pine-deep'
+                  ? 'border-emerald-500 bg-emerald-50 font-bold text-emerald-800 shadow-sm scale-105 focus:outline-none focus:ring-2 focus:ring-emerald-500/10'
                   : weekend
-                    ? 'border-hairline bg-wash text-muted/60'
-                    : 'border-hairline bg-surface hover:border-pine'
+                    ? 'border-hairline bg-wash/80 text-muted/50'
+                    : 'border-hairline bg-surface hover:border-emerald-500 hover:text-emerald-700 focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/10'
               }`}
             >
               <span className="tnum">{dayNumber}</span>
 
               {hasData && !selected && (
                 <span
-                  className="mt-1 h-1 w-4 rounded-full bg-pine"
+                  className="mt-1 h-1 w-4 rounded-full bg-emerald-500"
                   style={{ opacity: intensity(summary!.rate!) }}
                   aria-hidden="true"
                 />
               )}
               {hasData && selected && (
-                <span className="tnum mt-0.5 text-[9px] font-medium">
+                <span className="tnum mt-0.5 text-[9.5px] font-bold">
                   {Math.round(summary!.rate! * 100)}%
                 </span>
               )}
@@ -104,7 +104,7 @@ export default function MonthCalendar({
           {[0.28, 0.6, 1].map((o) => (
             <span
               key={o}
-              className="h-1.5 w-4 rounded-full bg-pine"
+              className="h-1.5 w-4 rounded-full bg-emerald-500"
               style={{ opacity: o }}
               aria-hidden="true"
             />

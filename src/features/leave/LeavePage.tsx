@@ -93,31 +93,39 @@ function BalanceCard({
   const config = {
     ANNUAL: {
       icon: Sun,
-      iconBg: 'bg-pine-tint text-pine',
-      barColor: 'bg-pine',
-      glow: 'hover:shadow-[0_0_15px_rgba(31,77,63,0.06)]',
-      borderColor: 'hover:border-pine/30',
+      iconBg: 'bg-emerald-50 text-emerald-600 border border-emerald-100/50',
+      bgGradient: 'bg-gradient-to-br from-emerald-500/[0.04] to-transparent',
+      barColor: 'bg-gradient-to-r from-emerald-400 to-emerald-600',
+      glow: 'hover:shadow-[0_4px_20px_rgba(16,185,129,0.08)]',
+      borderColor: 'border-emerald-500/10 hover:border-emerald-500/20',
+      badgeColor: 'text-emerald-700 bg-emerald-50/80 border border-emerald-100/30',
     },
     SICK: {
       icon: Activity,
-      iconBg: 'bg-clay-tint text-clay',
-      barColor: 'bg-clay',
-      glow: 'hover:shadow-[0_0_15px_rgba(156,66,33,0.06)]',
-      borderColor: 'hover:border-clay/30',
+      iconBg: 'bg-rose-50 text-rose-600 border border-rose-100/50',
+      bgGradient: 'bg-gradient-to-br from-rose-500/[0.04] to-transparent',
+      barColor: 'bg-gradient-to-r from-rose-400 to-rose-600',
+      glow: 'hover:shadow-[0_4px_20px_rgba(244,63,94,0.08)]',
+      borderColor: 'border-rose-500/10 hover:border-rose-500/20',
+      badgeColor: 'text-rose-700 bg-rose-50/80 border border-rose-100/30',
     },
     PERSONAL: {
       icon: User,
-      iconBg: 'bg-ochre-tint text-ochre-deep',
-      barColor: 'bg-ochre',
-      glow: 'hover:shadow-[0_0_15px_rgba(169,121,28,0.06)]',
-      borderColor: 'hover:border-ochre/30',
+      iconBg: 'bg-amber-50 text-amber-600 border border-amber-100/50',
+      bgGradient: 'bg-gradient-to-br from-amber-500/[0.04] to-transparent',
+      barColor: 'bg-gradient-to-r from-amber-400 to-amber-600',
+      glow: 'hover:shadow-[0_4px_20px_rgba(245,158,11,0.08)]',
+      borderColor: 'border-amber-500/10 hover:border-amber-500/20',
+      badgeColor: 'text-amber-700 bg-amber-50/80 border border-amber-100/30',
     },
     UNPAID: {
       icon: Clock,
-      iconBg: 'bg-wash text-muted',
-      barColor: 'bg-muted',
-      glow: 'hover:shadow-[0_0_15px_rgba(107,109,102,0.06)]',
-      borderColor: 'hover:border-hairline-strong',
+      iconBg: 'bg-slate-50 text-slate-600 border border-slate-100/50',
+      bgGradient: 'bg-gradient-to-br from-slate-500/[0.04] to-transparent',
+      barColor: 'bg-gradient-to-r from-slate-400 to-slate-500',
+      glow: 'hover:shadow-[0_4px_20px_rgba(107,109,102,0.08)]',
+      borderColor: 'border-slate-500/10 hover:border-slate-500/20',
+      badgeColor: 'text-slate-700 bg-slate-50/80 border border-slate-100/30',
     },
   }[type]
 
@@ -128,23 +136,23 @@ function BalanceCard({
       whileHover={{ y: -4, transition: { duration: 0.2 } }}
       className="h-full"
     >
-      <Card className={`p-4 h-full flex flex-col justify-between transition-all duration-300 border border-hairline ${config.glow} ${config.borderColor}`}>
+      <Card className={`p-5 h-full flex flex-col justify-between transition-all duration-300 border ${config.bgGradient} ${config.borderColor} ${config.glow}`}>
         <div>
           <div className="flex items-center justify-between">
             <span className={`inline-flex p-2 rounded-ctl ${config.iconBg}`}>
               <Icon size={16} />
             </span>
-            <span className="tnum text-[11px] font-medium text-muted bg-wash px-2 py-0.5 rounded-full">
+            <span className={`tnum text-[11px] font-bold px-2.5 py-0.5 rounded-full border ${config.badgeColor}`}>
               {used} / {total === 0 ? '∞' : `${total}d`}
             </span>
           </div>
 
           <div className="mt-4">
-            <p className="text-[11px] uppercase tracking-wider font-semibold text-muted">{label}</p>
-            <p className="tnum font-display mt-1 text-[30px] leading-none font-bold text-ink">
+            <p className="text-[11px] uppercase tracking-wider font-extrabold text-muted/80">{label}</p>
+            <p className="tnum font-display mt-1.5 text-[32px] leading-none font-bold text-ink">
               {total === 0 ? '—' : remaining}
             </p>
-            <p className="mt-1 text-[11.5px] text-muted">
+            <p className="mt-1.5 text-[12px] font-semibold text-muted">
               {total === 0 ? 'unlimited' : 'days left'}
             </p>
           </div>
@@ -152,7 +160,7 @@ function BalanceCard({
 
         {total > 0 && (
           <div className="mt-4">
-            <div className="h-1.5 w-full overflow-hidden rounded-full bg-wash">
+            <div className="h-2 w-full overflow-hidden rounded-full bg-wash/80 border border-hairline/20">
               <motion.div
                 initial={{ width: 0 }}
                 animate={{ width: `${pct}%` }}
@@ -375,31 +383,32 @@ export default function LeavePage() {
                 {/* Approve/Decline actions inside the expanded panel if allowed */}
                 {canDecide && (
                   <div className="flex items-center gap-2 border-t border-hairline/60 pt-3.5 mt-2 justify-end">
-                    <button
-                      type="button"
+                    <Button
+                      variant="secondary"
+                      size="sm"
                       onClick={(e) => {
                         e.stopPropagation()
                         void onDecide(request.id, 'REJECTED')
                       }}
                       disabled={busy}
-                      className="inline-flex h-8.5 items-center gap-1.5 rounded-ctl border border-hairline-strong bg-surface px-3.5 text-[12.5px] font-medium text-muted transition-colors hover:border-clay hover:text-clay disabled:opacity-50"
+                      className="h-8.5"
                     >
                       {busy ? <Loader2 size={13} className="animate-spin" /> : <X size={13} />}
                       Decline
-                    </button>
+                    </Button>
 
-                    <button
-                      type="button"
+                    <Button
+                      size="sm"
                       onClick={(e) => {
                         e.stopPropagation()
                         void onDecide(request.id, 'APPROVED')
                       }}
                       disabled={busy}
-                      className="inline-flex h-8.5 items-center gap-1.5 rounded-ctl bg-pine px-4.5 text-[12.5px] font-medium text-white transition-colors hover:bg-pine-deep disabled:opacity-50 shadow-sm"
+                      className="h-8.5 font-bold shadow-sm"
                     >
                       {busy ? <Loader2 size={13} className="animate-spin" /> : <Check size={13} />}
                       Approve
-                    </button>
+                    </Button>
                   </div>
                 )}
               </div>
@@ -460,16 +469,16 @@ export default function LeavePage() {
         <>
           {/* Header Summary / Quick Stats */}
           {data && (
-            <div className="flex flex-wrap gap-4 text-[13px] bg-wash/30 border border-hairline px-4 py-3 rounded-ctl text-muted">
+            <div className="flex flex-wrap gap-4 text-[13px] bg-emerald-500/[0.02] border border-emerald-500/10 px-4 py-3 rounded-ctl text-muted">
               <div className="flex items-center gap-1.5">
-                <Sparkles size={14} className="text-pine" />
+                <Sparkles size={14} className="text-emerald-500 animate-pulse" />
                 <span>Scope: <strong className="text-ink capitalize">{data.scope}</strong></span>
               </div>
               {data.pendingApprovals.length > 0 && (
                 <>
                   <span className="hidden sm:inline text-hairline-strong">|</span>
                   <div className="flex items-center gap-1.5">
-                    <CheckCircle2 size={14} className="text-ochre" />
+                    <CheckCircle2 size={14} className="text-amber-500" />
                     <span>
                       <strong className="text-ink">{data.pendingApprovals.length}</strong> request{data.pendingApprovals.length === 1 ? '' : 's'} waiting decision
                     </span>
@@ -483,7 +492,7 @@ export default function LeavePage() {
                 <>
                   <span className="hidden md:inline text-hairline-strong">|</span>
                   <div className="flex items-center gap-1.5">
-                    <Calendar size={14} className="text-pine" />
+                    <Calendar size={14} className="text-emerald-600" />
                     <span>
                       <strong className="text-ink">
                         {data.upcoming.filter(r => {
@@ -546,9 +555,9 @@ export default function LeavePage() {
                         setExpandedId(null)
                       }}
                       aria-pressed={active}
-                      className={`rounded-ctl px-3 py-1.5 text-[13px] transition-colors ${
+                      className={`rounded-ctl px-3 py-1.5 text-[13.5px] transition-colors cursor-pointer ${
                         active
-                          ? 'bg-pine-tint font-medium text-pine-deep'
+                          ? 'bg-emerald-50 text-emerald-800 border border-emerald-100 font-bold shadow-sm'
                           : 'text-muted hover:bg-wash hover:text-ink'
                       }`}
                     >
