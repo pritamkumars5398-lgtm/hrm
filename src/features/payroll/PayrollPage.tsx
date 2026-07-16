@@ -10,6 +10,7 @@ import {
 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import Card from '@/shared/components/Card'
+import Button from '@/shared/components/Button'
 import Badge from '@/shared/components/Badge'
 import Drawer from '@/shared/components/Drawer'
 import { useAuthStore } from '@/features/auth/store/authStore'
@@ -192,13 +193,12 @@ function PayslipDrawer({ slip, onClose }: { slip: Payslip | null; onClose: () =>
             </p>
           </div>
 
-          <button
-            type="button"
-            className="flex h-10 w-full items-center justify-center gap-2 rounded-ctl bg-pine text-white text-[13.5px] font-bold transition-all duration-200 hover:bg-pine-deep cursor-pointer shadow-sm hover:shadow"
+          <Button
+            className="w-full font-bold shadow-sm"
           >
             <Download size={15} />
             Download payslip (PDF)
-          </button>
+          </Button>
           <p className="text-center text-[11px] text-muted font-medium">
             Export is UI-only in this phase.
           </p>

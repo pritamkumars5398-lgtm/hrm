@@ -15,6 +15,7 @@ import {
 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import Card from '@/shared/components/Card'
+import Button from '@/shared/components/Button'
 import Badge from '@/shared/components/Badge'
 import Drawer from '@/shared/components/Drawer'
 import { useAuthStore } from '@/features/auth/store/authStore'
@@ -24,7 +25,7 @@ import { usePerformanceStore } from './store/performanceStore'
 const getAvatarTheme = (name: string) => {
   const hash = name.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0)
   const themes = [
-    { bg: 'bg-pine-tint text-pine-deep border-pine/20' },
+    { bg: 'bg-emerald-50 text-emerald-800 border-emerald-100/50' },
     { bg: 'bg-clay-tint text-clay-deep border-clay/20' },
     { bg: 'bg-ochre-tint text-ochre-deep border-ochre/20' },
     { bg: 'bg-wash text-ink border-hairline-strong' },
@@ -73,8 +74,8 @@ function StatCard({
 }) {
   const configs = {
     reviewed: {
-      bg: 'bg-pine-tint text-pine border border-pine/20',
-      glow: 'hover:shadow-[0_0_20px_rgba(31,77,63,0.1)] hover:border-pine/30',
+      bg: 'bg-emerald-50 text-emerald-600 border border-emerald-100/50',
+      glow: 'hover:shadow-[0_4px_20px_rgba(16,185,129,0.08)] hover:border-emerald-500/20',
       sparkline: 'emerald',
     },
     pending: {
@@ -278,7 +279,7 @@ function ReviewDrawer({
           <section className="space-y-3">
             <h3 className="text-[11px] font-bold tracking-[0.12em] text-muted uppercase border-b border-hairline pb-1.5 flex justify-between items-center">
               <span>Goals</span>
-              <span className="text-[10px] text-pine font-medium bg-pine-tint px-1.5 py-0.2 rounded-full lowercase">tracked</span>
+              <span className="text-[10px] text-emerald-700 font-bold bg-emerald-50 border border-emerald-100/40 px-2 py-0.5 rounded-full lowercase">tracked</span>
             </h3>
             
             <div className="space-y-4 bg-surface border border-hairline rounded-ctl p-4">
@@ -286,14 +287,14 @@ function ReviewDrawer({
                 <div key={goal.id} className="space-y-1.5">
                   <div className="flex items-baseline justify-between gap-3">
                     <p className="text-[13px] font-semibold text-ink">{goal.title}</p>
-                    <p className="tnum shrink-0 text-[12px] font-bold text-pine">{goal.progress}%</p>
+                    <p className="tnum shrink-0 text-[12px] font-bold text-emerald-600">{goal.progress}%</p>
                   </div>
-                  <div className="h-2 w-full overflow-hidden rounded-full bg-wash">
+                  <div className="h-2 w-full overflow-hidden rounded-full bg-wash/80 border border-hairline/25">
                     <motion.div
                       initial={{ width: 0 }}
                       animate={{ width: `${goal.progress}%` }}
                       transition={{ duration: 0.8, ease: 'easeOut' }}
-                      className="h-full rounded-full bg-pine"
+                      className="h-full rounded-full bg-gradient-to-r from-emerald-400 to-emerald-600"
                     />
                   </div>
                 </div>
@@ -354,19 +355,20 @@ function ReviewDrawer({
                   />
                 </div>
 
-                <div className="flex justify-end gap-2 border-t border-hairline pt-3.5">
-                  <button
-                    type="button"
+                 <div className="flex justify-end gap-2 border-t border-hairline pt-3.5">
+                  <Button
+                    variant="secondary"
+                    size="sm"
                     onClick={onClose}
                     disabled={submitting}
-                    className="px-3.5 py-1.5 border border-hairline-strong rounded-ctl text-[12.5px] font-medium text-muted hover:text-ink cursor-pointer disabled:opacity-50"
                   >
                     Cancel
-                  </button>
-                  <button
+                  </Button>
+                  <Button
                     type="submit"
+                    size="sm"
                     disabled={submitting}
-                    className="px-4 py-1.5 bg-pine hover:bg-pine-deep text-white rounded-ctl text-[12.5px] font-semibold flex items-center gap-1.5 cursor-pointer disabled:opacity-50 shadow-sm"
+                    className="font-bold shadow-sm"
                   >
                     {submitting ? (
                       <>
@@ -376,7 +378,7 @@ function ReviewDrawer({
                     ) : (
                       'Submit Appraisal'
                     )}
-                  </button>
+                  </Button>
                 </div>
               </form>
             </section>
@@ -465,7 +467,7 @@ export default function PerformancePage() {
             <h1 className="font-display text-[26px] leading-tight font-semibold tracking-[-0.02em] text-ink">
               Performance
             </h1>
-            <span className="flex size-6 items-center justify-center rounded-full bg-pine-tint text-pine">
+            <span className="flex size-6 items-center justify-center rounded-full bg-emerald-50 text-emerald-600 border border-emerald-100/50">
               <Sparkles size={13} />
             </span>
           </div>
@@ -563,7 +565,7 @@ export default function PerformancePage() {
                         placeholder="Search by employee name..."
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
-                        className="w-full h-9 pl-9 pr-3 rounded-ctl border border-hairline-strong bg-surface text-[12.5px] transition-colors focus:border-pine placeholder:text-muted/50 focus:outline-none"
+                        className="w-full h-9 pl-9 pr-3 rounded-ctl border border-hairline-strong bg-surface text-[12.5px] transition-all focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/10 placeholder:text-muted/50 focus:outline-none"
                       />
                     </div>
 
@@ -576,10 +578,10 @@ export default function PerformancePage() {
                             key={filter}
                             type="button"
                             onClick={() => setFilterStatus(filter)}
-                            className={`px-2.5 py-1 text-[11px] font-semibold rounded-ctl transition-colors cursor-pointer ${
+                            className={`px-2.5 py-1 text-[11.5px] font-semibold rounded-ctl transition-all cursor-pointer ${
                               isActive
-                                ? 'bg-pine-tint text-pine-deep font-bold'
-                                : 'text-muted hover:text-ink hover:bg-wash'
+                                ? 'bg-emerald-50 text-emerald-800 border border-emerald-100/50 font-bold shadow-sm'
+                                : 'text-muted hover:text-ink hover:bg-wash border border-transparent'
                             }`}
                           >
                             {label}
@@ -647,13 +649,13 @@ export default function PerformancePage() {
                                   <p className="truncate text-[13.5px] font-semibold text-ink">
                                     {record.employeeName}
                                   </p>
-                                  <span className="tnum text-[11px] text-muted font-medium">{avgGoal}% goals</span>
+                                  <span className="tnum text-[11.5px] text-emerald-700 font-bold bg-emerald-50 border border-emerald-100/30 px-2.5 py-0.5 rounded-full">{avgGoal}% goals</span>
                                 </div>
                                 
                                 <div className="mt-2 flex items-center justify-between gap-2 max-w-xs">
-                                  <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-wash">
+                                  <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-wash/80 border border-hairline/25">
                                     <div
-                                      className="h-full rounded-full bg-pine"
+                                      className="h-full rounded-full bg-gradient-to-r from-emerald-400 to-emerald-600"
                                       style={{ width: `${avgGoal}%` }}
                                     />
                                   </div>
@@ -705,7 +707,7 @@ export default function PerformancePage() {
                             initial={{ width: 0 }}
                             animate={{ width: `${(bucket.count / maxCount) * 100}%` }}
                             transition={{ duration: 0.6, ease: 'easeOut' }}
-                            className="h-full rounded-[3px] bg-pine transition-[width]"
+                            className="h-full rounded-[3px] bg-gradient-to-r from-emerald-400 to-emerald-600 transition-[width]"
                             style={{
                               opacity: 0.45 + (bucket.rating / 5) * 0.55,
                             }}

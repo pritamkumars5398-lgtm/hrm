@@ -41,9 +41,9 @@ export default function Modal({ open, onClose, title, description, children }: M
             initial={reduced ? false : { opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={reduced ? undefined : { opacity: 0 }}
-            transition={{ duration: 0.15 }}
+            transition={{ duration: 0.2 }}
             onClick={onClose}
-            className="absolute inset-0 bg-ink/25"
+            className="absolute inset-0 bg-[#1c1d1a]/20 backdrop-blur-[3px]"
             aria-hidden="true"
           />
 
@@ -53,10 +53,10 @@ export default function Modal({ open, onClose, title, description, children }: M
             aria-modal="true"
             aria-label={title}
             tabIndex={-1}
-            initial={reduced ? false : { opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={reduced ? undefined : { opacity: 0, y: 8 }}
-            transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
+            initial={reduced ? false : { opacity: 0, scale: 0.95, y: 16 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={reduced ? undefined : { opacity: 0, scale: 0.95, y: 16 }}
+            transition={{ type: 'spring', damping: 24, stiffness: 320 }}
             /* §7.2 narrow exception: a faint shadow, because a border alone doesn't
                read as "above" the dimmed page behind it. `shadow-overlay` is the
                one sanctioned shadow token — never a raw value. */

@@ -36,7 +36,7 @@ const Select = forwardRef<HTMLSelectElement, SelectProps>(function Select(
           className={`h-10 w-full appearance-none rounded-ctl border bg-surface pr-9 pl-3 text-[14px] transition-colors ${
             error
               ? 'border-clay focus:border-clay'
-              : 'border-hairline-strong hover:border-muted/50 focus:border-pine'
+              : 'border-hairline-strong hover:border-muted/50 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/10'
           }`}
           {...rest}
         >

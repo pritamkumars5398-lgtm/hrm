@@ -12,6 +12,7 @@ import {
 } from 'lucide-react'
 import { motion } from 'framer-motion'
 import Card from '@/shared/components/Card'
+import Button from '@/shared/components/Button'
 import { useAuthStore } from '@/features/auth/store/authStore'
 import { reportsService, type ReportsData } from '@/services/reportsService'
 import { formatMoneyCompact } from '@/services/payrollService'
@@ -223,13 +224,12 @@ export default function ReportsPage() {
           </p>
         </div>
 
-        <button
-          type="button"
-          className="inline-flex h-10 items-center gap-2 rounded-ctl bg-pine text-white px-4 text-[13.5px] font-bold transition-all duration-200 hover:bg-pine-deep shadow-sm hover:shadow cursor-pointer border border-transparent"
+        <Button
+          className="font-bold shadow-sm"
         >
           <Download size={15} />
           Export CSV
-        </button>
+        </Button>
       </div>
 
       {status === 'error' && (

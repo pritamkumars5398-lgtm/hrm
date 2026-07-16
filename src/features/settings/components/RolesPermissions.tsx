@@ -1,5 +1,5 @@
 import { Info } from 'lucide-react'
-import { Link } from 'react-router-dom'
+import Button from '@/shared/components/Button'
 import Card from '@/shared/components/Card'
 
 export default function RolesPermissions() {
@@ -23,12 +23,13 @@ export default function RolesPermissions() {
           The global role matrix has been replaced with granular, per-user permissions. 
           You can now adjust exactly what each individual person can see and do.
         </p>
-        <Link 
+        <Button 
           to="/dashboard/team" 
-          className="inline-flex h-9 items-center justify-center rounded-ctl bg-pine px-4 text-[13px] font-medium text-white transition-colors hover:bg-pine-deep"
+          size="sm"
+          className="font-bold shadow-sm"
         >
           Manage Team Permissions
-        </Link>
+        </Button>
       </Card>
     </div>
   )
