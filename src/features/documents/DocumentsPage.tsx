@@ -70,7 +70,6 @@ function DocumentCard({ doc, canManage }: { doc: CompanyDocument; canManage: boo
     XLSX: 'bg-pine-tint text-pine border border-pine/15',
   }[doc.fileType]
 
-  const btnConfig = 'bg-pine text-white hover:bg-pine-deep border-transparent'
 
   return (
     <motion.div
