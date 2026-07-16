@@ -143,8 +143,27 @@ export default function AddEmployeePage() {
   const [formError, setFormError] = useState<string | null>(null)
   const [activeSection, setActiveSection] = useState<string>('basic')
   const [avatarImg, setAvatarImg] = useState<string | null>('/default_avatar.png')
+  // The real, uploaded Cloudinary URL — submitted with the invite. `avatarImg`
+  // is just the local preview and swaps to this once the upload finishes.
+  const [photoUrl, setPhotoUrl] = useState<string | null>(null)
+  const [photoUploading, setPhotoUploading] = useState(false)
+  const [photoError, setPhotoError] = useState<string | null>(null)
 
   const sectionRefs = useRef<Record<string, HTMLElement | null>>({})
+
+  const handlePhotoSelect = (file: File) => {
+    setAvatarImg(URL.createObjectURL(file))
+    setPhotoError(null)
+    setPhotoUploading(true)
+    teamService
+      .uploadPhoto(file)
+      .then((url) => setPhotoUrl(url))
+      .catch((err) => {
+        setPhotoError(err instanceof TeamError ? err.message : 'Could not upload that photo.')
+        setAvatarImg('/default_avatar.png')
+      })
+      .finally(() => setPhotoUploading(false))
+  }
 
   const {
     register,
@@ -193,6 +212,12 @@ export default function AddEmployeePage() {
       return
     }
 
+    if (photoUploading) {
+      setFormError('Their photo is still uploading — give it a moment and try again.')
+      scrollTo('basic')
+      return
+    }
+
     try {
       const result = await teamService.invite({
         email: values.email,
@@ -205,6 +230,7 @@ export default function AddEmployeePage() {
         employeeId: values.employeeId,
         contactNumber: values.contactNumber || undefined,
         homeAddress: values.homeAddress || undefined,
+        photoUrl: photoUrl ?? undefined,
         jobTitle: values.jobTitle,
         department: values.department,
         startDate: values.startDate,
@@ -358,9 +384,7 @@ export default function AddEmployeePage() {
                       className="sr-only"
                       onChange={(e) => {
                         const file = e.target.files?.[0]
-                        if (file) {
-                          setAvatarImg(URL.createObjectURL(file))
-                        }
+                        if (file) handlePhotoSelect(file)
                       }}
                     />
                   </label>
@@ -379,25 +403,30 @@ export default function AddEmployeePage() {
                         className="sr-only"
                         onChange={(e) => {
                           const file = e.target.files?.[0]
-                          if (file) {
-                            setAvatarImg(URL.createObjectURL(file))
-                          }
+                          if (file) handlePhotoSelect(file)
                         }}
                       />
                     </label>
-                    {avatarImg && (
+                    {avatarImg && avatarImg !== '/default_avatar.png' && (
                       <button
                         type="button"
-                        onClick={() => setAvatarImg(null)}
+                        onClick={() => {
+                          setAvatarImg('/default_avatar.png')
+                          setPhotoUrl(null)
+                          setPhotoError(null)
+                        }}
                         className="h-8 text-[12px] font-semibold text-clay px-2 hover:underline cursor-pointer"
                       >
                         Remove
                       </button>
                     )}
                   </div>
-                  <p className="mt-2 text-[11px] text-muted">
-                    Preview only — the photo isn't saved until profile photo uploads are wired up.
-                  </p>
+                  {photoUploading && (
+                    <p className="mt-2 text-[11px] text-muted">Uploading…</p>
+                  )}
+                  {photoError && (
+                    <p className="mt-2 text-[11px] text-clay">{photoError}</p>
+                  )}
                 </div>
               </div>
 
@@ -585,7 +614,7 @@ export default function AddEmployeePage() {
                   <Button type="button" variant="secondary" onClick={() => navigate('/dashboard/employees')}>
                     Cancel
                   </Button>
-                  <Button type="submit" disabled={isSubmitting} className="font-bold shadow-sm">
+                  <Button type="submit" disabled={isSubmitting || photoUploading} className="font-bold shadow-sm">
                     {isSubmitting ? (
                       <>
                         <Loader2 size={16} className="animate-spin" /> Saving…

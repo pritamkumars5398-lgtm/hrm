@@ -55,6 +55,8 @@ export type InvitePayload = {
   employeeId?: string
   contactNumber?: string
   homeAddress?: string
+  /** Cloudinary secure_url returned by `teamService.uploadPhoto()`. */
+  photoUrl?: string
   financialDetails?: FinancialDetails
   educationDetails?: EducationDetail[]
   familyDetails?: FamilyDetail[]
@@ -130,6 +132,7 @@ export const teamService = {
             employeeId: payload.employeeId,
             contactNumber: payload.contactNumber,
             homeAddress: payload.homeAddress,
+            photoUrl: payload.photoUrl,
             financialDetails: payload.financialDetails,
             educationDetails: payload.educationDetails,
             familyDetails: payload.familyDetails,
@@ -210,6 +213,30 @@ export const teamService = {
     const revoked: Invite = { ...invite, status: 'REVOKED' }
     mockInviteState = mockInviteState.map((i) => (i.id === id ? revoked : i))
     return revoked
+  },
+
+  /**
+   * Uploads a picked employee photo and returns its stored URL. Real backend:
+   * proxied through our server to Cloudinary (never a direct browser→Cloudinary
+   * upload — see hrm-backend/.env.example). No backend: resolves to a local
+   * object URL so the picker still previews correctly in the mock/demo build.
+   */
+  async uploadPhoto(file: File): Promise<string> {
+    if (hasBackend) {
+      try {
+        const form = new FormData()
+        form.append('file', file)
+        const { data } = await apiClient.post<{ url: string }>('/invites/photo', form, {
+          headers: { 'Content-Type': undefined },
+        })
+        return data.url
+      } catch (error) {
+        throw new TeamError(apiErrorMessage(error, 'Could not upload that photo.'))
+      }
+    }
+
+    await delay()
+    return URL.createObjectURL(file)
   },
 
   async removeMember(id: string): Promise<void> {
