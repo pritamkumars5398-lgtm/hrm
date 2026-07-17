@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Bell, LogOut, Menu, Search, Settings, User, Building, Check, ChevronDown, Plus } from 'lucide-react'
+import { Bell, LogOut, Menu, Search, Building, Check, ChevronDown, Plus } from 'lucide-react'
 import Card from '@/shared/components/Card'
 import { useAuthStore, type SessionUser } from '@/features/auth/store/authStore'
 
@@ -221,26 +221,7 @@ export default function Topbar({
                 <p className="truncate text-[12px] text-muted">{user.email}</p>
               </div>
 
-              <ul className="p-1">
-                <li>
-                  <button
-                    type="button"
-                    className="flex w-full items-center gap-2.5 rounded-ctl px-3 py-2 text-left text-[13px] text-muted transition-colors hover:bg-wash hover:text-ink"
-                  >
-                    <User size={15} />
-                    Your profile
-                  </button>
-                </li>
-                <li>
-                  <button
-                    type="button"
-                    className="flex w-full items-center gap-2.5 rounded-ctl px-3 py-2 text-left text-[13px] text-muted transition-colors hover:bg-wash hover:text-ink"
-                  >
-                    <Settings size={15} />
-                    Preferences
-                  </button>
-                </li>
-              </ul>
+
 
               <div className="border-t border-hairline p-1">
                 <button
