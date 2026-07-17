@@ -16,6 +16,8 @@ import AddEmployeePage from '@/features/employees/components/AddEmployeePage'
 import AttendancePage from '@/features/attendance/AttendancePage'
 import LeavePage from '@/features/leave/LeavePage'
 import PayrollPage from '@/features/payroll/PayrollPage'
+import PayslipPage from '@/features/payroll/PayslipPage'
+import MyPayslipPage from '@/features/payroll/MyPayslipPage'
 import PerformancePage from '@/features/performance/PerformancePage'
 import DocumentsPage from '@/features/documents/DocumentsPage'
 import ReportsPage from '@/features/reports/ReportsPage'
@@ -123,6 +125,24 @@ export default function App() {
           element={
             <RequireModule module="payroll">
               <PayrollPage />
+            </RequireModule>
+          }
+        />
+
+        <Route
+          path="payroll/payslip/:employeeId"
+          element={
+            <RequireModule module="payroll">
+              <PayslipPage />
+            </RequireModule>
+          }
+        />
+
+        <Route
+          path="payslip"
+          element={
+            <RequireModule module="payslip">
+              <MyPayslipPage />
             </RequireModule>
           }
         />

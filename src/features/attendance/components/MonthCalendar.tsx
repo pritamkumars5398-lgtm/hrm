@@ -6,6 +6,9 @@ type MonthCalendarProps = {
   days: DaySummary[]
   selectedDate: string
   onSelect: (date: string) => void
+  /** 'me' — a single person's own leave fills the whole day. 'company' — one
+   * person's leave shouldn't hide everyone else's attendance for that day. */
+  scope: 'me' | 'company'
 }
 
 const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
@@ -28,6 +31,7 @@ export default function MonthCalendar({
   days,
   selectedDate,
   onSelect,
+  scope,
 }: MonthCalendarProps) {
   const byDate = new Map(days.map((d) => [d.date, d]))
   const first = new Date(year, month, 1)
@@ -58,7 +62,11 @@ export default function MonthCalendar({
           const summary = byDate.get(iso)
           const selected = iso === selectedDate
           const weekend = summary?.isWeekend ?? [0, 6].includes(date.getDay())
-          const onLeave = Boolean(summary?.leave)
+          // In the company view one person's leave shouldn't blank out everyone
+          // else's attendance for the day — only a lone viewer's own leave fills
+          // the whole cell.
+          const onLeave = scope === 'me' && Boolean(summary?.leave)
+          const someoneOnLeave = scope === 'company' && Boolean(summary?.leave)
           const hasData = Boolean(summary) && !weekend && summary!.rate !== null
 
           return (
@@ -70,13 +78,15 @@ export default function MonthCalendar({
                 onLeave
                   ? `${dayNumber} — on leave`
                   : hasData
-                    ? `${dayNumber} — ${Math.round(summary!.rate! * 100)}% attendance`
+                    ? `${dayNumber} — ${Math.round(summary!.rate! * 100)}% attendance${
+                        someoneOnLeave ? `, ${summary!.leave} on leave` : ''
+                      }`
                     : `${dayNumber} — no records`
               }
               aria-pressed={selected}
               className={`relative flex aspect-square flex-col items-center justify-center rounded-[6px] border text-[12.5px] transition-all cursor-pointer ${
                 selected
-                  ? 'border-emerald-500 bg-emerald-50 font-bold text-emerald-800 shadow-sm scale-105 focus:outline-none focus:ring-2 focus:ring-emerald-500/10'
+                  ? 'border-emerald-500 bg-emerald-50 font-bold text-emerald-800 scale-105 focus:outline-none focus:ring-2 focus:ring-emerald-500/10'
                   : onLeave
                     ? 'border-ochre/40 bg-ochre-tint font-semibold text-ochre-deep'
                     : weekend
@@ -105,6 +115,15 @@ export default function MonthCalendar({
                     </span>
                   )}
                 </>
+              )}
+
+              {/* A dot, not a full-cell override — one person's leave shouldn't
+                  read as "the whole day is a leave day" in the company view. */}
+              {someoneOnLeave && (
+                <span
+                  className="absolute right-1 top-1 size-1.5 rounded-full bg-ochre"
+                  aria-hidden="true"
+                />
               )}
             </button>
           )

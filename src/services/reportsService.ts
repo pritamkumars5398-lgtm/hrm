@@ -102,7 +102,9 @@ export const reportsService = {
           : Math.round((attended.length / workdays.length) * 1000) / 10,
       leaveDaysTaken: approvedLeave.reduce((sum, r) => sum + r.days, 0),
       // HR can run every report except the one that reveals what people are paid.
-      payrollCost: role === 'OWNER' ? (mockPayrollRuns[0]?.gross ?? 0) : null,
+      // mockPayrollRuns stores pence; formatMoney/formatMoneyCompact now take
+      // whole rupees (§ payroll: no mock data), so convert at this boundary.
+      payrollCost: role === 'OWNER' ? Math.round((mockPayrollRuns[0]?.gross ?? 0) / 100) : null,
       departments,
       headcountByMonth,
     }
