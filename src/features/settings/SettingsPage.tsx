@@ -18,6 +18,7 @@ import Button from '@/shared/components/Button'
 import Input from '@/shared/components/Input'
 import Select from '@/shared/components/Select'
 import Badge from '@/shared/components/Badge'
+import Modal from '@/shared/components/Modal'
 import { useAuthStore } from '@/features/auth/store/authStore'
 import {
   OrganizationError,
@@ -55,6 +56,143 @@ function ErrorNote({ message }: { message: string }) {
       <AlertCircle size={15} className="mt-px shrink-0 text-clay" />
       <p className="text-[13px] leading-relaxed text-clay">{message}</p>
     </div>
+  )
+}
+
+/* ------------------------------------------------------------- danger zone */
+
+/** Type-to-confirm modal for permanently deleting the active company —
+ *  irreversible and affects every member in it, not just the Owner, so a
+ *  plain "Are you sure?" isn't enough friction. */
+function DeleteCompanyModal({
+  organization,
+  open,
+  onClose,
+}: {
+  organization: Organization
+  open: boolean
+  onClose: () => void
+}) {
+  const removeOrganization = useAuthStore((s) => s.removeOrganization)
+  const [confirmText, setConfirmText] = useState('')
+  const [deleting, setDeleting] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (open) {
+      setConfirmText('')
+      setError(null)
+    }
+  }, [open])
+
+  const matches = confirmText.trim() === organization.name.trim()
+
+  const handleDelete = async () => {
+    if (!matches) return
+    setDeleting(true)
+    setError(null)
+    try {
+      await organizationService.remove(organization.id, confirmText)
+      removeOrganization(organization.id)
+      // The whole screen — every module's cached data — was scoped to the
+      // company that no longer exists, so a full reload is the only way to
+      // land cleanly on whatever workspace is now active.
+      window.location.href = '/dashboard'
+    } catch (err) {
+      setError(err instanceof OrganizationError ? err.message : 'We could not delete that company.')
+      setDeleting(false)
+    }
+  }
+
+  return (
+    <Modal
+      open={open}
+      onClose={() => {
+        if (!deleting) onClose()
+      }}
+      title={`Delete ${organization.name}?`}
+      description="This permanently removes the company and everything in it — employees, attendance, leave, payroll, performance and documents — for every member, not just you. This cannot be undone."
+    >
+      <div className="space-y-4">
+        {error && (
+          <div className="flex gap-2 rounded-ctl border border-clay/35 bg-clay/5 p-3 text-[12px] text-clay-deep">
+            <AlertCircle size={15} className="mt-px shrink-0 text-clay" />
+            <p>{error}</p>
+          </div>
+        )}
+
+        <div>
+          <label htmlFor="confirm-company-name" className="mb-1.5 block text-[12.5px] font-semibold text-ink">
+            Type <span className="font-bold">{organization.name}</span> to confirm
+          </label>
+          <input
+            id="confirm-company-name"
+            type="text"
+            value={confirmText}
+            onChange={(e) => setConfirmText(e.target.value)}
+            disabled={deleting}
+            className="w-full h-10 rounded-ctl border border-hairline-strong bg-surface px-3 text-[13.5px] focus:border-clay focus:outline-none"
+            autoComplete="off"
+          />
+        </div>
+
+        <div className="flex justify-end gap-2 border-t border-hairline pt-4">
+          <Button type="button" variant="secondary" onClick={onClose} disabled={deleting}>
+            Cancel
+          </Button>
+          <Button
+            onClick={() => void handleDelete()}
+            disabled={!matches || deleting}
+            variant="danger"
+          >
+            {deleting ? (
+              <>
+                <Loader2 size={15} className="animate-spin" />
+                Deleting…
+              </>
+            ) : (
+              'Delete company'
+            )}
+          </Button>
+        </div>
+      </div>
+    </Modal>
+  )
+}
+
+/** Owner-only — the backend independently enforces this against the
+ *  company's own `ownerId`, so hiding it for anyone else here is just UX,
+ *  not the actual access control. */
+function DangerZone({ organization }: { organization: Organization }) {
+  const isOwner = useAuthStore((s) => s.user?.permissions.includes('*') ?? false)
+  const [confirmOpen, setConfirmOpen] = useState(false)
+
+  if (!isOwner) return null
+
+  return (
+    <>
+      <Card className="p-5 border-clay/30">
+        <h3 className="text-[13.5px] font-bold text-clay-deep">Danger Zone</h3>
+        <div className="mt-3 flex flex-wrap items-center justify-between gap-3 border-t border-clay/15 pt-4">
+          <div>
+            <p className="text-[13px] font-semibold text-ink">Delete this company</p>
+            <p className="mt-0.5 text-[12.5px] text-muted max-w-md">
+              Permanently removes {organization.name} and every employee, attendance, leave, payroll,
+              performance and document record in it. This cannot be undone.
+            </p>
+          </div>
+          <Button
+            onClick={() => setConfirmOpen(true)}
+            className="shrink-0"
+            variant="danger"
+          >
+            Delete Company
+          </Button>
+        </div>
+      </Card>
+
+      <DeleteCompanyModal organization={organization} open={confirmOpen} onClose={() => setConfirmOpen(false)} />
+    </>
   )
 }
 
@@ -199,6 +337,8 @@ function CompanyProfile() {
           </div>
         </form>
       </Card>
+
+      {org && <DangerZone organization={org} />}
     </div>
   )
 }

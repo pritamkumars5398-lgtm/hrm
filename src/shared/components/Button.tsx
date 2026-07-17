@@ -1,7 +1,7 @@
 import type { ButtonHTMLAttributes, ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 
-type Variant = 'primary' | 'secondary' | 'ghost' | 'inverse' | 'premium'
+type Variant = 'primary' | 'secondary' | 'ghost' | 'inverse' | 'premium' | 'danger'
 type Size = 'sm' | 'md' | 'lg'
 
 const variants: Record<Variant, string> = {
@@ -11,6 +11,7 @@ const variants: Record<Variant, string> = {
   ghost: 'bg-transparent text-ink border border-transparent hover:bg-wash',
   inverse: 'bg-paper text-pine-deep border border-paper hover:bg-white',
   premium: 'bg-gradient-to-r from-[#10b981] to-[#15803d] text-white border border-[#10b981]/30 transition-all duration-300 hover:scale-[1.03] active:scale-[0.98] relative overflow-hidden',
+  danger: 'bg-clay text-white border border-clay hover:bg-clay/90 hover:border-clay/90 transition-all duration-200',
 }
 
 const sizes: Record<Size, string> = {

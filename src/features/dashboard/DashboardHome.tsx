@@ -1,4 +1,5 @@
 import { useEffect } from 'react'
+import { Link } from 'react-router-dom'
 import {
   AlertCircle,
   Banknote,
@@ -6,20 +7,32 @@ import {
   RotateCw,
   Target,
   UserPlus,
-  Users,
   Activity,
   Star,
   Info,
-  Plus,
-  ChevronDown,
-  CheckCircle2,
-  FileUp,
-  Clock,
-  MoreVertical,
 } from 'lucide-react'
 import Button from '@/shared/components/Button'
 import { useAuthStore } from '@/features/auth/store/authStore'
+import { hasPermission } from '@/shared/config/navigation'
+import { useAttendanceStore } from '@/features/attendance/store/attendanceStore'
+import CheckInOutCard from '@/features/attendance/components/CheckInOutCard'
 import { useDashboardStore } from './store/dashboardStore'
+
+const LEAVE_TYPE_COLOR: Record<string, string> = {
+  ANNUAL: '#10b981',
+  SICK: '#f59e0b',
+  PERSONAL: '#8b5cf6',
+  UNPAID: '#facc15',
+}
+const LEAVE_TYPE_LABEL: Record<string, string> = {
+  ANNUAL: 'Annual',
+  SICK: 'Sick',
+  PERSONAL: 'Personal',
+  UNPAID: 'Unpaid',
+}
+
+const formatLeaveDate = (iso: string) =>
+  new Date(`${iso}T00:00:00`).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
 
 const ACTIVITY_ICON = {
   leave: CalendarDays,
@@ -34,14 +47,27 @@ function greetingFor(hour: number): string {
   return 'Good evening'
 }
 
+/** "2h ago" / "3d ago" from a real timestamp — falls back to a generic label
+ *  when one isn't available (the offline mock activity has none). */
+function timeAgo(iso: string | undefined): string {
+  if (!iso) return 'Recently'
+  const diffMs = Date.now() - new Date(iso).getTime()
+  const minutes = Math.floor(diffMs / 60000)
+  if (minutes < 1) return 'Just now'
+  if (minutes < 60) return `${minutes}m ago`
+  const hours = Math.floor(minutes / 60)
+  if (hours < 24) return `${hours}h ago`
+  const days = Math.floor(hours / 24)
+  return `${days}d ago`
+}
+
 function StatSkeleton() {
   return (
-    <div className="rounded-card border border-hairline bg-surface p-4 flex gap-4 items-start animate-pulse">
-      <div className="size-10 rounded-full bg-wash shrink-0" />
+    <div className="rounded-card border border-hairline bg-surface p-3 h-[104px] flex flex-col gap-2 animate-pulse">
+      <div className="size-8 rounded-full bg-wash shrink-0" />
       <div className="min-w-0 flex-1">
-        <div className="h-3 w-20 rounded bg-wash" />
-        <div className="mt-2 h-7 w-16 rounded bg-wash" />
-        <div className="mt-2.5 h-3 w-24 rounded bg-wash" />
+        <div className="h-2.5 w-14 rounded bg-wash" />
+        <div className="mt-2 h-5 w-12 rounded bg-wash" />
       </div>
     </div>
   )
@@ -53,77 +79,68 @@ const getStatStyle = (id: string, label: string) => {
 
   if (normId.includes('headcount') || normLabel.includes('employee') || normLabel.includes('total')) {
     return {
-      label: 'Total Employees',
       Icon: UserPlus,
       iconColor: 'text-teal-600',
       iconBg: 'bg-teal-50/80 border border-teal-100/50',
       deltaColor: 'text-emerald-700 bg-emerald-50/60 border border-emerald-100/30',
-      sparkline: 'teal',
     }
   }
   if (normId.includes('present') || normLabel.includes('present')) {
     return {
-      label: 'Present Today',
       Icon: Activity,
       iconColor: 'text-emerald-600',
       iconBg: 'bg-emerald-50/80 border border-emerald-100/50',
       deltaColor: 'text-muted-deep bg-wash/60 border border-hairline/60',
-      sparkline: 'emerald',
     }
   }
   if (normId.includes('leave') || normLabel.includes('leave')) {
     return {
-      label: 'On Leave',
       Icon: CalendarDays,
       iconColor: 'text-orange-600',
       iconBg: 'bg-orange-50/80 border border-orange-100/50',
       deltaColor: 'text-orange-700 bg-orange-50/60 border border-orange-100/30',
-      sparkline: 'orange',
     }
   }
   if (normId.includes('payroll') || normLabel.includes('payroll')) {
     return {
-      label: 'March Payroll',
       Icon: Banknote,
       iconColor: 'text-indigo-600',
       iconBg: 'bg-indigo-50/80 border border-indigo-100/50',
       deltaColor: 'text-indigo-700 bg-indigo-50/60 border border-indigo-100/30',
-      sparkline: 'purple',
     }
   }
 
   return {
-    label: label,
     Icon: Star,
     iconColor: 'text-purple-600',
     iconBg: 'bg-purple-50/80 border border-purple-100/50',
     deltaColor: 'text-purple-700 bg-purple-50/60 border border-purple-100/30',
-    sparkline: 'purple',
   }
 }
 
 export default function DashboardHome() {
   const user = useAuthStore((s) => s.user)!
   const { status, data, error, load } = useDashboardStore()
+  const viewer = { permissions: user.permissions, name: user.name }
+  const {
+    data: attendanceData,
+    checkingInOut,
+    load: loadAttendance,
+    checkIn,
+    checkOut,
+  } = useAttendanceStore()
 
   useEffect(() => {
-    void load(user.role)
-  }, [load, user.role])
+    void load(user.permissions)
+    void loadAttendance(viewer)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [load, user.permissions])
 
   const firstName = user.name.split(' ')[0]
   const greeting = greetingFor(new Date().getHours())
-
-  // Ensure 4 stats are shown to match mockup (add Performance if missing)
-  const statsToShow = data ? [...data.stats] : []
-  if (data && statsToShow.length < 4) {
-    statsToShow.push({
-      id: 'st-performance',
-      organizationId: user.organizationId || '',
-      label: 'Average Performance',
-      value: '4.6 / 5',
-      delta: '0.3 this month',
-    })
-  }
+  const statsToShow = data?.stats ?? []
+  const canSeeAttendanceOverview = hasPermission(user.permissions, 'attendance.manage')
+  const canSeeLeaveOverview = hasPermission(user.permissions, 'leave.approve')
 
   return (
     <div className="space-y-6">
@@ -140,26 +157,19 @@ export default function DashboardHome() {
               Welcome back to Keystone. Manage your team, track daily attendance records, process payroll, and view company analytics from your centralized workspace.
             </p>
           </div>
-          <div className="flex gap-2">
-            <Button
-              className="h-9.5 font-bold"
-            >
-              <Plus size={14} />
-              Quick Action
-              <ChevronDown size={14} className="opacity-80" />
-            </Button>
-            {status === 'ready' && (
+          {status === 'ready' && (
+            <div className="flex gap-2">
               <Button
                 variant="secondary"
                 size="sm"
                 className="h-9.5"
-                onClick={() => void load(user.role, { force: true })}
+                onClick={() => void load(user.permissions, { force: true })}
               >
                 <RotateCw size={14} />
                 Refresh
               </Button>
-            )}
-          </div>
+            </div>
+          )}
         </div>
 
         {/* Dashboard Illustration */}
@@ -179,7 +189,7 @@ export default function DashboardHome() {
             <p className="text-[14px] font-medium text-clay">{error}</p>
             <button
               type="button"
-              onClick={() => void load(user.role, { force: true })}
+              onClick={() => void load(user.permissions, { force: true })}
               className="mt-2 text-[13px] font-medium text-clay underline underline-offset-2"
             >
               Try again
@@ -191,261 +201,168 @@ export default function DashboardHome() {
       {status !== 'error' && (
         <>
           {/* Stats Grid */}
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid gap-3 grid-cols-2 sm:grid-cols-3 lg:grid-cols-5">
             {status === 'ready' && data
               ? statsToShow.map((stat) => {
                 const style = getStatStyle(stat.id, stat.label)
                 const StatIcon = style.Icon
                 return (
-                  <div key={stat.id} className="group relative rounded-card border border-hairline bg-surface p-4 flex flex-col justify-between transition-all duration-300 hover:-translate-y-1.5 hover:shadow-lg hover:border-hairline-strong overflow-hidden h-[155px]">
+                  <div key={stat.id} className="group relative rounded-card border border-hairline bg-surface p-3 flex flex-col justify-between transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:border-hairline-strong overflow-hidden h-[104px]">
                     <div className="flex items-start justify-between w-full">
-                      <div className={`p-2.5 rounded-full shrink-0 flex items-center justify-center transition-transform duration-300 group-hover:scale-105 ${style.iconBg}`}>
-                        <StatIcon className={`size-5 ${style.iconColor}`} />
+                      <div className={`p-2 rounded-full shrink-0 flex items-center justify-center transition-transform duration-300 group-hover:scale-105 ${style.iconBg}`}>
+                        <StatIcon className={`size-4 ${style.iconColor}`} />
                       </div>
-                      <button type="button" className="text-muted hover:text-ink transition-colors p-1 rounded-ctl hover:bg-wash cursor-pointer">
-                        <MoreVertical size={16} />
-                      </button>
                     </div>
 
-                    <div className="min-w-0 flex-1 mt-3">
-                      <p className="text-[11px] text-muted font-bold uppercase tracking-wider leading-none">{style.label}</p>
-                      <div className="flex items-baseline justify-between mt-2">
-                        <p className="tnum font-display text-[26px] leading-none font-bold text-ink">
+                    <div className="min-w-0 flex-1 mt-2">
+                      <p className="text-[10px] text-muted font-bold uppercase tracking-wider leading-none truncate">{stat.label}</p>
+                      <div className="flex items-baseline justify-between gap-1 mt-1.5">
+                        <p className="tnum font-display text-[19px] leading-none font-bold text-ink truncate">
                           {stat.value}
                         </p>
                         {stat.delta && (
-                          <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold border leading-none ${style.deltaColor}`}>
+                          <span className={`shrink-0 inline-flex items-center px-1.5 py-0.5 rounded-full text-[9px] font-bold border leading-none ${style.deltaColor}`}>
                             {stat.delta}
                           </span>
                         )}
                       </div>
                     </div>
-
-                    {/* Sparkline Graph */}
-                    <div className="absolute bottom-0 inset-x-0 h-10 overflow-hidden pointer-events-none rounded-b-card">
-                      {style.sparkline === 'teal' && (
-                        <svg viewBox="0 0 100 30" className="w-full h-full" preserveAspectRatio="none">
-                          <defs>
-                            <linearGradient id="spark-teal" x1="0" y1="0" x2="0" y2="1">
-                              <stop offset="0%" stopColor="#0d9488" stopOpacity="0.15" />
-                              <stop offset="100%" stopColor="#0d9488" stopOpacity="0.0" />
-                            </linearGradient>
-                          </defs>
-                          <path d="M 0,26 C 15,28 30,14 45,16 C 60,18 75,6 90,8 C 95,9 98,4 100,3" fill="none" stroke="#0d9488" strokeWidth="2" strokeLinecap="round" />
-                          <path d="M 0,26 C 15,28 30,14 45,16 C 60,18 75,6 90,8 C 95,9 98,4 100,3 L 100,30 L 0,30 Z" fill="url(#spark-teal)" />
-                          <circle cx="100" cy="3" r="1.5" fill="#0d9488" />
-                        </svg>
-                      )}
-                      {style.sparkline === 'emerald' && (
-                        <svg viewBox="0 0 100 30" className="w-full h-full" preserveAspectRatio="none">
-                          <defs>
-                            <linearGradient id="spark-emerald" x1="0" y1="0" x2="0" y2="1">
-                              <stop offset="0%" stopColor="#10b981" stopOpacity="0.15" />
-                              <stop offset="100%" stopColor="#10b981" stopOpacity="0.0" />
-                            </linearGradient>
-                          </defs>
-                          <path d="M 0,16 C 10,8 20,24 30,16 C 40,8 50,24 60,16 C 70,8 80,24 90,16 C 95,12 98,16 100,12" fill="none" stroke="#10b981" strokeWidth="2" strokeLinecap="round" />
-                          <path d="M 0,16 C 10,8 20,24 30,16 C 40,8 50,24 60,16 C 70,8 80,24 90,16 C 95,12 98,16 100,12 L 100,30 L 0,30 Z" fill="url(#spark-emerald)" />
-                          <circle cx="100" cy="12" r="1.5" fill="#10b981" />
-                        </svg>
-                      )}
-                      {style.sparkline === 'orange' && (
-                        <svg viewBox="0 0 100 30" className="w-full h-full" preserveAspectRatio="none">
-                          <defs>
-                            <linearGradient id="spark-orange" x1="0" y1="0" x2="0" y2="1">
-                              <stop offset="0%" stopColor="#f97316" stopOpacity="0.15" />
-                              <stop offset="100%" stopColor="#f97316" stopOpacity="0.0" />
-                            </linearGradient>
-                          </defs>
-                          <path d="M 0,28 C 15,28 30,28 45,12 C 55,4 65,22 80,24 C 90,25 97,27 100,28" fill="none" stroke="#f97316" strokeWidth="2" strokeLinecap="round" />
-                          <path d="M 0,28 C 15,28 30,28 45,12 C 55,4 65,22 80,24 C 90,25 97,27 100,28 L 100,30 L 0,30 Z" fill="url(#spark-orange)" />
-                          <circle cx="100" cy="28" r="1.5" fill="#f97316" />
-                        </svg>
-                      )}
-                      {style.sparkline === 'purple' && (
-                        <svg viewBox="0 0 100 30" className="w-full h-full" preserveAspectRatio="none">
-                          <defs>
-                            <linearGradient id="spark-purple" x1="0" y1="0" x2="0" y2="1">
-                              <stop offset="0%" stopColor="#8b5cf6" stopOpacity="0.15" />
-                              <stop offset="100%" stopColor="#8b5cf6" stopOpacity="0.0" />
-                            </linearGradient>
-                          </defs>
-                          <path d="M 0,14 C 15,12 30,22 45,18 C 60,10 75,8 90,6 C 95,5 98,6 100,5" fill="none" stroke="#8b5cf6" strokeWidth="2" strokeLinecap="round" />
-                          <path d="M 0,14 C 15,12 30,22 45,18 C 60,10 75,8 90,6 C 95,5 98,6 100,5 L 100,30 L 0,30 Z" fill="url(#spark-purple)" />
-                          <circle cx="100" cy="5" r="1.5" fill="#8b5cf6" />
-                        </svg>
-                      )}
-                    </div>
                   </div>
                 )
               })
-              : [0, 1, 2, 3].map((i) => <StatSkeleton key={i} />)}
+              : [0, 1, 2, 3, 4].map((i) => <StatSkeleton key={i} />)}
           </div>
 
           {/* Overview Charts Grid */}
           <div className="grid gap-4 lg:grid-cols-5">
-            {/* Attendance Chart */}
-            <div className="lg:col-span-3 rounded-card border border-hairline bg-surface p-4 flex flex-col justify-between relative">
-              <div className="flex items-center justify-between border-b border-hairline pb-3">
-                <div className="flex items-center gap-1.5">
-                  <h2 className="text-[14px] font-semibold text-ink">Attendance Overview</h2>
-                  <Info size={13} className="text-muted cursor-pointer hover:text-ink transition-colors" />
+            {/* Attendance Chart — real check-ins, last 7 days */}
+            {canSeeAttendanceOverview && (
+              <div className="lg:col-span-3 rounded-card border border-hairline bg-surface p-4 flex flex-col justify-between relative">
+                <div className="flex items-center justify-between border-b border-hairline pb-3">
+                  <div className="flex items-center gap-1.5">
+                    <h2 className="text-[14px] font-semibold text-ink">Attendance Overview</h2>
+                    <Info size={13} className="text-muted cursor-pointer hover:text-ink transition-colors" />
+                  </div>
+                  <span className="rounded-ctl border border-hairline-strong bg-surface px-2.5 py-1 text-[11.5px] font-medium text-ink">
+                    Last 7 days
+                  </span>
                 </div>
-                <button className="inline-flex items-center gap-1 rounded-ctl border border-hairline-strong bg-surface px-2.5 py-1 text-[11.5px] font-medium text-ink transition-colors hover:bg-wash">
-                  This Week
-                  <ChevronDown size={12} className="text-muted" />
-                </button>
+
+                {data && data.weeklyAttendance.length > 0 ? (
+                  <>
+                    <div className="mt-5 flex h-40 gap-2.5">
+                      {data.weeklyAttendance.map((day, i) => {
+                        const maxExpected = Math.max(1, ...data.weeklyAttendance.map((d) => d.expected))
+                        const heightPct = (day.present / maxExpected) * 100
+                        return (
+                          <div key={`${day.label}-${i}`} className="flex flex-1 flex-col items-center gap-2">
+                            <span className="tnum text-[11px] font-bold text-ink">{day.present}</span>
+                            <div className="w-full flex-1 relative overflow-hidden bg-wash rounded-t-[3px]">
+                              <div
+                                className="absolute bottom-0 w-full rounded-t-[3px] bg-emerald-500 transition-all"
+                                style={{ height: `${heightPct}%` }}
+                              />
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                    <div className="flex items-center justify-between text-[11px] text-muted px-1 mt-2.5 font-medium">
+                      {data.weeklyAttendance.map((day, i) => (
+                        <span key={`${day.label}-lbl-${i}`}>{day.label}</span>
+                      ))}
+                    </div>
+                  </>
+                ) : (
+                  <div className="py-14 text-center">
+                    <p className="text-[13px] font-medium text-ink">No attendance recorded yet</p>
+                    <p className="mt-1 text-[12px] text-muted">Check-ins will build this chart day by day.</p>
+                  </div>
+                )}
               </div>
-
-              <div className="mt-5 relative h-44 w-full">
-                <svg viewBox="0 0 500 140" className="w-full h-full" preserveAspectRatio="none">
-                  <defs>
-                    <linearGradient id="attendance-glow" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#10b981" stopOpacity="0.25" />
-                      <stop offset="100%" stopColor="#10b981" stopOpacity="0.0" />
-                    </linearGradient>
-                  </defs>
-
-                  {/* Grid lines */}
-                  <line x1="20" y1="10" x2="480" y2="10" stroke="#f3f3f0" strokeWidth="1" />
-                  <line x1="20" y1="40" x2="480" y2="40" stroke="#f3f3f0" strokeWidth="1" />
-                  <line x1="20" y1="70" x2="480" y2="70" stroke="#f3f3f0" strokeWidth="1" />
-                  <line x1="20" y1="100" x2="480" y2="100" stroke="#f3f3f0" strokeWidth="1" />
-                  <line x1="20" y1="130" x2="480" y2="130" stroke="#f3f3f0" strokeWidth="1" />
-
-                  {/* Y Axis Labels */}
-                  <text x="5" y="13" className="text-[9.5px] fill-muted font-medium">40</text>
-                  <text x="5" y="43" className="text-[9.5px] fill-muted font-medium">30</text>
-                  <text x="5" y="73" className="text-[9.5px] fill-muted font-medium">20</text>
-                  <text x="5" y="103" className="text-[9.5px] fill-muted font-medium">10</text>
-                  <text x="10" y="133" className="text-[9.5px] fill-muted font-medium">0</text>
-
-                  {/* Dotted Vertical Guide line for Wednesday */}
-                  <line x1="173.3" y1="10" x2="173.3" y2="130" stroke="#e4e4e1" strokeWidth="1" strokeDasharray="3 3" />
-
-                  {/* Gradient Area under curve */}
-                  <path
-                    d="M 20,40 C 50,38 70,32 96.6,34 C 120,36 150,28 173.3,28 C 200,28 230,31 250,31 C 280,31 310,25 326.6,25 C 360,25 380,94 403.3,94 C 430,94 450,91 480,91 L 480,130 L 20,130 Z"
-                    fill="url(#attendance-glow)"
-                  />
-
-                  {/* Line curve path */}
-                  <path
-                    d="M 20,40 C 50,38 70,32 96.6,34 C 120,36 150,28 173.3,28 C 200,28 230,31 250,31 C 280,31 310,25 326.6,25 C 360,25 380,94 403.3,94 C 430,94 450,91 480,91"
-                    fill="none"
-                    stroke="#10b981"
-                    strokeWidth="2.5"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-
-                  {/* Data Points */}
-                  <circle cx="20" cy="40" r="3.5" fill="#ffffff" stroke="#10b981" strokeWidth="2" />
-                  <circle cx="96.6" cy="34" r="3.5" fill="#ffffff" stroke="#10b981" strokeWidth="2" />
-                  <circle cx="173.3" cy="28" r="3.5" fill="#10b981" stroke="#10b981" strokeWidth="2" />
-                  <circle cx="250" cy="31" r="3.5" fill="#ffffff" stroke="#10b981" strokeWidth="2" />
-                  <circle cx="326.6" cy="25" r="3.5" fill="#ffffff" stroke="#10b981" strokeWidth="2" />
-                  <circle cx="403.3" cy="94" r="3.5" fill="#ffffff" stroke="#10b981" strokeWidth="2" />
-                  <circle cx="480" cy="91" r="3.5" fill="#ffffff" stroke="#10b981" strokeWidth="2" />
-                </svg>
-
-                {/* Selected Tooltip Overlay */}
-                <div
-                  className="absolute bg-surface border border-hairline shadow-overlay rounded-ctl px-2.5 py-1.5 text-[11px] pointer-events-none"
-                  style={{ left: 'calc(34.66% - 50px)', top: '12px' }}
-                >
-                  <p className="font-semibold text-ink">Wed, 12 Mar</p>
-                  <p className="text-muted flex items-center gap-1 mt-0.5 font-medium">
-                    <span className="inline-block size-1.5 rounded-full bg-[#10b981]" />
-                    Present: <span className="font-bold text-ink">34</span>
-                  </p>
-                </div>
-              </div>
-
-              {/* X Axis Labels */}
-              <div className="flex items-center justify-between text-[11px] text-muted px-4 mt-2.5 font-medium">
-                <span>Mon</span>
-                <span>Tue</span>
-                <span>Wed</span>
-                <span>Thu</span>
-                <span>Fri</span>
-                <span>Sat</span>
-                <span>Sun</span>
-              </div>
-            </div>
+            )}
 
             {/* Leave Overview Chart */}
-            <div className="lg:col-span-2 rounded-card border border-hairline bg-surface p-4 flex flex-col justify-between">
-              <div className="flex items-center justify-between border-b border-hairline pb-3">
-                <div className="flex items-center gap-1.5">
-                  <h2 className="text-[14px] font-semibold text-ink">Leave Overview</h2>
-                  <Info size={13} className="text-muted cursor-pointer hover:text-ink transition-colors" />
+            {canSeeLeaveOverview && data && (() => {
+              const totalDays = data.leaveBreakdown.reduce((sum, s) => sum + s.days, 0)
+              const circumference = 2 * Math.PI * 36
+              let cumulative = 0
+
+              return (
+                <div className="lg:col-span-2 rounded-card border border-hairline bg-surface p-4 flex flex-col justify-between">
+                  <div className="flex items-center justify-between border-b border-hairline pb-3">
+                    <div className="flex items-center gap-1.5">
+                      <h2 className="text-[14px] font-semibold text-ink">Leave Overview</h2>
+                      <Info size={13} className="text-muted cursor-pointer hover:text-ink transition-colors" />
+                    </div>
+                  </div>
+
+                  {totalDays === 0 ? (
+                    <div className="flex-1 flex flex-col items-center justify-center py-6 text-center">
+                      <p className="text-[13px] font-medium text-ink">No leave taken yet this year</p>
+                      <p className="mt-1 text-[12px] text-muted">Approved leave will show up here.</p>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-4 my-4 flex-1">
+                      {/* SVG Donut Chart — real per-type breakdown */}
+                      <div className="relative size-24 shrink-0 flex items-center justify-center">
+                        <svg viewBox="0 0 100 100" className="size-full">
+                          {data.leaveBreakdown.map((slice) => {
+                            const length = (slice.days / totalDays) * circumference
+                            const offset = -cumulative
+                            cumulative += length
+                            return (
+                              <circle
+                                key={slice.type}
+                                cx="50"
+                                cy="50"
+                                r="36"
+                                fill="transparent"
+                                stroke={LEAVE_TYPE_COLOR[slice.type]}
+                                strokeWidth="11"
+                                strokeDasharray={`${length} ${circumference}`}
+                                strokeDashoffset={offset}
+                                transform="rotate(-90 50 50)"
+                                strokeLinecap="round"
+                              />
+                            )
+                          })}
+                        </svg>
+                        <div className="absolute inset-0 flex flex-col items-center justify-center">
+                          <span className="text-[18px] font-bold leading-none text-ink">{totalDays}</span>
+                          <span className="text-[9.5px] text-muted mt-0.5 font-medium">Total</span>
+                        </div>
+                      </div>
+
+                      {/* Legend */}
+                      <div className="flex-1 flex flex-col gap-1.5 text-[11.5px] font-medium text-ink">
+                        {data.leaveBreakdown.map((slice) => (
+                          <div key={slice.type} className="flex items-center justify-between">
+                            <span className="flex items-center gap-1.5">
+                              <span className="size-2 rounded-full" style={{ backgroundColor: LEAVE_TYPE_COLOR[slice.type] }} />
+                              <span className="text-muted">{LEAVE_TYPE_LABEL[slice.type]}</span>
+                            </span>
+                            <span className="font-semibold text-ink">
+                              {slice.days} ({Math.round((slice.days / totalDays) * 100)}%)
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="flex items-center justify-between border-t border-hairline pt-3 mt-1">
+                    <span className="text-[12px] font-semibold text-orange-600">
+                      {data.pendingLeaveCount > 0 ? `${data.pendingLeaveCount} pending approval` : 'All caught up'}
+                    </span>
+                    <Link to="/dashboard/leave" className="text-[12px] font-semibold text-pine hover:underline">View all</Link>
+                  </div>
                 </div>
-              </div>
-
-              <div className="flex items-center gap-4 my-4 flex-1">
-                {/* SVG Donut Chart */}
-                <div className="relative size-24 shrink-0 flex items-center justify-center">
-                  <svg viewBox="0 0 100 100" className="size-full">
-                    {/* Segment 1: Annual Leave (6 = 50%) */}
-                    <circle cx="50" cy="50" r="36" fill="transparent" stroke="#10b981" strokeWidth="11" strokeDasharray="113.1 226.2" strokeDashoffset="0" transform="rotate(-90 50 50)" strokeLinecap="round" />
-
-                    {/* Segment 2: Sick Leave (3 = 25%) */}
-                    <circle cx="50" cy="50" r="36" fill="transparent" stroke="#f59e0b" strokeWidth="11" strokeDasharray="56.5 226.2" strokeDashoffset="-113.1" transform="rotate(-90 50 50)" strokeLinecap="round" />
-
-                    {/* Segment 3: Personal Leave (2 = 16.7%) */}
-                    <circle cx="50" cy="50" r="36" fill="transparent" stroke="#8b5cf6" strokeWidth="11" strokeDasharray="37.8 226.2" strokeDashoffset="-169.6" transform="rotate(-90 50 50)" strokeLinecap="round" />
-
-                    {/* Segment 4: Other Leave (1 = 8.3%) */}
-                    <circle cx="50" cy="50" r="36" fill="transparent" stroke="#facc15" strokeWidth="11" strokeDasharray="18.8 226.2" strokeDashoffset="-207.4" transform="rotate(-90 50 50)" strokeLinecap="round" />
-                  </svg>
-                  <div className="absolute inset-0 flex flex-col items-center justify-center">
-                    <span className="text-[18px] font-bold leading-none text-ink">12</span>
-                    <span className="text-[9.5px] text-muted mt-0.5 font-medium">Total</span>
-                  </div>
-                </div>
-
-                {/* Legend */}
-                <div className="flex-1 flex flex-col gap-1.5 text-[11.5px] font-medium text-ink">
-                  <div className="flex items-center justify-between">
-                    <span className="flex items-center gap-1.5">
-                      <span className="size-2 rounded-full bg-[#10b981]" />
-                      <span className="text-muted">Annual</span>
-                    </span>
-                    <span className="font-semibold text-ink">6 (50%)</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="flex items-center gap-1.5">
-                      <span className="size-2 rounded-full bg-[#f59e0b]" />
-                      <span className="text-muted">Sick</span>
-                    </span>
-                    <span className="font-semibold text-ink">3 (25%)</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="flex items-center gap-1.5">
-                      <span className="size-2 rounded-full bg-[#8b5cf6]" />
-                      <span className="text-muted">Personal</span>
-                    </span>
-                    <span className="font-semibold text-ink">2 (16.7%)</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="flex items-center gap-1.5">
-                      <span className="size-2 rounded-full bg-[#facc15]" />
-                      <span className="text-muted">Other</span>
-                    </span>
-                    <span className="font-semibold text-ink">1 (8.3%)</span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between border-t border-hairline pt-3 mt-1">
-                <span className="text-[12px] font-semibold text-orange-600">1 pending approval</span>
-                <a href="#leave" className="text-[12px] font-semibold text-pine hover:underline">View all</a>
-              </div>
-            </div>
+              )
+            })()}
           </div>
 
-          {/* Activity / Events / Quick Actions Grid */}
+          {/* Activity / Upcoming Leave / Check In Grid */}
           <div className="grid gap-4 lg:grid-cols-3">
             {/* Recent Activity */}
             <div className="rounded-card border border-hairline bg-surface p-4 flex flex-col justify-between">
@@ -459,13 +376,7 @@ export default function DashboardHome() {
                     <ul className="mt-2.5 divide-y divide-hairline">
                       {data.activity.map((item) => {
                         const Icon = ACTIVITY_ICON[item.kind]
-                        const timeMap: Record<string, string> = {
-                          'ac-1': '2h ago',
-                          'ac-2': '1d ago',
-                          'ac-3': '2d ago',
-                          'ac-4': '2d ago',
-                        }
-                        const timeStr = timeMap[item.id] || '3d ago'
+                        const timeStr = timeAgo(item.occurredAt)
 
                         return (
                           <li key={item.id} className="flex gap-3 py-3 items-start last:pb-0">
@@ -505,102 +416,62 @@ export default function DashboardHome() {
                   </ul>
                 )}
               </div>
-              <div className="border-t border-hairline pt-3 mt-3">
-                <a href="#activity" className="text-[12px] font-semibold text-pine hover:underline">View all activity</a>
-              </div>
             </div>
 
-            {/* Upcoming Events */}
-            <div className="rounded-card border border-hairline bg-surface p-4 flex flex-col justify-between">
-              <div>
-                <div className="flex items-center justify-between border-b border-hairline pb-3">
-                  <h2 className="text-[14px] font-semibold text-ink">Upcoming Events</h2>
-                  <button className="inline-flex items-center rounded-ctl border border-hairline-strong bg-surface px-2.5 py-1 text-[11px] font-medium text-ink transition-colors hover:bg-wash">
-                    View Calendar
-                  </button>
+            {/* Upcoming Leave — real approved leave, not fake calendar events */}
+            {canSeeLeaveOverview && (
+              <div className="rounded-card border border-hairline bg-surface p-4 flex flex-col justify-between">
+                <div>
+                  <div className="flex items-center justify-between border-b border-hairline pb-3">
+                    <h2 className="text-[14px] font-semibold text-ink">Upcoming Leave</h2>
+                  </div>
+
+                  {data && data.upcomingLeave.length > 0 ? (
+                    <ul className="mt-2.5 divide-y divide-hairline">
+                      {data.upcomingLeave.map((item) => (
+                        <li key={item.id} className="flex gap-3 py-3 items-center last:pb-0">
+                          <span
+                            className="flex size-7.5 shrink-0 items-center justify-center rounded-full"
+                            style={{ backgroundColor: `${LEAVE_TYPE_COLOR[item.type]}1a`, color: LEAVE_TYPE_COLOR[item.type] }}
+                          >
+                            <CalendarDays size={13} aria-hidden="true" />
+                          </span>
+                          <div className="min-w-0">
+                            <p className="text-[13px] leading-snug font-semibold text-ink">
+                              {item.employeeName} · {LEAVE_TYPE_LABEL[item.type]}
+                            </p>
+                            <p className="mt-0.5 text-[11.5px] text-muted font-medium">
+                              {formatLeaveDate(item.startDate)} – {formatLeaveDate(item.endDate)} · {item.days} day{item.days === 1 ? '' : 's'}
+                            </p>
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <div className="py-10 text-center">
+                      <p className="text-[13px] font-medium text-ink">No upcoming leave</p>
+                      <p className="mt-1 text-[12px] text-muted">Approved leave coming up will show up here.</p>
+                    </div>
+                  )}
                 </div>
-
-                <ul className="mt-2.5 divide-y divide-hairline">
-                  {[
-                    {
-                      id: 1,
-                      title: 'Team Standup',
-                      time: 'Today · 10:00 AM',
-                      iconBg: 'bg-blue-50 text-blue-600',
-                      Icon: Clock,
-                    },
-                    {
-                      id: 2,
-                      title: 'Performance Review: Design Team',
-                      time: 'Tomorrow · 2:00 PM',
-                      iconBg: 'bg-purple-50 text-purple-600',
-                      Icon: Target,
-                    },
-                    {
-                      id: 3,
-                      title: 'Payroll Processing',
-                      time: '15 Mar 2024 · 9:00 AM',
-                      iconBg: 'bg-emerald-50 text-emerald-600',
-                      Icon: Banknote,
-                    },
-                    {
-                      id: 4,
-                      title: 'Company All Hands',
-                      time: '20 Mar 2024 · 11:00 AM',
-                      iconBg: 'bg-pink-50 text-pink-600',
-                      Icon: Users,
-                    },
-                  ].map((event) => {
-                    const EventIcon = event.Icon
-                    return (
-                      <li key={event.id} className="flex gap-3 py-3 items-center last:pb-0">
-                        <span className={`flex size-7.5 shrink-0 items-center justify-center rounded-full ${event.iconBg}`}>
-                          <EventIcon size={13} aria-hidden="true" />
-                        </span>
-                        <div className="min-w-0">
-                          <p className="text-[13px] leading-snug font-semibold text-ink">{event.title}</p>
-                          <p className="mt-0.5 text-[11.5px] text-muted font-medium">{event.time}</p>
-                        </div>
-                      </li>
-                    )
-                  })}
-                </ul>
+                <div className="border-t border-hairline pt-3 mt-3">
+                  <Link to="/dashboard/leave" className="text-[12px] font-semibold text-pine hover:underline">View all leave</Link>
+                </div>
               </div>
-            </div>
+            )}
 
-            {/* Quick Actions */}
-            <div className="rounded-card border border-hairline bg-surface p-4">
-              <div className="border-b border-hairline pb-3">
-                <h2 className="text-[14px] font-semibold text-ink">Quick Actions</h2>
-              </div>
-
-              <div className="grid grid-cols-3 gap-2.5 mt-4">
-                {[
-                  { label: 'Request Leave', Icon: CalendarDays, bg: 'bg-emerald-50 text-emerald-600' },
-                  { label: 'Add Employee', Icon: UserPlus, bg: 'bg-blue-50 text-blue-600' },
-                  { label: 'View Reports', Icon: Activity, bg: 'bg-purple-50 text-purple-600' },
-                  { label: 'Mark Attendance', Icon: CheckCircle2, bg: 'bg-orange-50 text-orange-600' },
-                  { label: 'Upload Doc', Icon: FileUp, bg: 'bg-cyan-50 text-cyan-600' },
-                  { label: 'Feedback', Icon: Star, bg: 'bg-amber-50 text-amber-600' },
-                ].map((action) => {
-                  const ActionIcon = action.Icon
-                  return (
-                    <button
-                      key={action.label}
-                      type="button"
-                      className="flex flex-col items-center justify-center p-2.5 rounded-card border border-hairline bg-surface hover:bg-wash transition-colors text-center cursor-pointer group"
-                    >
-                      <span className={`flex size-8.5 items-center justify-center rounded-lg transition-transform group-hover:scale-105 ${action.bg}`}>
-                        <ActionIcon size={14} />
-                      </span>
-                      <span className="text-[10.5px] font-bold text-ink mt-2 leading-tight">
-                        {action.label}
-                      </span>
-                    </button>
-                  )
-                })}
-              </div>
-            </div>
+            {/* Check In / Out — a real shortcut, same store and endpoint as /attendance.
+                Hidden entirely (not an explanatory dead-end) for anyone with no Employee
+                record — e.g. an Owner isn't necessarily an employee of their own company. */}
+            {attendanceData && attendanceData.myTodayStatus !== null && (
+              <CheckInOutCard
+                status={attendanceData.myTodayStatus}
+                loading={checkingInOut}
+                name={user.name}
+                onCheckIn={() => checkIn(viewer)}
+                onCheckOut={() => checkOut(viewer)}
+              />
+            )}
           </div>
         </>
       )}

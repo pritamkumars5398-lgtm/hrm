@@ -78,17 +78,30 @@ export const PERMISSION_MODULES: PermissionMatrix = {
  * that would undo it. `attendance` is here too — checking yourself in/out and
  * seeing your own history is baseline self-service, not a granted privilege;
  * `attendance.manage` only changes what the page shows once you're on it
- * (company-wide vs. just you), decided server-side (§4.1). `payslip` is the
- * same idea one level down from `payroll`: seeing your own finalized payslip
- * needs no permission at all, even for someone with no payroll access.
+ * (company-wide vs. just you), decided server-side (§4.1). `payslip` is NOT
+ * unconditional like the others — see the carve-out in `canAccess` below.
  */
-export const ALWAYS_GRANTED: ModuleKey[] = ['dashboard', 'attendance', 'leave', 'payslip']
+export const ALWAYS_GRANTED: ModuleKey[] = ['dashboard', 'attendance', 'leave']
+
+/**
+ * Payslip is the "my own payslip" ESS view, distinct from the Payroll
+ * management module. Anyone who manages payroll (or holds full access, i.e.
+ * the Owner) administers *other people's* payslips through Payroll itself —
+ * they don't get a separate "my payslip" tab.
+ */
+export function canAccessPayslip(permissions: string[] | undefined): boolean {
+  const perms = permissions ?? []
+  if (perms.includes('*')) return false
+  if (perms.includes('payroll.manage')) return false
+  return true
+}
 
 export function canAccess(permissions: string[] | undefined, moduleKey: ModuleKey): boolean {
   const perms = permissions ?? []
+  if (moduleKey === 'payslip') return canAccessPayslip(perms)
   if (perms.includes('*')) return true
   if (ALWAYS_GRANTED.includes(moduleKey)) return true
-  
+
   const requiredPerms = PERMISSION_MODULES[moduleKey] || []
   return requiredPerms.some((p) => perms.includes(p))
 }

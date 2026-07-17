@@ -1,8 +1,10 @@
+import { hasBackend } from '@/config/env'
+import { hasPermission } from '@/shared/config/navigation'
+import { apiClient, apiErrorMessage } from './apiClient'
 import { mockEmployees } from '@/mock/mockEmployees'
 import { mockLeaveRequests } from '@/mock/mockLeave'
 import { mockPayrollRuns } from '@/mock/mockPayroll'
 import { buildMonth } from '@/mock/mockAttendance'
-import type { Role } from './authService'
 
 const LATENCY_MS = 650
 const delay = () => new Promise((r) => setTimeout(r, LATENCY_MS))
@@ -21,7 +23,7 @@ export type ReportsData = {
   attritionRate: number
   avgAttendance: number
   leaveDaysTaken: number
-  /** Owner-only — HR must not see the company's payroll cost (§10). */
+  /** Null unless the caller holds payroll.view/payroll.manage/* — never just reports.view (§10). */
   payrollCost: number | null
   departments: DepartmentRow[]
   headcountByMonth: Array<{ label: string; value: number }>
@@ -30,18 +32,26 @@ export type ReportsData = {
 export class ReportsError extends Error {}
 
 /**
- * Every figure here is DERIVED from the other modules' mock data rather than
- * typed by hand. A report that disagrees with the screen it summarises is worse
- * than no report at all.
- *
- * Mock-only (§11.4) — no API, no DB model.
+ * Real backend once configured — every figure is aggregated server-side from
+ * the other real modules (Employees, Attendance, Leave, Payroll), scoped by
+ * organizationId. The mock path exists for the offline/no-backend demo and
+ * derives from the mock data the same way this used to work end-to-end.
  */
 export const reportsService = {
-  async get(role: Role): Promise<ReportsData> {
+  async get(permissions: string[]): Promise<ReportsData> {
+    if (hasBackend) {
+      try {
+        const { data } = await apiClient.get<ReportsData>('/reports')
+        return data
+      } catch (error) {
+        throw new ReportsError(apiErrorMessage(error, 'We could not build your reports.'))
+      }
+    }
+
     await delay()
 
-    if (role !== 'OWNER' && role !== 'HR') {
-      throw new ReportsError('Reports are restricted to owners and HR.')
+    if (!hasPermission(permissions, 'reports.view')) {
+      throw new ReportsError('Reports are restricted to those with reports access.')
     }
 
     const active = mockEmployees.filter((e) => e.status !== 'INACTIVE')
@@ -81,7 +91,6 @@ export const reportsService = {
       })
       .sort((a, b) => b.headcount - a.headcount)
 
-    // Headcount trend: work backwards from today using each person's join date.
     const headcountByMonth = Array.from({ length: 6 }, (_, i) => {
       const date = new Date(now.getFullYear(), now.getMonth() - (5 - i), 1)
       const cutoff = date.toISOString().slice(0, 10)
@@ -101,12 +110,32 @@ export const reportsService = {
           ? 0
           : Math.round((attended.length / workdays.length) * 1000) / 10,
       leaveDaysTaken: approvedLeave.reduce((sum, r) => sum + r.days, 0),
-      // HR can run every report except the one that reveals what people are paid.
-      // mockPayrollRuns stores pence; formatMoney/formatMoneyCompact now take
-      // whole rupees (§ payroll: no mock data), so convert at this boundary.
-      payrollCost: role === 'OWNER' ? Math.round((mockPayrollRuns[0]?.gross ?? 0) / 100) : null,
+      payrollCost: hasPermission(permissions, 'payroll.view')
+        ? Math.round((mockPayrollRuns[0]?.gross ?? 0) / 100)
+        : null,
       departments,
       headcountByMonth,
+    }
+  },
+
+  /** Downloads the real CSV export. No mock equivalent — there is no file to export offline. */
+  async exportCsv(): Promise<void> {
+    if (!hasBackend) {
+      throw new ReportsError('Export requires a connected backend.')
+    }
+
+    try {
+      const { data } = await apiClient.get('/reports/export', { responseType: 'blob' })
+      const blobUrl = window.URL.createObjectURL(data as Blob)
+      const a = document.createElement('a')
+      a.href = blobUrl
+      a.download = 'reports.csv'
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      window.URL.revokeObjectURL(blobUrl)
+    } catch (error) {
+      throw new ReportsError(apiErrorMessage(error, 'We could not export your reports.'))
     }
   },
 }

@@ -53,6 +53,13 @@ type AuthState = {
    * - Real path: not needed — server returns updated memberships via setSession.
    */
   attachOrganization: (organizationId: string, organizationName: string, jobTitle?: string) => void
+  /**
+   * Drops a deleted company from local state. If it was the active workspace,
+   * switches to whatever membership remains — the backend guarantees at least
+   * one always does (§10.2's account-level version: nobody can delete their
+   * way down to zero companies).
+   */
+  removeOrganization: (organizationId: string) => void
   /** Clears the server's httpOnly cookie as well as local state. */
   logout: () => Promise<void>
   clearSession: () => void
@@ -175,6 +182,29 @@ export const useAuthStore = create<AuthState>()(
               }
             : state,
         ),
+
+      removeOrganization: (organizationId) =>
+        set((state) => {
+          if (!state.user) return state
+          const memberships = state.user.memberships.filter((m) => m.organizationId !== organizationId)
+
+          if (state.user.activeOrganizationId !== organizationId) {
+            return { user: { ...state.user, memberships } }
+          }
+
+          const next = memberships[0] ?? null
+          return {
+            user: {
+              ...state.user,
+              memberships,
+              activeOrganizationId: next?.organizationId ?? null,
+              organizationId: next?.organizationId ?? null,
+              permissions: next?.permissions ?? state.user.permissions,
+              role: next ? deriveRole(next.permissions) : state.user.role,
+              jobTitle: next?.jobTitle ?? state.user.jobTitle,
+            },
+          }
+        }),
 
       logout: async () => {
         // Clear all welcome keys from sessionStorage on logout so they trigger on next login

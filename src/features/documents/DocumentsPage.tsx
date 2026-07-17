@@ -1,9 +1,10 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import {
   AlertCircle,
   Download,
   FileText,
   Search,
+  Trash2,
   Upload,
   Loader2,
   Sparkles,
@@ -16,6 +17,7 @@ import Input from '@/shared/components/Input'
 import Select from '@/shared/components/Select'
 import Modal from '@/shared/components/Modal'
 import { useAuthStore } from '@/features/auth/store/authStore'
+import { hasPermission } from '@/shared/config/navigation'
 import {
   DOCUMENT_CATEGORIES,
   documentsService,
@@ -33,7 +35,15 @@ const formatDate = (iso: string) =>
     year: 'numeric',
   })
 
-function DocumentCard({ doc, canManage }: { doc: CompanyDocument; canManage: boolean }) {
+function DocumentCard({
+  doc,
+  canManage,
+  onRequestDelete,
+}: {
+  doc: CompanyDocument
+  canManage: boolean
+  onRequestDelete: (doc: CompanyDocument) => void
+}) {
   // Category-based styling config
   const categoryConfig = {
     Policies: {
@@ -69,7 +79,6 @@ function DocumentCard({ doc, canManage }: { doc: CompanyDocument; canManage: boo
     DOCX: 'bg-pine-tint text-pine-deep border border-pine/10',
     XLSX: 'bg-pine-tint text-pine border border-pine/15',
   }[doc.fileType]
-
 
   return (
     <motion.div
@@ -109,14 +118,53 @@ function DocumentCard({ doc, canManage }: { doc: CompanyDocument; canManage: boo
             <p className="truncate text-[9.5px] text-muted mt-0.5">By {doc.updatedBy}</p>
           </div>
 
-          <Button
-            size="sm"
-            aria-label={`Download ${doc.name}`}
-            className="h-8 text-[12px] font-bold shadow-sm"
-          >
-            <Download size={13} />
-            {canManage ? 'Download' : 'View'}
-          </Button>
+          <div className="flex items-center gap-1.5 shrink-0">
+            {canManage && (
+              <button
+                type="button"
+                onClick={() => onRequestDelete(doc)}
+                aria-label={`Delete ${doc.name}`}
+                className="inline-flex size-8 items-center justify-center rounded-ctl bg-clay text-white hover:bg-clay-deep transition-colors cursor-pointer border border-transparent shadow-sm hover:shadow"
+              >
+                <Trash2 size={13} />
+              </button>
+            )}
+            {doc.cloudinaryUrl ? (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault()
+                  e.stopPropagation()
+                  const ext = doc.fileType.toLowerCase()
+                  const filename = doc.name.toLowerCase().endsWith(`.${ext}`) ? doc.name : `${doc.name}.${ext}`
+                  
+                  fetch(doc.cloudinaryUrl!)
+                    .then((res) => res.blob())
+                    .then((blob) => {
+                      const blobUrl = window.URL.createObjectURL(blob)
+                      const a = document.createElement('a')
+                      a.href = blobUrl
+                      a.download = filename
+                      document.body.appendChild(a)
+                      a.click()
+                      document.body.removeChild(a)
+                      window.URL.revokeObjectURL(blobUrl)
+                    })
+                    .catch((err) => console.error('Failed to download', err))
+                }}
+                aria-label={`Download ${doc.name}`}
+                className="inline-flex h-8 items-center justify-center gap-2 rounded-ctl bg-gradient-to-r from-[#10b981] to-[#15803d] px-3.5 text-[12px] font-bold text-white shadow-sm transition-transform hover:scale-[1.03] active:scale-[0.98] cursor-pointer"
+              >
+                <Download size={13} />
+                Download
+              </button>
+            ) : (
+              <Button size="sm" aria-label={`Download ${doc.name}`} className="h-8 text-[12px] font-bold shadow-sm">
+                <Download size={13} />
+                Download
+              </Button>
+            )}
+          </div>
         </div>
       </Card>
     </motion.div>
@@ -143,29 +191,26 @@ function CardSkeleton() {
 type UploadModalProps = {
   open: boolean
   onClose: () => void
-  onUpload: (payload: {
-    name: string
-    description: string
-    category: DocumentCategory
-    fileType: 'PDF' | 'DOCX' | 'XLSX'
-  }) => Promise<void>
+  onUpload: (file: File, payload: { name: string; description: string; category: DocumentCategory }) => Promise<void>
 }
 
 function UploadModal({ open, onClose, onUpload }: UploadModalProps) {
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
   const [categoryInput, setCategoryInput] = useState<DocumentCategory>('Policies')
-  const [fileTypeInput, setFileTypeInput] = useState<'PDF' | 'DOCX' | 'XLSX'>('PDF')
+  const [file, setFile] = useState<File | null>(null)
   const [submitting, setSubmitting] = useState(false)
   const [errorText, setErrorText] = useState<string | null>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     if (open) {
       setName('')
       setDescription('')
       setCategoryInput('Policies')
-      setFileTypeInput('PDF')
+      setFile(null)
       setErrorText(null)
+      if (fileInputRef.current) fileInputRef.current.value = ''
     }
   }, [open])
 
@@ -175,17 +220,16 @@ function UploadModal({ open, onClose, onUpload }: UploadModalProps) {
       setErrorText('Please fill out all fields.')
       return
     }
+    if (!file) {
+      setErrorText('Please choose a PDF, DOCX or XLSX file.')
+      return
+    }
 
     setSubmitting(true)
     setErrorText(null)
 
     try {
-      await onUpload({
-        name,
-        description,
-        category: categoryInput,
-        fileType: fileTypeInput,
-      })
+      await onUpload(file, { name, description, category: categoryInput })
       onClose()
     } catch {
       setErrorText('We could not upload the document.')
@@ -217,24 +261,12 @@ function UploadModal({ open, onClose, onUpload }: UploadModalProps) {
           required
         />
 
-        <div className="grid gap-4 sm:grid-cols-2">
-          <Select
-            label="Category"
-            value={categoryInput}
-            onChange={(e) => setCategoryInput(e.target.value as DocumentCategory)}
-            options={DOCUMENT_CATEGORIES.map((c) => ({ value: c, label: c }))}
-          />
-          <Select
-            label="File Type"
-            value={fileTypeInput}
-            onChange={(e) => setFileTypeInput(e.target.value as any)}
-            options={[
-              { value: 'PDF', label: 'PDF Document' },
-              { value: 'DOCX', label: 'Word Document (DOCX)' },
-              { value: 'XLSX', label: 'Excel Spreadsheet (XLSX)' },
-            ]}
-          />
-        </div>
+        <Select
+          label="Category"
+          value={categoryInput}
+          onChange={(e) => setCategoryInput(e.target.value as DocumentCategory)}
+          options={DOCUMENT_CATEGORIES.map((c) => ({ value: c, label: c }))}
+        />
 
         <Input
           label="Description / Purpose"
@@ -243,6 +275,18 @@ function UploadModal({ open, onClose, onUpload }: UploadModalProps) {
           placeholder="Short summary of what this document covers..."
           required
         />
+
+        <div>
+          <label className="mb-1.5 block text-[12.5px] font-semibold text-ink">File</label>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".pdf,.doc,.docx,.xls,.xlsx"
+            onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+            className="w-full text-[12.5px] text-muted file:mr-3 file:rounded-ctl file:border file:border-hairline-strong file:bg-surface file:px-3 file:py-1.5 file:text-[12px] file:font-semibold file:text-ink hover:file:bg-wash file:cursor-pointer"
+          />
+          <p className="mt-1 text-[11px] text-muted">PDF, DOCX or XLSX, up to 10MB.</p>
+        </div>
 
         <div className="mt-6 flex justify-end gap-2 border-t border-hairline pt-4">
           <Button type="button" variant="secondary" onClick={onClose} disabled={submitting}>
@@ -266,6 +310,7 @@ function UploadModal({ open, onClose, onUpload }: UploadModalProps) {
 
 export default function DocumentsPage() {
   const user = useAuthStore((s) => s.user)!
+  const canManage = hasPermission(user.permissions, 'documents.manage')
 
   const [data, setData] = useState<DocumentsData | null>(null)
   const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading')
@@ -273,6 +318,9 @@ export default function DocumentsPage() {
   const [search, setSearch] = useState('')
   const [term, setTerm] = useState('')
   const [uploadOpen, setUploadOpen] = useState(false)
+  const [pendingDelete, setPendingDelete] = useState<CompanyDocument | null>(null)
+  const [deleting, setDeleting] = useState(false)
+  const [deleteError, setDeleteError] = useState<string | null>(null)
 
   // Debounced search
   useEffect(() => {
@@ -280,12 +328,25 @@ export default function DocumentsPage() {
     return () => clearTimeout(timer)
   }, [search])
 
+  const refetch = () => {
+    setStatus('loading')
+    return documentsService
+      .get({ search: term, category })
+      .then((result) => {
+        setData(result)
+        setStatus('ready')
+      })
+      .catch(() => {
+        setStatus('error')
+      })
+  }
+
   useEffect(() => {
     let cancelled = false
     setStatus('loading')
 
     void documentsService
-      .get(user.role, { search: term, category })
+      .get({ search: term, category })
       .then((result) => {
         if (!cancelled) {
           setData(result)
@@ -299,28 +360,32 @@ export default function DocumentsPage() {
     return () => {
       cancelled = true
     }
-  }, [user.role, term, category])
+  }, [term, category])
 
-  const handleUpload = async (payload: {
-    name: string
-    description: string
-    category: DocumentCategory
-    fileType: 'PDF' | 'DOCX' | 'XLSX'
-  }) => {
-    await documentsService.upload(user.role, payload)
-    // Refetch
-    setStatus('loading')
+  const handleUpload = async (
+    file: File,
+    payload: { name: string; description: string; category: DocumentCategory },
+  ) => {
+    await documentsService.upload(file, payload)
+    await refetch()
+  }
+
+  const handleDelete = async () => {
+    if (!pendingDelete) return
+    setDeleting(true)
+    setDeleteError(null)
     try {
-      const result = await documentsService.get(user.role, { search: term, category })
-      setData(result)
-      setStatus('ready')
+      await documentsService.remove(pendingDelete.id)
+      setPendingDelete(null)
+      await refetch()
     } catch {
-      setStatus('error')
+      setDeleteError('We could not delete that document.')
+    } finally {
+      setDeleting(false)
     }
   }
 
   const tabs: Array<DocumentCategory | 'ALL'> = ['ALL', ...DOCUMENT_CATEGORIES]
-  const canManage = data?.canManage ?? false
 
   return (
     <motion.div
@@ -437,7 +502,15 @@ export default function DocumentsPage() {
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <AnimatePresence mode="popLayout">
             {data.documents.map((doc) => (
-              <DocumentCard key={doc.id} doc={doc} canManage={canManage} />
+              <DocumentCard
+                key={doc.id}
+                doc={doc}
+                canManage={canManage}
+                onRequestDelete={(d) => {
+                  setDeleteError(null)
+                  setPendingDelete(d)
+                }}
+              />
             ))}
           </AnimatePresence>
         </div>
@@ -448,6 +521,41 @@ export default function DocumentsPage() {
         onClose={() => setUploadOpen(false)}
         onUpload={handleUpload}
       />
+
+      <Modal
+        open={pendingDelete !== null}
+        onClose={() => setPendingDelete(null)}
+        title={`Delete ${pendingDelete?.name ?? ''}?`}
+        description="This removes the file for everyone in your company. This cannot be undone."
+      >
+        <div className="space-y-4">
+          {deleteError && (
+            <div className="flex gap-2 rounded-ctl border border-clay/35 bg-clay/5 p-3 text-[12px] text-clay-deep">
+              <AlertCircle size={15} className="mt-px shrink-0 text-clay" />
+              <p>{deleteError}</p>
+            </div>
+          )}
+          <div className="flex justify-end gap-2">
+            <Button variant="secondary" onClick={() => setPendingDelete(null)} disabled={deleting}>
+              Cancel
+            </Button>
+            <Button
+              onClick={() => void handleDelete()}
+              disabled={deleting}
+              className="border-clay bg-clay hover:border-clay/90 hover:bg-clay/90"
+            >
+              {deleting ? (
+                <>
+                  <Loader2 size={15} className="animate-spin" />
+                  Deleting…
+                </>
+              ) : (
+                'Delete document'
+              )}
+            </Button>
+          </div>
+        </div>
+      </Modal>
     </motion.div>
   )
 }

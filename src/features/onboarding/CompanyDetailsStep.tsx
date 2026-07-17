@@ -48,7 +48,7 @@ export default function CompanyDetailsStep({ isAdditional = false }: { isAdditio
         ownerId: user.id,
       })
 
-      attachOrganization(org.id, isAdditional ? 'Owner' : (personal?.jobTitle || 'Owner'), org.name)
+      attachOrganization(org.id, org.name, isAdditional ? 'Owner' : (personal?.jobTitle || 'Owner'))
       navigate('/dashboard', { replace: true })
     } catch (err) {
       setFormError(

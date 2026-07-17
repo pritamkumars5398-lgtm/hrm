@@ -186,26 +186,42 @@ function StatCard({
 function ReviewDrawer({
   record,
   onClose,
-  role,
+  permissions,
   viewerName,
 }: {
   record: PerformanceRecord | null
   onClose: () => void
-  role: string
+  permissions: string[]
   viewerName: string
 }) {
-  const { submitReview } = usePerformanceStore()
+  const { submitReview, addGoal, updateGoalProgress } = usePerformanceStore()
   const [submitting, setSubmitting] = useState(false)
   const [ratingInput, setRatingInput] = useState(5)
   const [summaryInput, setSummaryInput] = useState('')
   const [submitError, setSubmitError] = useState<string | null>(null)
+
+  const [goalTitle, setGoalTitle] = useState('')
+  const [goalDueOn, setGoalDueOn] = useState('')
+  const [addingGoal, setAddingGoal] = useState(false)
+  const [goalError, setGoalError] = useState<string | null>(null)
+  const [progressDrafts, setProgressDrafts] = useState<Record<string, number>>({})
+  const [savingGoalId, setSavingGoalId] = useState<string | null>(null)
 
   // Reset review form when record changes
   useEffect(() => {
     setRatingInput(5)
     setSummaryInput('')
     setSubmitError(null)
+    setGoalTitle('')
+    setGoalDueOn('')
+    setGoalError(null)
+    setProgressDrafts({})
   }, [record])
+
+  // Undefined on the mock path defaults to reviewable — only an explicit
+  // `false` from the real backend blocks it (e.g. this is your own record).
+  const canReviewThis = record?.canReview !== false
+  const isOwnRecord = record?.employeeName === viewerName
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -219,7 +235,7 @@ function ReviewDrawer({
     setSubmitError(null)
 
     try {
-      await submitReview(role as any, viewerName, record.id, {
+      await submitReview(permissions, viewerName, record.employeeId, {
         rating: ratingInput,
         summary: summaryInput,
       })
@@ -228,6 +244,46 @@ function ReviewDrawer({
       setSubmitError('We could not submit that appraisal review.')
     } finally {
       setSubmitting(false)
+    }
+  }
+
+  const handleAddGoal = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!record) return
+    if (!goalTitle.trim() || !goalDueOn) {
+      setGoalError('Please enter a title and a due date.')
+      return
+    }
+
+    setAddingGoal(true)
+    setGoalError(null)
+
+    try {
+      await addGoal(permissions, viewerName, record.employeeId, { title: goalTitle, dueOn: goalDueOn })
+      setGoalTitle('')
+      setGoalDueOn('')
+    } catch {
+      setGoalError('We could not add that goal.')
+    } finally {
+      setAddingGoal(false)
+    }
+  }
+
+  const handleSaveProgress = async (goalId: string) => {
+    if (!record) return
+    const value = progressDrafts[goalId]
+    if (value === undefined) return
+
+    setSavingGoalId(goalId)
+    try {
+      await updateGoalProgress(permissions, viewerName, goalId, value)
+      setProgressDrafts((prev) => {
+        const next = { ...prev }
+        delete next[goalId]
+        return next
+      })
+    } finally {
+      setSavingGoalId(null)
     }
   }
 
@@ -283,27 +339,79 @@ function ReviewDrawer({
             </h3>
             
             <div className="space-y-4 bg-surface border border-hairline rounded-ctl p-4">
-              {record.goals.map((goal) => (
-                <div key={goal.id} className="space-y-1.5">
-                  <div className="flex items-baseline justify-between gap-3">
-                    <p className="text-[13px] font-semibold text-ink">{goal.title}</p>
-                    <p className="tnum shrink-0 text-[12px] font-bold text-emerald-600">{goal.progress}%</p>
+              {record.goals.length === 0 && (
+                <p className="text-[12.5px] text-muted text-center py-2">No goals set for this cycle yet.</p>
+              )}
+              {record.goals.map((goal) => {
+                const canEditProgress = canReviewThis || isOwnRecord
+                const draft = progressDrafts[goal.id]
+                return (
+                  <div key={goal.id} className="space-y-1.5">
+                    <div className="flex items-baseline justify-between gap-3">
+                      <p className="text-[13px] font-semibold text-ink">{goal.title}</p>
+                      <p className="tnum shrink-0 text-[12px] font-bold text-emerald-600">{goal.progress}%</p>
+                    </div>
+                    <div className="h-2 w-full overflow-hidden rounded-full bg-wash/80 border border-hairline/25">
+                      <motion.div
+                        initial={{ width: 0 }}
+                        animate={{ width: `${goal.progress}%` }}
+                        transition={{ duration: 0.8, ease: 'easeOut' }}
+                        className="h-full rounded-full bg-gradient-to-r from-emerald-400 to-emerald-600"
+                      />
+                    </div>
+                    {canEditProgress && (
+                      <div className="flex items-center gap-2 pt-0.5">
+                        <input
+                          type="number"
+                          min={0}
+                          max={100}
+                          value={draft ?? goal.progress}
+                          onChange={(e) =>
+                            setProgressDrafts((prev) => ({ ...prev, [goal.id]: Number(e.target.value) }))
+                          }
+                          className="w-16 h-7 rounded-ctl border border-hairline-strong bg-surface px-2 text-[11.5px] tnum focus:border-pine focus:outline-none"
+                        />
+                        <Button
+                          type="button"
+                          variant="secondary"
+                          size="sm"
+                          disabled={draft === undefined || savingGoalId === goal.id}
+                          onClick={() => void handleSaveProgress(goal.id)}
+                        >
+                          {savingGoalId === goal.id ? <Loader2 size={12} className="animate-spin" /> : 'Update'}
+                        </Button>
+                      </div>
+                    )}
                   </div>
-                  <div className="h-2 w-full overflow-hidden rounded-full bg-wash/80 border border-hairline/25">
-                    <motion.div
-                      initial={{ width: 0 }}
-                      animate={{ width: `${goal.progress}%` }}
-                      transition={{ duration: 0.8, ease: 'easeOut' }}
-                      className="h-full rounded-full bg-gradient-to-r from-emerald-400 to-emerald-600"
-                    />
-                  </div>
-                </div>
-              ))}
+                )
+              })}
             </div>
+
+            {canReviewThis && (
+              <form onSubmit={handleAddGoal} className="flex flex-col sm:flex-row gap-2 bg-wash/20 border border-hairline rounded-ctl p-3">
+                {goalError && <p className="text-[11.5px] text-clay-deep sm:w-full">{goalError}</p>}
+                <input
+                  type="text"
+                  value={goalTitle}
+                  onChange={(e) => setGoalTitle(e.target.value)}
+                  placeholder="New goal title…"
+                  className="flex-1 h-9 rounded-ctl border border-hairline-strong bg-surface px-2.5 text-[12.5px] focus:border-pine focus:outline-none placeholder:text-muted/50"
+                />
+                <input
+                  type="date"
+                  value={goalDueOn}
+                  onChange={(e) => setGoalDueOn(e.target.value)}
+                  className="h-9 rounded-ctl border border-hairline-strong bg-surface px-2.5 text-[12.5px] focus:border-pine focus:outline-none"
+                />
+                <Button type="submit" size="sm" disabled={addingGoal}>
+                  {addingGoal ? <Loader2 size={13} className="animate-spin" /> : 'Add Goal'}
+                </Button>
+              </form>
+            )}
           </section>
 
-          {/* Complete Review Form (if pending review) */}
-          {record.rating === null && (
+          {/* Complete Review Form (if pending review and the viewer may review this person) */}
+          {record.rating === null && canReviewThis && (
             <section className="bg-surface border border-hairline rounded-ctl p-4 space-y-4">
               <h3 className="text-[11px] font-bold tracking-[0.12em] text-muted uppercase border-b border-hairline pb-1.5 flex justify-between items-center">
                 <span>Complete Review</span>
@@ -440,8 +548,17 @@ export default function PerformancePage() {
   const [filterStatus, setFilterStatus] = useState<'ALL' | 'REVIEWED' | 'PENDING'>('ALL')
 
   useEffect(() => {
-    void load(user.role, user.name)
-  }, [load, user.role, user.name])
+    void load(user.permissions, user.name)
+  }, [load, user.permissions, user.name])
+
+  useEffect(() => {
+    if (open && data?.records) {
+      const updated = data.records.find((r) => r.id === open.id)
+      if (updated) {
+        setOpen(updated)
+      }
+    }
+  }, [data, open?.id])
 
   const isLoading = status === 'loading' || !data
   const maxCount = data ? Math.max(1, ...data.distribution.map((d) => d.count)) : 1
@@ -474,7 +591,9 @@ export default function PerformancePage() {
           <p className="mt-1.5 text-[14px] text-muted">
             {data?.scope === 'team'
               ? `Your team's goals and reviews — ${data.cycle}.`
-              : `Ratings, goals and appraisals — ${data?.cycle ?? 'current cycle'}.`}
+              : data?.scope === 'me'
+                ? `Your own goals and reviews — ${data.cycle}.`
+                : `Ratings, goals and appraisals — ${data?.cycle ?? 'current cycle'}.`}
           </p>
         </div>
       </div>
@@ -486,7 +605,7 @@ export default function PerformancePage() {
             <p className="text-[14px] font-medium text-clay">{error}</p>
             <button
               type="button"
-              onClick={() => void load(user.role, user.name, { force: true })}
+              onClick={() => void load(user.permissions, user.name, { force: true })}
               className="mt-2 text-[13px] font-medium text-clay underline underline-offset-2"
             >
               Try again
@@ -735,7 +854,7 @@ export default function PerformancePage() {
       <ReviewDrawer
         record={open}
         onClose={() => setOpen(null)}
-        role={user.role}
+        permissions={user.permissions}
         viewerName={user.name}
       />
     </motion.div>
