@@ -122,3 +122,72 @@ export function hasPermission(permissions: string[] | undefined, key: string): b
   const namespace = key.split('.')[0]
   return perms.includes(`${namespace}.*`)
 }
+
+/**
+ * The full granular permission catalog (§10.1), grouped by module for the
+ * Permission Editor's checkbox grid. This is the complete, fixed set of keys
+ * the backend actually understands — the editor lets the Owner (or anyone
+ * holding `team.managePermissions`) grant any combination of these to
+ * anyone, not just the three role presets (HR/Manager/Employee), which are
+ * only a starting point for the invite form.
+ */
+export const PERMISSION_KEY_GROUPS: Array<{ label: string; keys: Array<{ key: string; label: string }> }> = [
+  {
+    label: 'Employees',
+    keys: [
+      { key: 'employees.view', label: 'View employee directory' },
+      { key: 'employees.manage', label: 'Manage employee records' },
+    ],
+  },
+  {
+    label: 'Attendance',
+    keys: [
+      { key: 'attendance.view', label: 'View attendance' },
+      { key: 'attendance.manage', label: 'Manage company-wide attendance' },
+    ],
+  },
+  {
+    label: 'Leave',
+    keys: [
+      { key: 'leave.view', label: 'View leave' },
+      { key: 'leave.approve', label: 'Approve or reject leave requests' },
+    ],
+  },
+  {
+    label: 'Payroll',
+    keys: [
+      { key: 'payroll.view', label: 'View payroll' },
+      { key: 'payroll.manage', label: 'Run and finalize payroll' },
+    ],
+  },
+  {
+    label: 'Performance',
+    keys: [
+      { key: 'performance.view', label: 'View performance' },
+      { key: 'performance.manage', label: 'Manage company-wide reviews' },
+    ],
+  },
+  {
+    label: 'Documents',
+    keys: [
+      { key: 'documents.view', label: 'View documents' },
+      { key: 'documents.manage', label: 'Upload and delete documents' },
+    ],
+  },
+  {
+    label: 'Reports',
+    keys: [{ key: 'reports.view', label: 'View reports' }],
+  },
+  {
+    label: 'Team',
+    keys: [
+      { key: 'team.view', label: 'View team members' },
+      { key: 'team.invite', label: 'Invite new members' },
+      { key: 'team.managePermissions', label: 'Edit permissions and remove members' },
+    ],
+  },
+  {
+    label: 'Settings',
+    keys: [{ key: 'settings.manage', label: 'Manage company settings' }],
+  },
+]

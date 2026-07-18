@@ -2,6 +2,7 @@ import { hasBackend } from '@/config/env'
 import { apiClient, apiErrorMessage } from './apiClient'
 import { mockInvites, type Invite, type InvitableRole, type InviteStatus } from '@/mock/mockInvites'
 import { mockUsers } from '@/mock/mockUsers'
+import { deriveRole } from '@/features/auth/store/authStore'
 import type { User } from './authService'
 
 export type { Invite, InvitableRole, InviteStatus }
@@ -84,7 +85,11 @@ export const teamService = {
     if (hasBackend) {
       try {
         const { data } = await apiClient.get<Member[]>('/members')
-        return data
+        // The real backend has no `role` field at all (§10 — permissions are
+        // the source of truth, roles are a display label only) — derive it
+        // here so RoleBadge has something to render, instead of it silently
+        // coming back undefined.
+        return data.map((m) => ({ ...m, role: deriveRole(m.memberships?.[0]?.permissions ?? []) }))
       } catch (error) {
         throw new TeamError(apiErrorMessage(error, 'We could not load your team.'))
       }
@@ -251,5 +256,29 @@ export const teamService = {
 
     await delay()
     mockMemberState = mockMemberState.filter((m) => m.id !== id)
+  },
+
+  /**
+   * The Permission Editor's save action — sets a member's ENTIRE granular
+   * permission list (a revision, not a merge). The server independently
+   * refuses to touch anyone already holding `*` (§10.2) and refuses editing
+   * your own permissions — this isn't just a UI nicety, it's re-checked there.
+   */
+  async updatePermissions(userId: string, permissions: string[]): Promise<void> {
+    if (hasBackend) {
+      try {
+        await apiClient.patch(`/members/${userId}/permissions`, { permissions })
+        return
+      } catch (error) {
+        throw new TeamError(apiErrorMessage(error, 'We could not save those permissions.'))
+      }
+    }
+
+    await delay()
+    mockMemberState = mockMemberState.map((m) =>
+      m.id === userId && m.memberships?.[0]
+        ? { ...m, memberships: [{ ...m.memberships[0], permissions }] }
+        : m,
+    )
   },
 }

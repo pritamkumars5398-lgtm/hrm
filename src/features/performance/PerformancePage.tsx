@@ -388,24 +388,26 @@ function ReviewDrawer({
             </div>
 
             {canReviewThis && (
-              <form onSubmit={handleAddGoal} className="flex flex-col sm:flex-row gap-2 bg-wash/20 border border-hairline rounded-ctl p-3">
-                {goalError && <p className="text-[11.5px] text-clay-deep sm:w-full">{goalError}</p>}
+              <form onSubmit={handleAddGoal} className="space-y-2 bg-wash/20 border border-hairline rounded-ctl p-3">
+                {goalError && <p className="text-[11.5px] text-clay-deep">{goalError}</p>}
                 <input
                   type="text"
                   value={goalTitle}
                   onChange={(e) => setGoalTitle(e.target.value)}
                   placeholder="New goal title…"
-                  className="flex-1 h-9 rounded-ctl border border-hairline-strong bg-surface px-2.5 text-[12.5px] focus:border-pine focus:outline-none placeholder:text-muted/50"
+                  className="w-full h-9 rounded-ctl border border-hairline-strong bg-surface px-2.5 text-[12.5px] focus:border-pine focus:outline-none placeholder:text-muted/50"
                 />
-                <input
-                  type="date"
-                  value={goalDueOn}
-                  onChange={(e) => setGoalDueOn(e.target.value)}
-                  className="h-9 rounded-ctl border border-hairline-strong bg-surface px-2.5 text-[12.5px] focus:border-pine focus:outline-none"
-                />
-                <Button type="submit" size="sm" disabled={addingGoal}>
-                  {addingGoal ? <Loader2 size={13} className="animate-spin" /> : 'Add Goal'}
-                </Button>
+                <div className="flex gap-2">
+                  <input
+                    type="date"
+                    value={goalDueOn}
+                    onChange={(e) => setGoalDueOn(e.target.value)}
+                    className="flex-1 min-w-0 h-9 rounded-ctl border border-hairline-strong bg-surface px-2.5 text-[12.5px] focus:border-pine focus:outline-none"
+                  />
+                  <Button type="submit" size="sm" disabled={addingGoal} className="shrink-0">
+                    {addingGoal ? <Loader2 size={13} className="animate-spin" /> : 'Add Goal'}
+                  </Button>
+                </div>
               </form>
             )}
           </section>

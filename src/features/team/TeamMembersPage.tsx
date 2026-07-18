@@ -7,6 +7,7 @@ import {
   Loader2,
   MailPlus,
   RotateCw,
+  ShieldCheck,
   Trash2,
   UserMinus,
   Sparkles,
@@ -19,6 +20,7 @@ import Modal from '@/shared/components/Modal'
 import Card from '@/shared/components/Card'
 import { RoleBadge } from '@/shared/components/Badge'
 import { useAuthStore } from '@/features/auth/store/authStore'
+import { hasPermission, PERMISSION_KEY_GROUPS } from '@/shared/config/navigation'
 import { TeamError, teamService, type InvitableRole, type Member } from '@/services/teamService'
 import { sendInviteEmail } from '@/services/emailService'
 import { useTeamStore } from './store/teamStore'
@@ -91,18 +93,144 @@ function RowSkeleton() {
   )
 }
 
+/**
+ * Full freedom across the granular keys — not tied to the three role presets,
+ * which are only a convenience for the invite form. The Owner (or anyone
+ * holding team.managePermissions) can grant any member any combination of
+ * these. Saving always sends the whole exact-key list; the server refuses
+ * outright if the target already holds `*` (§10.2's immutable-Owner rule).
+ */
+function PermissionEditorModal({
+  member,
+  onClose,
+  onSaved,
+}: {
+  member: Member | null
+  onClose: () => void
+  onSaved: (userId: string, permissions: string[]) => void
+}) {
+  const [checked, setChecked] = useState<Set<string>>(new Set())
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (!member) return
+    const current = member.memberships?.[0]?.permissions ?? []
+    const initial = new Set<string>()
+    for (const group of PERMISSION_KEY_GROUPS) {
+      for (const { key } of group.keys) {
+        if (hasPermission(current, key)) initial.add(key)
+      }
+    }
+    setChecked(initial)
+    setError(null)
+  }, [member])
+
+  const toggle = (key: string) => {
+    setChecked((prev) => {
+      const next = new Set(prev)
+      if (next.has(key)) next.delete(key)
+      else next.add(key)
+      return next
+    })
+  }
+
+  const handleSave = async () => {
+    if (!member) return
+    setSaving(true)
+    setError(null)
+    try {
+      const permissions = [...checked]
+      await teamService.updatePermissions(member.id, permissions)
+      onSaved(member.id, permissions)
+      onClose()
+    } catch (err) {
+      setError(err instanceof TeamError ? err.message : 'We could not save those permissions.')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <Modal
+      open={member !== null}
+      onClose={() => {
+        if (!saving) onClose()
+      }}
+      title={`Edit permissions — ${member?.name ?? ''}`}
+      description="Grant exactly what this person needs, module by module. Nothing here is tied to a fixed role."
+    >
+      <div className="space-y-4">
+        {error && (
+          <div className="flex gap-2 rounded-ctl border border-clay/35 bg-clay/5 p-3 text-[12px] text-clay-deep">
+            <AlertCircle size={15} className="mt-px shrink-0 text-clay" />
+            <p>{error}</p>
+          </div>
+        )}
+
+        <div className="max-h-[50vh] overflow-y-auto space-y-4 pr-1">
+          {PERMISSION_KEY_GROUPS.map((group) => (
+            <div key={group.label}>
+              <h3 className="text-[11px] font-bold tracking-[0.1em] text-muted uppercase border-b border-hairline pb-1.5">
+                {group.label}
+              </h3>
+              <div className="mt-2 space-y-1.5">
+                {group.keys.map(({ key, label }) => (
+                  <label
+                    key={key}
+                    className="flex items-center gap-2.5 rounded-ctl px-2 py-1.5 text-[13px] text-ink hover:bg-wash/50 cursor-pointer"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={checked.has(key)}
+                      onChange={() => toggle(key)}
+                      className="size-4 rounded border-hairline-strong accent-pine cursor-pointer"
+                    />
+                    {label}
+                  </label>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div className="flex justify-end gap-2 border-t border-hairline pt-4">
+          <Button type="button" variant="secondary" onClick={onClose} disabled={saving}>
+            Cancel
+          </Button>
+          <Button onClick={() => void handleSave()} disabled={saving}>
+            {saving ? (
+              <>
+                <Loader2 size={15} className="animate-spin" />
+                Saving…
+              </>
+            ) : (
+              'Save permissions'
+            )}
+          </Button>
+        </div>
+      </div>
+    </Modal>
+  )
+}
+
 export default function TeamMembersPage() {
   const currentUser = useAuthStore((s) => s.user)!
-  const { status, members, invites, error, load, upsertInvite, dropMember } = useTeamStore()
+  const { status, members, invites, error, load, upsertInvite, dropMember, updateMemberPermissions } = useTeamStore()
 
   const [inviteLink, setInviteLink] = useState<string | null>(null)
   const [inviteTempPassword, setInviteTempPassword] = useState<string | null>(null)
   const [formError, setFormError] = useState<string | null>(null)
   const [busyId, setBusyId] = useState<string | null>(null)
   const [pendingRemoval, setPendingRemoval] = useState<Member | null>(null)
+  const [pendingPermissionsEdit, setPendingPermissionsEdit] = useState<Member | null>(null)
 
-  const canManage = currentUser.role === 'OWNER' || currentUser.role === 'HR'
-  const canRemove = currentUser.role === 'OWNER'
+  // Every protected action here checks the real granular permission, never a
+  // role label (§10 hard rule) — the backend's DELETE /members/:id and the
+  // new PATCH .../permissions both gate on team.managePermissions too, so
+  // this mirrors exactly what the server actually enforces.
+  const canManage = hasPermission(currentUser.permissions, 'team.invite')
+  const canManagePermissions = hasPermission(currentUser.permissions, 'team.managePermissions')
 
   const {
     register,
@@ -441,7 +569,18 @@ export default function TeamMembersPage() {
 
                     <RoleBadge role={member.role} />
 
-                    {canRemove && member.role !== 'OWNER' && member.id !== currentUser.id && (
+                    {canManagePermissions && member.role !== 'OWNER' && member.id !== currentUser.id && (
+                      <button
+                        type="button"
+                        onClick={() => setPendingPermissionsEdit(member)}
+                        aria-label={`Edit permissions for ${member.name}`}
+                        className="inline-flex size-8 items-center justify-center rounded-ctl border border-hairline-strong bg-surface text-muted hover:bg-wash hover:text-ink transition-colors cursor-pointer"
+                      >
+                        <ShieldCheck size={13} />
+                      </button>
+                    )}
+
+                    {canManagePermissions && member.role !== 'OWNER' && member.id !== currentUser.id && (
                       <button
                         type="button"
                         onClick={() => setPendingRemoval(member)}
@@ -485,6 +624,12 @@ export default function TeamMembersPage() {
           </Button>
         </div>
       </Modal>
+
+      <PermissionEditorModal
+        member={pendingPermissionsEdit}
+        onClose={() => setPendingPermissionsEdit(null)}
+        onSaved={updateMemberPermissions}
+      />
     </motion.div>
   )
 }

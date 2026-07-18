@@ -73,7 +73,7 @@ type AuthState = {
  * or can invite/manage the team) > Employee (view-only baseline, matching the
  * Employee preset in §10.3 — e.g. attendance.view + leave.view with nothing else).
  */
-function deriveRole(permissions: string[]): Role {
+export function deriveRole(permissions: string[]): Role {
   if (permissions.includes('*')) return 'OWNER'
   if (permissions.some((p) => p.startsWith('employees'))) return 'HR'
 

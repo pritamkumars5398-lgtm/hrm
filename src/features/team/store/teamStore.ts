@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import { teamService, type Invite, type Member } from '@/services/teamService'
+import { deriveRole } from '@/features/auth/store/authStore'
 
 type Status = 'idle' | 'loading' | 'ready' | 'error'
 
@@ -12,6 +13,7 @@ type TeamState = {
   /** Applied after a mutation so the list reflects it without a full refetch. */
   upsertInvite: (invite: Invite) => void
   dropMember: (id: string) => void
+  updateMemberPermissions: (userId: string, permissions: string[]) => void
 }
 
 export const useTeamStore = create<TeamState>()((set, get) => ({
@@ -48,4 +50,13 @@ export const useTeamStore = create<TeamState>()((set, get) => ({
     }),
 
   dropMember: (id) => set((state) => ({ members: state.members.filter((m) => m.id !== id) })),
+
+  updateMemberPermissions: (userId, permissions) =>
+    set((state) => ({
+      members: state.members.map((m) =>
+        m.id === userId && m.memberships?.[0]
+          ? { ...m, memberships: [{ ...m.memberships[0], permissions }], role: deriveRole(permissions) }
+          : m,
+      ),
+    })),
 }))
