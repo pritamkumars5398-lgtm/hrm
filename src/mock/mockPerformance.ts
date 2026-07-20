@@ -31,6 +31,8 @@ export type PerformanceRecord = {
   previousRating: number | null
   goals: Goal[]
   reviews: Review[]
+  /** Real backend computes this per-viewer; undefined on the mock path defaults to reviewable. */
+  canReview?: boolean
 }
 
 export const CURRENT_CYCLE = 'Q3 2026'

@@ -14,6 +14,25 @@ export default function Modal({ open, onClose, title, description, children }: M
   const panelRef = useRef<HTMLDivElement>(null)
   const reduced = useReducedMotion()
 
+  // Handle focus and overflow only when `open` changes
+  useEffect(() => {
+    if (!open) return
+
+    const previouslyFocused = document.activeElement as HTMLElement | null
+    document.body.style.overflow = 'hidden'
+    
+    // Slight delay to let animation start before focusing
+    requestAnimationFrame(() => {
+      panelRef.current?.focus()
+    })
+
+    return () => {
+      document.body.style.overflow = ''
+      previouslyFocused?.focus()
+    }
+  }, [open])
+
+  // Handle Escape key with latest onClose
   useEffect(() => {
     if (!open) return
 
@@ -22,14 +41,8 @@ export default function Modal({ open, onClose, title, description, children }: M
     }
 
     document.addEventListener('keydown', onKeyDown)
-    const previouslyFocused = document.activeElement as HTMLElement | null
-    document.body.style.overflow = 'hidden'
-    panelRef.current?.focus()
-
     return () => {
       document.removeEventListener('keydown', onKeyDown)
-      document.body.style.overflow = ''
-      previouslyFocused?.focus()
     }
   }, [open, onClose])
 

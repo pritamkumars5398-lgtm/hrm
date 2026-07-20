@@ -5,6 +5,7 @@ import {
   CalendarDays,
   Clock,
   Download,
+  Loader2,
   TrendingDown,
   Users,
   Sparkles,
@@ -177,13 +178,15 @@ export default function ReportsPage() {
 
   const [data, setData] = useState<ReportsData | null>(null)
   const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading')
+  const [exporting, setExporting] = useState(false)
+  const [exportError, setExportError] = useState<string | null>(null)
 
   useEffect(() => {
     let cancelled = false
     setStatus('loading')
 
     void reportsService
-      .get(user.role)
+      .get(user.permissions)
       .then((result) => {
         if (!cancelled) {
           setData(result)
@@ -197,7 +200,19 @@ export default function ReportsPage() {
     return () => {
       cancelled = true
     }
-  }, [user.role])
+  }, [user.permissions])
+
+  const handleExport = async () => {
+    setExporting(true)
+    setExportError(null)
+    try {
+      await reportsService.exportCsv()
+    } catch {
+      setExportError('We could not export your reports.')
+    } finally {
+      setExporting(false)
+    }
+  }
 
   const isLoading = status === 'loading' || !data
   const maxHeadcount = data ? Math.max(...data.headcountByMonth.map((m) => m.value)) : 1
@@ -226,11 +241,20 @@ export default function ReportsPage() {
 
         <Button
           className="font-bold shadow-sm"
+          onClick={() => void handleExport()}
+          disabled={exporting || isLoading}
         >
-          <Download size={15} />
+          {exporting ? <Loader2 size={15} className="animate-spin" /> : <Download size={15} />}
           Export CSV
         </Button>
       </div>
+
+      {exportError && (
+        <Card className="flex items-start gap-3 border-clay/30 bg-clay/5 p-3.5">
+          <AlertCircle size={16} className="mt-px shrink-0 text-clay" />
+          <p className="text-[13px] font-medium text-clay">{exportError}</p>
+        </Card>
+      )}
 
       {status === 'error' && (
         <Card className="mt-6 flex items-start gap-3 border-clay/30 bg-clay/5 p-5">
@@ -297,9 +321,11 @@ export default function ReportsPage() {
                 <h2 className="text-[13px] font-semibold text-ink">Department statistics</h2>
                 <button
                   type="button"
-                  className="inline-flex items-center gap-1.5 text-[12.5px] font-bold text-pine hover:text-pine-deep cursor-pointer"
+                  onClick={() => void handleExport()}
+                  disabled={exporting || isLoading}
+                  className="inline-flex items-center gap-1.5 text-[12.5px] font-bold text-pine hover:text-pine-deep cursor-pointer disabled:opacity-50 disabled:pointer-events-none"
                 >
-                  <Download size={13} />
+                  {exporting ? <Loader2 size={13} className="animate-spin" /> : <Download size={13} />}
                   Export
                 </button>
               </div>
@@ -437,8 +463,6 @@ export default function ReportsPage() {
               )}
             </Card>
           </div>
-
-          <p className="mt-4 text-[11px] text-muted font-medium">Export buttons are UI-only in this phase.</p>
         </>
       )}
     </motion.div>

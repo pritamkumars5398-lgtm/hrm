@@ -1,4 +1,4 @@
-import { MOCK_ORGANIZATION_ID, type Role } from './mockUsers'
+import { MOCK_ORGANIZATION_ID } from './mockUsers'
 import { mockEmployees } from './mockEmployees'
 
 // Derived, not typed by hand: a dashboard that says 248 while the directory shows
@@ -14,8 +14,8 @@ export type DashboardStat = {
   label: string
   value: string
   delta: string | null
-  /** Which roles may see this figure — payroll cost is not for everyone (§10). */
-  restrictedTo?: Role[]
+  /** Permission key gating this figure — payroll cost is not for everyone (§10). */
+  restrictedPermission?: string
 }
 
 export type ActivityItem = {
@@ -54,8 +54,8 @@ export const mockDashboardStats: DashboardStat[] = [
     label: 'March payroll',
     value: '₹1,82,400',
     delta: 'Ready to review',
-    // A Manager has no business seeing the company's total payroll cost.
-    restrictedTo: ['OWNER'],
+    // Anyone without real payroll access has no business seeing this figure.
+    restrictedPermission: 'payroll.view',
   },
 ]
 

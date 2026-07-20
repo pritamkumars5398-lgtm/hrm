@@ -19,6 +19,15 @@ const read = (value: string | undefined): string | null => {
 export const env = {
   googleClientId: read(import.meta.env.VITE_GOOGLE_CLIENT_ID),
   apiBaseUrl: read(import.meta.env.VITE_API_BASE_URL),
+  firebase: {
+    apiKey: read(import.meta.env.VITE_FIREBASE_API_KEY),
+    authDomain: read(import.meta.env.VITE_FIREBASE_AUTH_DOMAIN),
+    projectId: read(import.meta.env.VITE_FIREBASE_PROJECT_ID),
+    storageBucket: read(import.meta.env.VITE_FIREBASE_STORAGE_BUCKET),
+    messagingSenderId: read(import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID),
+    appId: read(import.meta.env.VITE_FIREBASE_APP_ID),
+    vapidKey: read(import.meta.env.VITE_FIREBASE_VAPID_KEY),
+  },
 }
 
 /** True once a real Google client ID exists — until then, the simulated chooser runs. */
@@ -26,3 +35,13 @@ export const hasGoogleOAuth = env.googleClientId !== null
 
 /** True once the NestJS backend is reachable — until then, services return mock data. */
 export const hasBackend = env.apiBaseUrl !== null
+
+/** True once every value push registration needs is present — until then, the
+ *  app just never asks for notification permission (real in-app notifications
+ *  still work regardless; this only gates the OS/browser push channel). */
+export const hasPushNotifications =
+  env.firebase.apiKey !== null &&
+  env.firebase.projectId !== null &&
+  env.firebase.messagingSenderId !== null &&
+  env.firebase.appId !== null &&
+  env.firebase.vapidKey !== null
