@@ -111,12 +111,7 @@ export default function CompanyDetailsStep({ isAdditional = false }: { isAdditio
         jobTitle: isAdditional ? 'Owner' : (personal?.jobTitle || 'Owner'),
         ownerId: user.id,
       })
-<<<<<<< HEAD
       attachOrganization(org.id, isAdditional ? 'Owner' : (personal?.jobTitle || 'Owner'), org.name)
-=======
-
-      attachOrganization(org.id, org.name, isAdditional ? 'Owner' : (personal?.jobTitle || 'Owner'))
->>>>>>> 03cc48703f96409ff27be8daedd2dffe53354e9f
       navigate('/dashboard', { replace: true })
     } catch (err) {
       setFormError(
