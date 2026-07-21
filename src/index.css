@@ -44,6 +44,21 @@
   /* §7.2 — radius capped at 6–8px */
   --radius-ctl: 6px;
   --radius-card: 8px;
+
+  /* Premium animations */
+  --animate-shine: shine 3s ease-in-out infinite;
+
+  @keyframes shine {
+    0% {
+      left: -100%;
+    }
+    20% {
+      left: 100%;
+    }
+    100% {
+      left: 100%;
+    }
+  }
 }
 
 @layer base {

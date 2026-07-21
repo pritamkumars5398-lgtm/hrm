@@ -14,8 +14,8 @@ export type DashboardStat = {
   label: string
   value: string
   delta: string | null
-  /** Which roles may see this figure — payroll cost is not for everyone (§10). */
-  restrictedTo?: Array<'OWNER' | 'HR' | 'MANAGER'>
+  /** Permission key gating this figure — payroll cost is not for everyone (§10). */
+  restrictedPermission?: string
 }
 
 export type ActivityItem = {
@@ -52,10 +52,10 @@ export const mockDashboardStats: DashboardStat[] = [
     id: 'st-payroll',
     organizationId: MOCK_ORGANIZATION_ID,
     label: 'March payroll',
-    value: '£182,400',
+    value: '₹1,82,400',
     delta: 'Ready to review',
-    // A Manager has no business seeing the company's total payroll cost.
-    restrictedTo: ['OWNER'],
+    // Anyone without real payroll access has no business seeing this figure.
+    restrictedPermission: 'payroll.view',
   },
 ]
 
@@ -71,7 +71,7 @@ export const mockActivity: ActivityItem[] = [
     id: 'ac-2',
     organizationId: MOCK_ORGANIZATION_ID,
     title: 'March payroll is ready to review',
-    meta: '248 employees · £847,204',
+    meta: '248 employees · ₹8,47,204',
     kind: 'payroll',
   },
   {

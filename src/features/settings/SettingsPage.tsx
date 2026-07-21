@@ -10,12 +10,15 @@ import {
   Shield,
   ShieldCheck,
   Users,
+  Sparkles,
 } from 'lucide-react'
+import { motion, AnimatePresence } from 'framer-motion'
 import Card from '@/shared/components/Card'
 import Button from '@/shared/components/Button'
 import Input from '@/shared/components/Input'
 import Select from '@/shared/components/Select'
 import Badge from '@/shared/components/Badge'
+import Modal from '@/shared/components/Modal'
 import { useAuthStore } from '@/features/auth/store/authStore'
 import {
   OrganizationError,
@@ -27,22 +30,22 @@ import RolesPermissions from './components/RolesPermissions'
 
 type Tab = 'company' | 'roles' | 'notifications' | 'appearance' | 'security'
 
-const TABS: Array<{ key: Tab; label: string; icon: typeof Building2 }> = [
-  { key: 'company', label: 'Company profile', icon: Building2 },
-  { key: 'roles', label: 'Roles & Permissions', icon: Users },
-  { key: 'notifications', label: 'Notifications', icon: Bell },
-  { key: 'appearance', label: 'Appearance', icon: Palette },
-  { key: 'security', label: 'Security', icon: Shield },
+const TABS: Array<{ key: Tab; label: string; icon: typeof Building2; color: string }> = [
+  { key: 'company', label: 'Company profile', icon: Building2, color: 'text-indigo-500' },
+  { key: 'roles', label: 'Roles & Permissions', icon: Users, color: 'text-violet-500' },
+  { key: 'notifications', label: 'Notifications', icon: Bell, color: 'text-amber-500' },
+  { key: 'appearance', label: 'Appearance', icon: Palette, color: 'text-emerald-600' },
+  { key: 'security', label: 'Security', icon: Shield, color: 'text-rose-500' },
 ]
 
-type CompanyForm = { name: string; address: string; industry: string }
+type CompanyForm = { name: string; address: string; industry: string; leaveNotificationEmail: string }
 type PasswordForm = { currentPassword: string; newPassword: string }
 
 function Saved() {
   return (
-    <span className="inline-flex items-center gap-1.5 text-[12.5px] font-medium text-pine">
+    <span className="inline-flex items-center gap-1.5 text-[12.5px] font-bold text-emerald-800 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-100/40 shadow-sm">
       <Check size={14} />
-      Saved
+      Saved successfully
     </span>
   )
 }
@@ -53,6 +56,143 @@ function ErrorNote({ message }: { message: string }) {
       <AlertCircle size={15} className="mt-px shrink-0 text-clay" />
       <p className="text-[13px] leading-relaxed text-clay">{message}</p>
     </div>
+  )
+}
+
+/* ------------------------------------------------------------- danger zone */
+
+/** Type-to-confirm modal for permanently deleting the active company —
+ *  irreversible and affects every member in it, not just the Owner, so a
+ *  plain "Are you sure?" isn't enough friction. */
+function DeleteCompanyModal({
+  organization,
+  open,
+  onClose,
+}: {
+  organization: Organization
+  open: boolean
+  onClose: () => void
+}) {
+  const removeOrganization = useAuthStore((s) => s.removeOrganization)
+  const [confirmText, setConfirmText] = useState('')
+  const [deleting, setDeleting] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (open) {
+      setConfirmText('')
+      setError(null)
+    }
+  }, [open])
+
+  const matches = confirmText.trim() === organization.name.trim()
+
+  const handleDelete = async () => {
+    if (!matches) return
+    setDeleting(true)
+    setError(null)
+    try {
+      await organizationService.remove(organization.id, confirmText)
+      removeOrganization(organization.id)
+      // The whole screen — every module's cached data — was scoped to the
+      // company that no longer exists, so a full reload is the only way to
+      // land cleanly on whatever workspace is now active.
+      window.location.href = '/dashboard'
+    } catch (err) {
+      setError(err instanceof OrganizationError ? err.message : 'We could not delete that company.')
+      setDeleting(false)
+    }
+  }
+
+  return (
+    <Modal
+      open={open}
+      onClose={() => {
+        if (!deleting) onClose()
+      }}
+      title={`Delete ${organization.name}?`}
+      description="This permanently removes the company and everything in it — employees, attendance, leave, payroll, performance and documents — for every member, not just you. This cannot be undone."
+    >
+      <div className="space-y-4">
+        {error && (
+          <div className="flex gap-2 rounded-ctl border border-clay/35 bg-clay/5 p-3 text-[12px] text-clay-deep">
+            <AlertCircle size={15} className="mt-px shrink-0 text-clay" />
+            <p>{error}</p>
+          </div>
+        )}
+
+        <div>
+          <label htmlFor="confirm-company-name" className="mb-1.5 block text-[12.5px] font-semibold text-ink">
+            Type <span className="font-bold">{organization.name}</span> to confirm
+          </label>
+          <input
+            id="confirm-company-name"
+            type="text"
+            value={confirmText}
+            onChange={(e) => setConfirmText(e.target.value)}
+            disabled={deleting}
+            className="w-full h-10 rounded-ctl border border-hairline-strong bg-surface px-3 text-[13.5px] focus:border-clay focus:outline-none"
+            autoComplete="off"
+          />
+        </div>
+
+        <div className="flex justify-end gap-2 border-t border-hairline pt-4">
+          <Button type="button" variant="secondary" onClick={onClose} disabled={deleting}>
+            Cancel
+          </Button>
+          <Button
+            onClick={() => void handleDelete()}
+            disabled={!matches || deleting}
+            variant="danger"
+          >
+            {deleting ? (
+              <>
+                <Loader2 size={15} className="animate-spin" />
+                Deleting…
+              </>
+            ) : (
+              'Delete company'
+            )}
+          </Button>
+        </div>
+      </div>
+    </Modal>
+  )
+}
+
+/** Owner-only — the backend independently enforces this against the
+ *  company's own `ownerId`, so hiding it for anyone else here is just UX,
+ *  not the actual access control. */
+function DangerZone({ organization }: { organization: Organization }) {
+  const isOwner = useAuthStore((s) => s.user?.permissions.includes('*') ?? false)
+  const [confirmOpen, setConfirmOpen] = useState(false)
+
+  if (!isOwner) return null
+
+  return (
+    <>
+      <Card className="p-5 border-clay/30">
+        <h3 className="text-[13.5px] font-bold text-clay-deep">Danger Zone</h3>
+        <div className="mt-3 flex flex-wrap items-center justify-between gap-3 border-t border-clay/15 pt-4">
+          <div>
+            <p className="text-[13px] font-semibold text-ink">Delete this company</p>
+            <p className="mt-0.5 text-[12.5px] text-muted max-w-md">
+              Permanently removes {organization.name} and every employee, attendance, leave, payroll,
+              performance and document record in it. This cannot be undone.
+            </p>
+          </div>
+          <Button
+            onClick={() => setConfirmOpen(true)}
+            className="shrink-0"
+            variant="danger"
+          >
+            Delete Company
+          </Button>
+        </div>
+      </Card>
+
+      <DeleteCompanyModal organization={organization} open={confirmOpen} onClose={() => setConfirmOpen(false)} />
+    </>
   )
 }
 
@@ -81,7 +221,12 @@ function CompanyProfile() {
       .then((result) => {
         if (cancelled || !result) return
         setOrg(result)
-        reset({ name: result.name, address: result.address, industry: result.industry })
+        reset({
+          name: result.name,
+          address: result.address,
+          industry: result.industry,
+          leaveNotificationEmail: result.leaveNotificationEmail ?? '',
+        })
       })
       .finally(() => {
         if (!cancelled) setLoading(false)
@@ -123,13 +268,15 @@ function CompanyProfile() {
   }
 
   return (
-    <div>
-      <h2 className="text-[15px] font-semibold">Company profile</h2>
-      <p className="mt-1 text-[13px] text-muted">
-        These details appear on payslips, offer letters and invites.
-      </p>
+    <div className="space-y-5">
+      <div>
+        <h2 className="text-[15px] font-semibold text-ink">Company profile</h2>
+        <p className="mt-1 text-[13px] text-muted font-medium">
+          These details appear on payslips, offer letters and invites.
+        </p>
+      </div>
 
-      <Card className="mt-5 p-5">
+      <Card className="p-5">
         <form onSubmit={onSubmit} noValidate>
           {error && (
             <div className="mb-5">
@@ -157,6 +304,24 @@ function CompanyProfile() {
             />
           </div>
 
+          <div className="mt-6 border-t border-hairline pt-5">
+            <h3 className="text-[13.5px] font-semibold text-ink">Leave notifications</h3>
+            <p className="mt-1 text-[12.5px] text-muted">
+              When someone applies for leave, an email goes to this address. Leave it blank to turn
+              notifications off.
+            </p>
+            <Input
+              label="Notification email"
+              type="email"
+              className="mt-3"
+              placeholder="hr@yourcompany.com"
+              error={errors.leaveNotificationEmail?.message}
+              {...register('leaveNotificationEmail', {
+                pattern: { value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/, message: 'Enter a valid email.' },
+              })}
+            />
+          </div>
+
           <div className="mt-6 flex items-center justify-end gap-3 border-t border-hairline pt-5">
             {saved && <Saved />}
             <Button type="submit" disabled={isSubmitting || !isDirty}>
@@ -172,6 +337,8 @@ function CompanyProfile() {
           </div>
         </form>
       </Card>
+
+      {org && <DangerZone organization={org} />}
     </div>
   )
 }
@@ -196,41 +363,42 @@ function Notifications() {
   })
 
   return (
-    <div>
-      <h2 className="text-[15px] font-semibold">Notifications</h2>
-      <p className="mt-1 text-[13px] text-muted">
-        Choose what Keystone emails you about. No mail is actually sent in this phase.
-      </p>
+    <div className="space-y-5">
+      <div>
+        <h2 className="text-[15px] font-semibold text-ink">Notifications</h2>
+        <p className="mt-1 text-[13px] text-muted font-medium">
+          Choose what Keystone emails you about. No mail is actually sent in this phase.
+        </p>
+      </div>
 
-      <Card flush className="mt-5">
-        <ul>
+      <Card flush className="overflow-hidden">
+        <ul className="divide-y divide-hairline">
           {NOTIFICATION_SETTINGS.map((setting) => {
             const on = enabled[setting.id] ?? false
 
             return (
               <li
                 key={setting.id}
-                className="flex items-center justify-between gap-4 border-b border-hairline px-4 py-3.5 last:border-0"
+                className="flex items-center justify-between gap-4 px-4 py-3.5 hover:bg-wash/20 transition-colors"
               >
                 <div className="min-w-0">
-                  <p className="text-[13.5px] font-medium">{setting.label}</p>
-                  <p className="mt-0.5 text-[12.5px] text-muted">{setting.hint}</p>
+                  <p className="text-[13.5px] font-semibold text-ink">{setting.label}</p>
+                  <p className="mt-0.5 text-[12.5px] text-muted font-medium">{setting.hint}</p>
                 </div>
 
-                {/* Pill-shaped by design — a toggle is a real convention (§7.2). */}
                 <button
                   type="button"
                   role="switch"
                   aria-checked={on}
                   aria-label={setting.label}
                   onClick={() => setEnabled((prev) => ({ ...prev, [setting.id]: !on }))}
-                  className={`relative h-5 w-9 shrink-0 rounded-full transition-colors ${
-                    on ? 'bg-pine' : 'bg-hairline-strong'
+                  className={`relative h-5.5 w-10 shrink-0 rounded-full transition-all duration-200 cursor-pointer focus:outline-none ${
+                    on ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.15)]' : 'bg-hairline-strong'
                   }`}
                 >
                   <span
-                    className={`absolute top-0.5 size-4 rounded-full bg-white transition-[left] ${
-                      on ? 'left-[1.125rem]' : 'left-0.5'
+                    className={`absolute top-0.5 size-4.5 rounded-full bg-white transition-[left] duration-200 shadow-sm ${
+                      on ? 'left-[1.25rem]' : 'left-0.5'
                     }`}
                   />
                 </button>
@@ -247,32 +415,81 @@ function Notifications() {
 
 function Appearance() {
   return (
-    <div>
-      <h2 className="text-[15px] font-semibold">Appearance</h2>
-      <p className="mt-1 text-[13px] text-muted">How Keystone looks on this device.</p>
+    <div className="space-y-5">
+      <div>
+        <h2 className="text-[15px] font-semibold text-ink">Appearance</h2>
+        <p className="mt-1 text-[13px] text-muted font-medium">Configure how Keystone looks on this device.</p>
+      </div>
 
-      <Card className="mt-5 p-5">
-        <div className="flex items-start gap-3">
-          <Palette size={16} className="mt-0.5 shrink-0 text-muted" aria-hidden="true" />
-          <div>
-            <p className="text-[13.5px] font-medium">Light theme</p>
-            <p className="mt-1 max-w-lg text-[12.5px] leading-relaxed text-muted">
-              Keystone currently ships one carefully-tuned light theme. A dark theme is
-              deliberately not half-built here: every colour token would need a dark counterpart,
-              and a rushed one looks worse than none. It is a small, self-contained piece of work
-              when you want it.
+      <div className="grid gap-4 sm:grid-cols-2">
+        {/* Active Light Theme Preview */}
+        <Card className="p-4 border border-pine flex flex-col justify-between h-48 relative overflow-hidden bg-surface shadow-sm">
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-[12.5px] font-bold text-ink flex items-center gap-1.5">
+                <Palette size={14} className="text-pine" />
+                Keystone Light
+              </span>
+              <span className="text-[10px] text-pine font-bold bg-pine-tint px-2 py-0.2 rounded-full border border-pine/10">Active</span>
+            </div>
+            <p className="text-[11.5px] text-muted leading-relaxed max-w-[200px] font-medium">
+              Alderway's premium brand theme featuring clean borders and emerald pine accents.
             </p>
           </div>
-        </div>
+          
+          {/* Visual Color Palette Preview Dots */}
+          <div className="flex items-center gap-4 border-t border-hairline pt-3.5">
+            <div className="flex flex-col gap-1 items-center">
+              <span className="size-4.5 rounded-full bg-pine border border-pine/15" />
+              <span className="text-[8px] font-bold text-muted uppercase tracking-wider">Pine</span>
+            </div>
+            <div className="flex flex-col gap-1 items-center">
+              <span className="size-4.5 rounded-full bg-wash border border-hairline-strong" />
+              <span className="text-[8px] font-bold text-muted uppercase tracking-wider">Wash</span>
+            </div>
+            <div className="flex flex-col gap-1 items-center">
+              <span className="size-4.5 rounded-full bg-clay border border-clay/15" />
+              <span className="text-[8px] font-bold text-muted uppercase tracking-wider">Clay</span>
+            </div>
+            <div className="flex flex-col gap-1 items-center">
+              <span className="size-4.5 rounded-full bg-ink border border-ink/15" />
+              <span className="text-[8px] font-bold text-muted uppercase tracking-wider">Ink</span>
+            </div>
+          </div>
+        </Card>
 
-        <div className="mt-5 border-t border-hairline pt-4">
-          <p className="text-[13px] font-medium">Reduced motion</p>
-          <p className="mt-1 text-[12.5px] leading-relaxed text-muted">
-            Animations already follow your system setting
-            (<code className="text-ink">prefers-reduced-motion</code>). Turn it on in your OS and
-            Keystone stops animating — no toggle needed here.
-          </p>
-        </div>
+        {/* Locked Dark Theme Preview */}
+        <Card className="p-4 border border-hairline flex flex-col justify-between h-48 relative overflow-hidden bg-wash/30 opacity-75">
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-[12.5px] font-bold text-muted flex items-center gap-1.5">
+                <ShieldCheck size={14} className="text-muted" />
+                Keystone Dark
+              </span>
+              <span className="text-[10px] text-muted font-bold bg-wash border border-hairline-strong px-2 py-0.2 rounded-full">Locked</span>
+            </div>
+            <p className="text-[11.5px] text-muted leading-relaxed max-w-[200px] font-medium">
+              Deep charcoal hues designed to reduce eye strain in low-light environments.
+            </p>
+          </div>
+
+          <div className="flex items-center justify-between border-t border-hairline/60 pt-3.5">
+            <span className="text-[10px] font-bold text-muted uppercase tracking-wider">Coming in Phase 2</span>
+            <div className="flex gap-1.5">
+              <span className="size-4 rounded-full bg-slate-800 border border-slate-700" />
+              <span className="size-4 rounded-full bg-slate-900 border border-slate-800" />
+            </div>
+          </div>
+        </Card>
+      </div>
+
+      <Card className="p-4">
+        <h3 className="text-[13px] font-bold text-ink">Reduced motion</h3>
+        <p className="mt-1.5 text-[12.5px] leading-relaxed text-muted font-medium">
+          Animations already follow your system setting
+          (<code className="text-ink bg-wash px-1 py-0.2 rounded border border-hairline">prefers-reduced-motion</code>). Turn it on in your OS and
+          Keystone stops animating — no toggle needed here.
+        </p>
       </Card>
     </div>
   )
@@ -307,14 +524,16 @@ function Security() {
   })
 
   return (
-    <div>
-      <h2 className="text-[15px] font-semibold">Security</h2>
-      <p className="mt-1 text-[13px] text-muted">Your password and session.</p>
+    <div className="space-y-5">
+      <div>
+        <h2 className="text-[15px] font-semibold text-ink">Security</h2>
+        <p className="mt-1 text-[13px] text-muted font-medium">Your password and session.</p>
+      </div>
 
-      <Card className="mt-5 p-5">
+      <Card className="p-5">
         <form onSubmit={onSubmit} noValidate>
-          <p className="text-[13.5px] font-medium">Change password</p>
-          <p className="mt-1 text-[12.5px] text-muted">
+          <p className="text-[13.5px] font-bold text-ink">Change password</p>
+          <p className="mt-1 text-[12.5px] text-muted font-medium">
             We ask for your current password even though you're signed in — it stops anyone at an
             unlocked laptop taking the account over.
           </p>
@@ -345,7 +564,7 @@ function Security() {
             />
           </div>
 
-          <div className="mt-5 flex items-center justify-end gap-3">
+          <div className="mt-5 flex items-center justify-end gap-3 border-t border-hairline pt-4">
             {saved && <Saved />}
             <Button type="submit" disabled={isSubmitting}>
               {isSubmitting ? (
@@ -361,15 +580,19 @@ function Security() {
         </form>
       </Card>
 
-      <Card className="mt-4 p-5">
+      <Card className="p-5 border border-hairline bg-surface hover:shadow-sm transition-all duration-300">
         <div className="flex items-start gap-3">
-          <ShieldCheck size={16} className="mt-0.5 shrink-0 text-pine" aria-hidden="true" />
+          <span className="inline-flex p-2 bg-pine-tint text-pine rounded-ctl border border-pine/10 shrink-0">
+            <ShieldCheck size={16} aria-hidden="true" />
+          </span>
           <div>
-            <p className="text-[13.5px] font-medium">Your session</p>
-            <p className="mt-1 text-[12.5px] leading-relaxed text-muted">
-              Signed in as <span className="font-medium text-ink">{user.email}</span> with the{' '}
-              <span className="font-medium text-ink">{user.role.toLowerCase()}</span> role. Your
-              session is held in an httpOnly cookie, so no script on the page can read it.
+            <h3 className="text-[13.5px] font-bold text-ink">Active Session Status</h3>
+            <p className="mt-1.5 text-[12.5px] leading-relaxed text-muted font-medium">
+              Signed in as <span className="font-bold text-ink">{user.email}</span> with active{' '}
+              <span className="font-bold text-pine uppercase bg-pine-tint px-1.5 py-0.2 rounded text-[10px] tracking-wider">{user.role}</span> privileges.
+            </p>
+            <p className="mt-2 text-[11px] text-muted font-medium leading-relaxed">
+              Your session is secured using standard HttpOnly flags, protecting cookies against client-side script access.
             </p>
           </div>
         </div>
@@ -384,23 +607,34 @@ export default function SettingsPage() {
   const [tab, setTab] = useState<Tab>('company')
 
   return (
-    <div>
+    <motion.div
+      initial={{ opacity: 0, y: 15 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.35, ease: 'easeOut' }}
+      className="space-y-6"
+    >
       <div>
-        <h1 className="font-display text-[26px] leading-tight font-semibold tracking-[-0.02em]">
-          Settings
-        </h1>
+        <div className="flex items-center gap-2">
+          <h1 className="font-display text-[26px] leading-tight font-semibold tracking-[-0.02em] text-ink">
+            Settings
+          </h1>
+          <span className="flex size-6 items-center justify-center rounded-full bg-emerald-50 text-emerald-600 border border-emerald-100/50">
+            <Sparkles size={13} />
+          </span>
+        </div>
         <p className="mt-1.5 text-[14px] text-muted">
           Your company, who can see what, and how Keystone behaves.
         </p>
       </div>
 
-      <div className="mt-6 grid gap-6 lg:grid-cols-4">
+      <div className="grid gap-6 lg:grid-cols-4">
         {/* Section nav */}
         <nav aria-label="Settings sections" className="lg:col-span-1">
-          <ul className="-mx-1 flex gap-1 overflow-x-auto px-1 pb-1 lg:flex-col lg:overflow-visible lg:pb-0">
+          <ul className="-mx-1 flex gap-1 overflow-x-auto px-1 pb-1 lg:flex-col lg:overflow-visible lg:pb-0 lg:space-y-1">
             {TABS.map((t) => {
               const active = tab === t.key
               const Icon = t.icon
+              const activeColor = t.color
 
               return (
                 <li key={t.key} className="shrink-0 lg:shrink">
@@ -408,13 +642,13 @@ export default function SettingsPage() {
                     type="button"
                     onClick={() => setTab(t.key)}
                     aria-current={active ? 'page' : undefined}
-                    className={`flex w-full items-center gap-2.5 rounded-ctl px-3 py-2 text-[13.5px] whitespace-nowrap transition-colors ${
+                    className={`flex w-full items-center gap-2.5 rounded-ctl px-3.5 py-2.5 text-[13.5px] font-semibold whitespace-nowrap transition-all duration-200 cursor-pointer ${
                       active
-                        ? 'bg-pine-tint font-medium text-pine-deep'
-                        : 'text-muted hover:bg-wash hover:text-ink'
+                        ? 'bg-emerald-50 text-emerald-800 font-bold border-l-[3px] border-emerald-500 pl-3 rounded-l-none'
+                        : 'text-muted hover:bg-wash hover:text-ink border-l-[3px] border-transparent pl-3'
                     }`}
                   >
-                    <Icon size={15} className={active ? 'text-pine' : 'text-muted'} />
+                    <Icon size={15} className={active ? activeColor : 'text-muted'} />
                     {t.label}
                   </button>
                 </li>
@@ -428,13 +662,23 @@ export default function SettingsPage() {
         </nav>
 
         <div className="lg:col-span-3">
-          {tab === 'company' && <CompanyProfile />}
-          {tab === 'roles' && <RolesPermissions />}
-          {tab === 'notifications' && <Notifications />}
-          {tab === 'appearance' && <Appearance />}
-          {tab === 'security' && <Security />}
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={tab}
+              initial={{ opacity: 0, x: 15 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -15 }}
+              transition={{ duration: 0.2 }}
+            >
+              {tab === 'company' && <CompanyProfile />}
+              {tab === 'roles' && <RolesPermissions />}
+              {tab === 'notifications' && <Notifications />}
+              {tab === 'appearance' && <Appearance />}
+              {tab === 'security' && <Security />}
+            </motion.div>
+          </AnimatePresence>
         </div>
       </div>
-    </div>
+    </motion.div>
   )
 }

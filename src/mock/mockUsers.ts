@@ -1,4 +1,4 @@
-export type Role = 'OWNER' | 'HR' | 'MANAGER'
+export type Role = 'OWNER' | 'HR' | 'MANAGER' | 'EMPLOYEE'
 
 export type User = {
   id: string
@@ -11,6 +11,16 @@ export type User = {
   jobTitle: string
   role: Role
   avatarInitials: string
+  /** Mock only. Tracks if the user must reset their temp password. */
+  requiresPasswordReset?: boolean
+  /** Real backend only. Populated after login when the user belongs to at least one org. */
+  memberships?: Array<{
+    id: string
+    userId: string
+    organizationId: string
+    jobTitle: string
+    permissions: string[]
+  }>
 }
 
 export const MOCK_ORGANIZATION_ID = 'org-alderway'

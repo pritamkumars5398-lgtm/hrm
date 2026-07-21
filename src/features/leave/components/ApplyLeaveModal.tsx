@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
-import { AlertCircle, Loader2 } from 'lucide-react'
+import { AlertCircle, Loader2, CheckCircle2 } from 'lucide-react'
 import Modal from '@/shared/components/Modal'
 import Button from '@/shared/components/Button'
 import Input from '@/shared/components/Input'
@@ -120,10 +120,19 @@ export default function ApplyLeaveModal({
           </div>
 
           {requested > 0 && (
-            <p className="tnum rounded-ctl border border-hairline bg-wash px-3 py-2 text-[12.5px] text-muted">
-              {requested} {requested === 1 ? 'day' : 'days'} requested
-              {type !== 'UNPAID' && ` · ${remaining - requested} would remain`}
-            </p>
+            <div className="tnum rounded-ctl border border-emerald-500/15 bg-emerald-500/[0.03] px-3.5 py-2.5 text-[13px] text-emerald-800 flex items-center justify-between font-semibold shadow-sm transition-all duration-300">
+              <span className="flex items-center gap-2">
+                <CheckCircle2 size={15} className="text-emerald-500 animate-pulse" />
+                <span>
+                  {requested} {requested === 1 ? 'day' : 'days'} requested
+                </span>
+              </span>
+              {type !== 'UNPAID' && (
+                <span className="text-[11px] text-muted font-bold bg-wash border border-hairline px-2 py-0.5 rounded-full">
+                  {remaining - requested} remaining
+                </span>
+              )}
+            </div>
           )}
 
           <Input

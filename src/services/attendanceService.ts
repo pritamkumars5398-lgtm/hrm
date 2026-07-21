@@ -1,10 +1,13 @@
+import { hasBackend } from '@/config/env'
+import { apiClient, apiErrorMessage } from './apiClient'
+import { hasPermission } from '@/shared/config/navigation'
+import type { LeaveType } from './leaveService'
 import {
   buildMonth,
   isWeekend,
   type AttendanceRecord,
   type AttendanceStatus,
 } from '@/mock/mockAttendance'
-import type { Role } from './authService'
 
 export type { AttendanceRecord, AttendanceStatus }
 
@@ -21,22 +24,37 @@ export type DaySummary = {
   rate: number | null
 }
 
+export type TodayStatus = {
+  checkedIn: boolean
+  checkedOut: boolean
+  checkInTime: string | null
+  checkOutTime: string | null
+  /** Set when today falls inside one of the caller's own approved leave requests. */
+  onLeave: { type: LeaveType } | null
+} | null
+
 export type AttendanceMonth = {
   year: number
   month: number
-  /** Whose records these are — a Manager only ever sees their own team (§10). */
-  scope: 'company' | 'team'
+  /** Whose records these are — 'me' when the caller lacks attendance.manage. */
+  scope: 'company' | 'me'
   headcount: number
   summary: {
     presentToday: number
     absentToday: number
     lateToday: number
+    leaveToday: number
     avgHours: number
   }
   days: DaySummary[]
   /** Individual records for the selected day. */
   today: AttendanceRecord[]
   todayDate: string
+  /**
+   * Today's personal check-in/out state — only populated when scope === 'me'.
+   * Null means no Employee record on file for this user in this org.
+   */
+  myTodayStatus: TodayStatus
 }
 
 export class AttendanceError extends Error {}
@@ -51,29 +69,41 @@ export type AttendanceQuery = {
   month: number
   /** Defaults to today, or the last day of the month if it is in the past. */
   selectedDate?: string
-  role: Role
-  /** The signed-in person's name — used to scope a Manager to their reports. */
+  /** The signed-in person's granular permissions for the active company. */
+  permissions: string[]
+  /** The signed-in person's name — used to filter the mock's 'me' scope. */
   viewerName: string
 }
 
+/**
+ * Attendance self-service (check in/out, see your own history) is a baseline
+ * every member gets — `attendance.manage` only changes whether `getMonth`
+ * returns the whole company or just you (decided server-side, never trusted
+ * from the client). Real API is authoritative once a backend is configured;
+ * the mock path exists for the offline/no-backend demo.
+ */
 export const attendanceService = {
-  /**
-   * Mock-only (§11.4) — no API, no DB model. The shape returned here is what the
-   * real endpoint will return, so the page does not change in Phase 2.
-   */
   async getMonth(query: AttendanceQuery): Promise<AttendanceMonth> {
+    if (hasBackend) {
+      try {
+        const { data } = await apiClient.get<AttendanceMonth>('/attendance/month', {
+          params: { year: query.year, month: query.month, selectedDate: query.selectedDate },
+        })
+        return data
+      } catch (error) {
+        throw new AttendanceError(apiErrorMessage(error, 'We could not load attendance for this month.'))
+      }
+    }
+
     await delay()
 
-    const { year, month, role, viewerName } = query
+    const { year, month } = query
+    const manage = hasPermission(query.permissions, 'attendance.manage')
 
     let records = buildMonth(year, month)
 
-    // A Manager may only see attendance for the people who report to them. This is
-    // filtered here, not in the component — once this is a real API, other people's
-    // records must not cross the wire at all.
-    const scope: AttendanceMonth['scope'] = role === 'MANAGER' ? 'team' : 'company'
-    if (scope === 'team') {
-      records = records.filter((r) => r.managerName === viewerName)
+    if (!manage) {
+      records = records.filter((r) => r.employeeName === query.viewerName)
     }
 
     if (records.length === 0) {
@@ -82,7 +112,6 @@ export const attendanceService = {
 
     const headcount = new Set(records.map((r) => r.employeeId)).size
 
-    // Group by day.
     const byDate = new Map<string, AttendanceRecord[]>()
     for (const record of records) {
       const bucket = byDate.get(record.date) ?? []
@@ -116,8 +145,6 @@ export const attendanceService = {
         }
       })
 
-    // Default the selected day to today when we are looking at the current month,
-    // and to the last working day otherwise — an empty "today" panel is useless.
     const workingDays = days.filter((d) => !d.isWeekend)
     const todayISO = toISO(new Date())
     const fallback = workingDays.at(-1)?.date ?? days[0]!.date
@@ -136,20 +163,64 @@ export const attendanceService = {
             (workedToday.reduce((sum, r) => sum + r.hours, 0) / workedToday.length) * 10,
           ) / 10
 
+    // For 'me' scope: derive today's personal check-in/out state from the viewer's own record.
+    let myTodayStatus: TodayStatus = null
+    if (!manage) {
+      const myRecord = today.find((r) => r.employeeName === query.viewerName)
+      if (myRecord) {
+        myTodayStatus = {
+          checkedIn: !!myRecord.clockIn,
+          checkedOut: !!myRecord.clockOut,
+          checkInTime: myRecord.clockIn ?? null,
+          checkOutTime: myRecord.clockOut ?? null,
+          // The mock attendance generator doesn't track which leave type — it's
+          // offline-fallback only, so this is a reasonable stand-in.
+          onLeave: myRecord.status === 'LEAVE' ? { type: 'ANNUAL' } : null,
+        }
+      }
+    }
+
     return {
       year,
       month,
-      scope,
+      scope: manage ? 'company' : 'me',
       headcount,
       summary: {
         presentToday: today.filter((r) => r.status === 'PRESENT').length,
         lateToday: today.filter((r) => r.status === 'LATE').length,
         absentToday: today.filter((r) => r.status === 'ABSENT').length,
+        leaveToday: today.filter((r) => r.status === 'LEAVE').length,
         avgHours,
       },
       days,
       today,
       todayDate: selectedDate,
+      myTodayStatus,
     }
+  },
+
+  async checkIn(): Promise<void> {
+    if (hasBackend) {
+      try {
+        await apiClient.post('/attendance/check-in')
+        return
+      } catch (error) {
+        throw new AttendanceError(apiErrorMessage(error, 'We could not check you in.'))
+      }
+    }
+    await delay()
+    // Mock mode has no persistent per-session state to mutate meaningfully — no-op.
+  },
+
+  async checkOut(): Promise<void> {
+    if (hasBackend) {
+      try {
+        await apiClient.post('/attendance/check-out')
+        return
+      } catch (error) {
+        throw new AttendanceError(apiErrorMessage(error, 'We could not check you out.'))
+      }
+    }
+    await delay()
   },
 }

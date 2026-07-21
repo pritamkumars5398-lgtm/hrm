@@ -70,6 +70,8 @@ export const organizationService = {
     name?: string
     address?: string
     industry?: string
+    /** '' clears it. */
+    leaveNotificationEmail?: string
   }): Promise<Organization> {
     if (hasBackend) {
       try {
@@ -99,6 +101,27 @@ export const organizationService = {
 
     await delay()
     return mockOrganization
+  },
+
+  /**
+   * Permanently deletes a company — Owner-only, enforced server-side against
+   * the company's own `ownerId`, and blocked if this would leave the caller
+   * belonging to zero companies. `confirmName` must match the company's
+   * current name exactly (the server-side half of the type-to-confirm UI).
+   */
+  async remove(organizationId: string, confirmName: string): Promise<void> {
+    if (hasBackend) {
+      try {
+        await apiClient.delete(`/organizations/${organizationId}`, { data: { confirmName } })
+        return
+      } catch (error) {
+        throw new OrganizationError(apiErrorMessage(error, 'We could not delete that company.'))
+      }
+    }
+
+    await delay()
+    const idx = runtimeOrgs.findIndex((o) => o.id === organizationId)
+    if (idx !== -1) runtimeOrgs.splice(idx, 1)
   },
 
   async getById(id: string): Promise<Organization | null> {

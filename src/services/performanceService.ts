@@ -1,5 +1,7 @@
+import { hasBackend } from '@/config/env'
+import { apiClient, apiErrorMessage } from './apiClient'
+import { hasPermission } from '@/shared/config/navigation'
 import { CURRENT_CYCLE, mockPerformance, type PerformanceRecord } from '@/mock/mockPerformance'
-import type { Role } from './authService'
 
 export type { PerformanceRecord }
 export { CURRENT_CYCLE }
@@ -10,7 +12,7 @@ const LATENCY_MS = 550
 const delay = () => new Promise((r) => setTimeout(r, LATENCY_MS))
 
 export type PerformanceData = {
-  scope: 'company' | 'team'
+  scope: 'company' | 'team' | 'me'
   cycle: string
   records: PerformanceRecord[]
   summary: {
@@ -23,18 +25,38 @@ export type PerformanceData = {
   distribution: Array<{ rating: number; count: number }>
 }
 
+/** Local mutable copy so ratings persist across session/refetches (mock path only). */
+let performanceRecords: PerformanceRecord[] = [...mockPerformance]
+
+/**
+ * Real backend is authoritative once configured (§ Phase 3 §4.4) — company vs.
+ * team vs. 'me' scope and who can review whom is decided server-side from
+ * `performance.manage`/`*` and the `managerId` graph, never trusted from here.
+ * The mock path exists only for the offline/no-backend demo.
+ */
 export const performanceService = {
-  /** Mock-only (§11.4). Owner and Manager only (§10) — HR has no Performance access. */
-  async get(role: Role, viewerName: string): Promise<PerformanceData> {
+  async get(permissions: string[], viewerName: string): Promise<PerformanceData> {
+    if (hasBackend) {
+      try {
+        const { data } = await apiClient.get<PerformanceData>('/performance')
+        return data
+      } catch (error) {
+        throw new PerformanceError(apiErrorMessage(error, 'We could not load performance data.'))
+      }
+    }
+
     await delay()
 
-    const scope: PerformanceData['scope'] = role === 'MANAGER' ? 'team' : 'company'
+    const manage = hasPermission(permissions, 'performance.manage')
+    const reports = performanceRecords.filter((r) => r.managerName === viewerName)
+    const scope: PerformanceData['scope'] = manage ? 'company' : reports.length > 0 ? 'team' : 'me'
 
-    // A Manager reviews their own reports, nobody else's.
     const records =
       scope === 'company'
-        ? mockPerformance
-        : mockPerformance.filter((r) => r.managerName === viewerName)
+        ? performanceRecords
+        : scope === 'team'
+          ? reports
+          : performanceRecords.filter((r) => r.employeeName === viewerName)
 
     const rated = records.filter((r) => r.rating !== null)
     const allGoals = records.flatMap((r) => r.goals)
@@ -60,5 +82,89 @@ export const performanceService = {
         count: rated.filter((r) => r.rating === rating).length,
       })),
     }
+  },
+
+  async submitReview(
+    employeeId: string,
+    viewerName: string,
+    payload: { rating: number; summary: string },
+  ): Promise<void> {
+    if (hasBackend) {
+      try {
+        await apiClient.post(`/performance/reviews/${employeeId}`, payload)
+        return
+      } catch (error) {
+        throw new PerformanceError(apiErrorMessage(error, 'We could not submit that appraisal review.'))
+      }
+    }
+
+    await delay()
+
+    const record = performanceRecords.find((r) => r.employeeId === employeeId)
+    if (!record) throw new PerformanceError('Performance record not found.')
+
+    const newReview = {
+      id: `rev-${crypto.randomUUID().slice(0, 8)}`,
+      cycle: CURRENT_CYCLE,
+      rating: payload.rating,
+      reviewer: viewerName,
+      summary: payload.summary.trim(),
+      reviewedOn: new Date().toISOString().slice(0, 10),
+    }
+
+    const updatedRecord: PerformanceRecord = {
+      ...record,
+      rating: payload.rating,
+      reviews: [newReview, ...record.reviews],
+    }
+
+    performanceRecords = performanceRecords.map((r) =>
+      r.employeeId === employeeId ? updatedRecord : r,
+    )
+  },
+
+  async addGoal(employeeId: string, payload: { title: string; dueOn: string }): Promise<void> {
+    if (hasBackend) {
+      try {
+        await apiClient.post(`/performance/goals/${employeeId}`, payload)
+        return
+      } catch (error) {
+        throw new PerformanceError(apiErrorMessage(error, 'We could not add that goal.'))
+      }
+    }
+
+    await delay()
+
+    const record = performanceRecords.find((r) => r.employeeId === employeeId)
+    if (!record) throw new PerformanceError('Performance record not found.')
+
+    const newGoal = {
+      id: `goal-${crypto.randomUUID().slice(0, 8)}`,
+      title: payload.title.trim(),
+      progress: 0,
+      dueOn: payload.dueOn,
+    }
+
+    performanceRecords = performanceRecords.map((r) =>
+      r.employeeId === employeeId ? { ...r, goals: [...r.goals, newGoal] } : r,
+    )
+  },
+
+  async updateGoalProgress(goalId: string, progress: number): Promise<void> {
+    if (hasBackend) {
+      try {
+        await apiClient.patch(`/performance/goals/${goalId}`, { progress })
+        return
+      } catch (error) {
+        throw new PerformanceError(apiErrorMessage(error, 'We could not update that goal.'))
+      }
+    }
+
+    await delay()
+
+    performanceRecords = performanceRecords.map((r) => ({
+      ...r,
+      goals: r.goals.map((g) => (g.id === goalId ? { ...g, progress } : g)),
+    }))
   },
 }

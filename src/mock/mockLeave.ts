@@ -32,12 +32,20 @@ export type LeaveRequest = {
 
 export const LEAVE_TYPES: LeaveType[] = ['ANNUAL', 'SICK', 'PERSONAL', 'UNPAID']
 
-/** The company's yearly entitlement. Unpaid has no cap. */
+/** The company's yearly entitlement default. Unpaid has no cap. */
 export const LEAVE_ENTITLEMENT: Record<LeaveType, number> = {
   ANNUAL: 25,
   SICK: 10,
   PERSONAL: 5,
   UNPAID: 0,
+}
+
+/** Mutable so the Owner's policy edits persist for the session (mock/offline path). */
+export let mockLeavePolicy: Record<LeaveType, number> = { ...LEAVE_ENTITLEMENT }
+
+export function updateMockLeavePolicy(patch: Partial<Record<'ANNUAL' | 'SICK' | 'PERSONAL', number>>) {
+  mockLeavePolicy = { ...mockLeavePolicy, ...patch }
+  return mockLeavePolicy
 }
 
 const byName = (name: string) => mockEmployees.find((e) => e.name === name)!
@@ -115,6 +123,6 @@ export function balancesFor(employeeId: string): LeaveBalance[] {
       .filter((r) => r.employeeId === employeeId && r.type === type && r.status === 'APPROVED')
       .reduce((sum, r) => sum + r.days, 0)
 
-    return { type, total: LEAVE_ENTITLEMENT[type], used }
+    return { type, total: mockLeavePolicy[type], used }
   })
 }

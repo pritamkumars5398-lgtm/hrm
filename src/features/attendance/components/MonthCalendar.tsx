@@ -6,6 +6,9 @@ type MonthCalendarProps = {
   days: DaySummary[]
   selectedDate: string
   onSelect: (date: string) => void
+  /** 'me' — a single person's own leave fills the whole day. 'company' — one
+   * person's leave shouldn't hide everyone else's attendance for that day. */
+  scope: 'me' | 'company'
 }
 
 const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
@@ -28,6 +31,7 @@ export default function MonthCalendar({
   days,
   selectedDate,
   onSelect,
+  scope,
 }: MonthCalendarProps) {
   const byDate = new Map(days.map((d) => [d.date, d]))
   const first = new Date(year, month, 1)
@@ -58,6 +62,11 @@ export default function MonthCalendar({
           const summary = byDate.get(iso)
           const selected = iso === selectedDate
           const weekend = summary?.isWeekend ?? [0, 6].includes(date.getDay())
+          // In the company view one person's leave shouldn't blank out everyone
+          // else's attendance for the day — only a lone viewer's own leave fills
+          // the whole cell.
+          const onLeave = scope === 'me' && Boolean(summary?.leave)
+          const someoneOnLeave = scope === 'company' && Boolean(summary?.leave)
           const hasData = Boolean(summary) && !weekend && summary!.rate !== null
 
           return (
@@ -66,32 +75,55 @@ export default function MonthCalendar({
               type="button"
               onClick={() => onSelect(iso)}
               aria-label={
-                hasData
-                  ? `${dayNumber} — ${Math.round(summary!.rate! * 100)}% attendance`
-                  : `${dayNumber} — no records`
+                onLeave
+                  ? `${dayNumber} — on leave`
+                  : hasData
+                    ? `${dayNumber} — ${Math.round(summary!.rate! * 100)}% attendance${
+                        someoneOnLeave ? `, ${summary!.leave} on leave` : ''
+                      }`
+                    : `${dayNumber} — no records`
               }
               aria-pressed={selected}
-              className={`relative flex aspect-square flex-col items-center justify-center rounded-[6px] border text-[12px] transition-colors ${
+              className={`relative flex aspect-square flex-col items-center justify-center rounded-[6px] border text-[12.5px] transition-all cursor-pointer ${
                 selected
-                  ? 'border-pine bg-pine-tint font-semibold text-pine-deep'
-                  : weekend
-                    ? 'border-hairline bg-wash text-muted/60'
-                    : 'border-hairline bg-surface hover:border-pine'
+                  ? 'border-emerald-500 bg-emerald-50 font-bold text-emerald-800 scale-105 focus:outline-none focus:ring-2 focus:ring-emerald-500/10'
+                  : onLeave
+                    ? 'border-ochre/40 bg-ochre-tint font-semibold text-ochre-deep'
+                    : weekend
+                      ? 'border-hairline bg-wash/80 text-muted/50'
+                      : 'border-hairline bg-surface hover:border-emerald-500 hover:text-emerald-700 focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/10'
               }`}
             >
               <span className="tnum">{dayNumber}</span>
 
-              {hasData && !selected && (
+              {onLeave ? (
+                <span className={`mt-0.5 text-[8.5px] font-semibold uppercase tracking-wide ${selected ? 'text-emerald-800' : 'text-ochre-deep'}`}>
+                  Leave
+                </span>
+              ) : (
+                <>
+                  {hasData && !selected && (
+                    <span
+                      className="mt-1 h-1 w-4 rounded-full bg-emerald-500"
+                      style={{ opacity: intensity(summary!.rate!) }}
+                      aria-hidden="true"
+                    />
+                  )}
+                  {hasData && selected && (
+                    <span className="tnum mt-0.5 text-[9.5px] font-bold">
+                      {Math.round(summary!.rate! * 100)}%
+                    </span>
+                  )}
+                </>
+              )}
+
+              {/* A dot, not a full-cell override — one person's leave shouldn't
+                  read as "the whole day is a leave day" in the company view. */}
+              {someoneOnLeave && (
                 <span
-                  className="mt-1 h-1 w-4 rounded-full bg-pine"
-                  style={{ opacity: intensity(summary!.rate!) }}
+                  className="absolute right-1 top-1 size-1.5 rounded-full bg-ochre"
                   aria-hidden="true"
                 />
-              )}
-              {hasData && selected && (
-                <span className="tnum mt-0.5 text-[9px] font-medium">
-                  {Math.round(summary!.rate! * 100)}%
-                </span>
               )}
             </button>
           )
@@ -104,7 +136,7 @@ export default function MonthCalendar({
           {[0.28, 0.6, 1].map((o) => (
             <span
               key={o}
-              className="h-1.5 w-4 rounded-full bg-pine"
+              className="h-1.5 w-4 rounded-full bg-emerald-500"
               style={{ opacity: o }}
               aria-hidden="true"
             />
@@ -114,6 +146,10 @@ export default function MonthCalendar({
         <span className="flex items-center gap-1.5">
           <span className="size-2 rounded-[3px] border border-hairline bg-wash" />
           Weekend
+        </span>
+        <span className="flex items-center gap-1.5">
+          <span className="size-2 rounded-[3px] border border-ochre/40 bg-ochre-tint" />
+          Leave
         </span>
       </div>
     </div>

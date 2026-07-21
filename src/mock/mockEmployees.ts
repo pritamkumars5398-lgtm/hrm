@@ -33,8 +33,19 @@ export type Employee = {
   location: string
   joinedAt: string
   managerName: string | null
+  /** Another Employee.id in the same company. Not surfaced in the UI yet. */
+  managerId?: string | null
   employmentHistory: EmploymentEvent[]
   documents: EmployeeDocument[]
+  /**
+   * Raw stored fields the backend returns so the edit form can show real values
+   * (`name`/`designation`/`location` are display-only). Optional because the mock
+   * seed doesn't populate them.
+   */
+  firstName?: string
+  lastName?: string
+  employeeId?: string
+  homeAddress?: string
 }
 
 export const DEPARTMENTS = [

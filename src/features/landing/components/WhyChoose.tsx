@@ -1,3 +1,4 @@
+import { Sparkles } from 'lucide-react'
 import Container from '@/shared/components/Container'
 import Reveal from '@/shared/components/Reveal'
 
@@ -26,47 +27,65 @@ const reasons = [
 
 export default function WhyChoose() {
   return (
-    <section className="border-t border-hairline py-20 sm:py-28">
+    <section className="border-t border-hairline bg-white py-20 sm:py-28">
       <Container>
-        <div className="grid gap-12 lg:grid-cols-12 lg:gap-16">
-          <div className="lg:col-span-5">
+        <div className="grid gap-12 lg:grid-cols-12 lg:gap-16 relative">
+          
+          {/* Left Column (Sticky Headings) */}
+          <div className="lg:col-span-5 text-left">
             <div className="lg:sticky lg:top-28">
               <Reveal>
-                <div className="flex items-center gap-3">
-                  <span className="h-px w-6 bg-hairline-strong" aria-hidden="true" />
-                  <span className="text-[11px] font-semibold tracking-[0.14em] text-muted uppercase">
-                    Why Keystone
+                <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/25 bg-emerald-50/50 px-3 py-1.5 text-[11px] font-bold text-[#15803d] uppercase tracking-wider shadow-sm">
+                  <Sparkles size={12} className="text-[#10b981] animate-pulse" />
+                  Why Keystone
+                </span>
+              </Reveal>
+              
+              <Reveal delay={0.08}>
+                <h2 className="font-sans mt-6 text-[34px] leading-[1.1] font-extrabold tracking-[-0.03em] text-ink sm:text-[42px]">
+                  Run your company from{' '}
+                  <span className="bg-gradient-to-r from-[#15803d] via-[#10b981] to-[#eab308] bg-clip-text text-transparent">
+                    one intelligent workspace.
                   </span>
-                </div>
-                <h2 className="font-display mt-4 text-3xl leading-[1.15] font-semibold tracking-[-0.02em] text-balance sm:text-[40px]">
-                  Run your company from one intelligent workspace.
                 </h2>
-                <p className="mt-5 max-w-md text-[15px] leading-relaxed text-muted">
+              </Reveal>
+              
+              <Reveal delay={0.16}>
+                <p className="mt-6 text-[15.5px] leading-relaxed text-muted font-medium">
                   Employee records, attendance, leave, payroll and performance stay connected in one platform, so your team spends less time managing data and more time growing the business.
                 </p>
               </Reveal>
             </div>
           </div>
 
+          {/* Right Column (2x2 Grid of Premium Stat Cards - Flat and White) */}
           <div className="lg:col-span-7">
-            <dl className="border-t border-hairline">
+            <div className="grid gap-6 sm:grid-cols-2">
               {reasons.map((r, i) => (
                 <Reveal key={r.stat} delay={i * 0.05}>
-                  <div className="grid grid-cols-1 gap-3 border-b border-hairline py-7 sm:grid-cols-12 sm:gap-6">
-                    <dt className="sm:col-span-4">
-                      <span className="tnum font-display block text-[32px] leading-none font-semibold tracking-[-0.02em] text-pine">
+                  <div className="relative overflow-hidden rounded-2xl border border-hairline bg-white p-6 h-full flex flex-col justify-between">
+                    <div>
+                      {/* Big Gradient Stat */}
+                      <span className="tnum font-display block text-[38px] font-extrabold tracking-[-0.03em] bg-gradient-to-r from-[#15803d] to-[#10b981] bg-clip-text text-transparent">
                         {r.stat}
                       </span>
-                      <span className="mt-2 block text-[12px] leading-snug text-muted">
+                      
+                      {/* Unit Label */}
+                      <span className="mt-2 block text-[12px] font-bold text-muted/85 leading-snug tracking-tight">
                         {r.unit}
                       </span>
-                    </dt>
-                    <dd className="text-[15px] leading-relaxed sm:col-span-8">{r.body}</dd>
+                    </div>
+
+                    {/* Body Text */}
+                    <p className="mt-5 text-[13.5px] leading-relaxed text-muted font-medium">
+                      {r.body}
+                    </p>
                   </div>
                 </Reveal>
               ))}
-            </dl>
+            </div>
           </div>
+
         </div>
       </Container>
     </section>

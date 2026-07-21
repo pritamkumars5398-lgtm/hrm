@@ -3,7 +3,7 @@ import LandingPage from '@/features/landing/LandingPage'
 import LoginPage from '@/features/auth/LoginPage'
 import SignupPage from '@/features/auth/SignupPage'
 import ForgotPasswordPage from '@/features/auth/ForgotPasswordPage'
-import AcceptInvitePage from '@/features/auth/AcceptInvitePage'
+import ResetPasswordPage from '@/features/auth/ResetPasswordPage'
 import RequireAuth from '@/features/auth/components/RequireAuth'
 import RequireModule from '@/features/auth/components/RequireModule'
 import PersonalDetailsStep from '@/features/onboarding/PersonalDetailsStep'
@@ -12,14 +12,23 @@ import DashboardLayout from '@/shared/layouts/DashboardLayout'
 import DashboardHome from '@/features/dashboard/DashboardHome'
 import TeamMembersPage from '@/features/team/TeamMembersPage'
 import EmployeesPage from '@/features/employees/EmployeesPage'
+import AddEmployeePage from '@/features/employees/components/AddEmployeePage'
 import AttendancePage from '@/features/attendance/AttendancePage'
 import LeavePage from '@/features/leave/LeavePage'
 import PayrollPage from '@/features/payroll/PayrollPage'
+import PayslipPage from '@/features/payroll/PayslipPage'
+import MyPayslipPage from '@/features/payroll/MyPayslipPage'
 import PerformancePage from '@/features/performance/PerformancePage'
 import DocumentsPage from '@/features/documents/DocumentsPage'
 import ReportsPage from '@/features/reports/ReportsPage'
 import SettingsPage from '@/features/settings/SettingsPage'
 import ComingSoon from '@/shared/components/ComingSoon'
+import { registerWorkspaceGetter } from '@/services/apiClient'
+import { useAuthStore } from '@/features/auth/store/authStore'
+
+// Wire up the active workspace so every API request includes X-Workspace-Id.
+// This runs once at module-load time before any request is made.
+registerWorkspaceGetter(() => useAuthStore.getState().user?.activeOrganizationId)
 
 export default function App() {
   return (
@@ -28,7 +37,7 @@ export default function App() {
       <Route path="/login" element={<LoginPage />} />
       <Route path="/signup" element={<SignupPage />} />
       <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-      <Route path="/accept-invite" element={<AcceptInvitePage />} />
+
 
       <Route
         path="/onboarding"
@@ -56,6 +65,15 @@ export default function App() {
         }
       >
         <Route index element={<DashboardHome />} />
+        
+        <Route
+          path="add-company"
+          element={
+            <RequireAuth>
+              <CompanyDetailsStep isAdditional />
+            </RequireAuth>
+          }
+        />
 
         <Route
           path="team"
@@ -71,6 +89,15 @@ export default function App() {
           element={
             <RequireModule module="employees">
               <EmployeesPage />
+            </RequireModule>
+          }
+        />
+
+        <Route
+          path="employees/new"
+          element={
+            <RequireModule module="employees">
+              <AddEmployeePage />
             </RequireModule>
           }
         />
@@ -98,6 +125,24 @@ export default function App() {
           element={
             <RequireModule module="payroll">
               <PayrollPage />
+            </RequireModule>
+          }
+        />
+
+        <Route
+          path="payroll/payslip/:employeeId"
+          element={
+            <RequireModule module="payroll">
+              <PayslipPage />
+            </RequireModule>
+          }
+        />
+
+        <Route
+          path="payslip"
+          element={
+            <RequireModule module="payslip">
+              <MyPayslipPage />
             </RequireModule>
           }
         />
@@ -139,7 +184,14 @@ export default function App() {
         />
       </Route>
 
-      <Route path="/reset-password" element={<ComingSoon title="Set a new password" />} />
+      <Route
+        path="/reset-password"
+        element={
+          <RequireAuth>
+            <ResetPasswordPage />
+          </RequireAuth>
+        }
+      />
       <Route path="*" element={<ComingSoon title="Page not found" />} />
     </Routes>
   )

@@ -10,6 +10,8 @@ export type Organization = {
   createdAt: string
   /** Absent from the API response — headcount is HR business data, which is mock-only (§11.4). */
   employeeCount?: number
+  /** Where a "someone applied for leave" notification email goes. */
+  leaveNotificationEmail?: string | null
 }
 
 export const INDUSTRIES = [
@@ -36,4 +38,5 @@ export const mockOrganization: Organization = {
   ownerId: 'usr-1',
   createdAt: '2024-02-11T09:00:00.000Z',
   employeeCount: 248,
+  leaveNotificationEmail: null,
 }

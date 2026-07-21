@@ -1,0 +1,634 @@
+import { useRef, useState } from 'react'
+import { useForm, useFieldArray } from 'react-hook-form'
+import { Link, useNavigate } from 'react-router-dom'
+import {
+  ArrowLeft,
+  Briefcase,
+  Check,
+  Copy,
+  DollarSign,
+  GraduationCap,
+  Loader2,
+  Plus,
+  Trash2,
+  User,
+  Users,
+} from 'lucide-react'
+import Card from '@/shared/components/Card'
+import Input from '@/shared/components/Input'
+import Select from '@/shared/components/Select'
+import Button from '@/shared/components/Button'
+import { teamService, TeamError } from '@/services/teamService'
+import { sendInviteEmail } from '@/services/emailService'
+import { employeeService } from '@/services/employeeService'
+
+type EducationRow = { degree: string; institution: string; year: string }
+type FamilyRow = { name: string; relationship: string; contactNumber: string }
+
+type AddEmployeeForm = {
+  firstName: string
+  lastName: string
+  employeeId: string
+  email: string
+  contactNumber: string
+  homeAddress: string
+  jobTitle: string
+  department: string
+  startDate: string
+  employmentType: string
+  workLocation: string
+  education: EducationRow[]
+  family: FamilyRow[]
+  bankName: string
+  accName: string
+  accNumber: string
+  ifscCode: string
+}
+
+const SECTIONS = [
+  { id: 'basic', label: 'Basic Info', icon: User },
+  { id: 'work', label: 'Work Info', icon: Briefcase },
+  { id: 'education', label: 'Education', icon: GraduationCap },
+  { id: 'family', label: 'Family', icon: Users },
+  { id: 'financial', label: 'Financial', icon: DollarSign },
+] as const
+
+function SectionShell({
+  id,
+  title,
+  description,
+  refFn,
+  children,
+}: {
+  id: string
+  title: string
+  description: string
+  refFn: (el: HTMLElement | null) => void
+  children: React.ReactNode
+}) {
+  return (
+    <section id={id} ref={refFn} className="scroll-mt-24">
+      <Card className="p-6">
+        <div className="mb-5">
+          <h2 className="font-display text-[18px] font-semibold tracking-[-0.01em] text-ink">{title}</h2>
+          <p className="mt-0.5 text-[13px] text-muted">{description}</p>
+        </div>
+        {children}
+      </Card>
+    </section>
+  )
+}
+
+function InviteResultPanel({
+  link,
+  tempPassword,
+  onDone,
+}: {
+  link: string
+  tempPassword: string | null
+  onDone: () => void
+}) {
+  const [copied, setCopied] = useState(false)
+
+  const copy = async () => {
+    const text = tempPassword ? `Link: ${link}\nTemp Password: ${tempPassword}` : link
+    await navigator.clipboard.writeText(text)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
+
+  return (
+    <Card className="mx-auto mt-10 max-w-xl p-6">
+      <span className="flex size-11 items-center justify-center rounded-full bg-pine-tint">
+        <Check size={20} className="text-pine" />
+      </span>
+      <h2 className="mt-4 font-display text-[20px] font-semibold tracking-[-0.01em] text-ink">
+        Employee added
+      </h2>
+      <p className="mt-1 text-[13.5px] leading-relaxed text-muted">
+        Their account was created and an invite email was sent. You can also share the credentials
+        below manually.
+      </p>
+
+      <div className="mt-4 rounded-ctl border border-hairline bg-wash/50 p-3.5">
+        <code className="block text-[12px] leading-relaxed break-all text-muted">
+          Link: {link}
+          {tempPassword && (
+            <>
+              <br />
+              Temp Password: <span className="font-semibold text-ink">{tempPassword}</span>
+            </>
+          )}
+        </code>
+      </div>
+
+      <div className="mt-4 flex items-center justify-end gap-2">
+        <button
+          type="button"
+          onClick={() => void copy()}
+          className="inline-flex h-10 items-center gap-1.5 rounded-ctl border border-hairline-strong bg-surface px-3.5 text-[13px] font-medium transition-colors hover:border-pine hover:text-pine"
+        >
+          {copied ? <Check size={14} className="text-pine" /> : <Copy size={14} />}
+          {copied ? 'Copied' : 'Copy details'}
+        </button>
+        <Button onClick={onDone}>Back to directory</Button>
+      </div>
+    </Card>
+  )
+}
+
+export default function AddEmployeePage() {
+  const navigate = useNavigate()
+  const [inviteResult, setInviteResult] = useState<{ link: string; tempPassword: string | null } | null>(null)
+  const [formError, setFormError] = useState<string | null>(null)
+  const [activeSection, setActiveSection] = useState<string>('basic')
+  const [avatarImg, setAvatarImg] = useState<string | null>('/default_avatar.png')
+  // The real, uploaded Cloudinary URL — submitted with the invite. `avatarImg`
+  // is just the local preview and swaps to this once the upload finishes.
+  const [photoUrl, setPhotoUrl] = useState<string | null>(null)
+  const [photoUploading, setPhotoUploading] = useState(false)
+  const [photoError, setPhotoError] = useState<string | null>(null)
+
+  const sectionRefs = useRef<Record<string, HTMLElement | null>>({})
+
+  const handlePhotoSelect = (file: File) => {
+    setAvatarImg(URL.createObjectURL(file))
+    setPhotoError(null)
+    setPhotoUploading(true)
+    teamService
+      .uploadPhoto(file)
+      .then((url) => setPhotoUrl(url))
+      .catch((err) => {
+        setPhotoError(err instanceof TeamError ? err.message : 'Could not upload that photo.')
+        setAvatarImg('/default_avatar.png')
+      })
+      .finally(() => setPhotoUploading(false))
+  }
+
+  const {
+    register,
+    handleSubmit,
+    control,
+    setError,
+    formState: { errors, isSubmitting },
+  } = useForm<AddEmployeeForm>({
+    defaultValues: {
+      firstName: '',
+      lastName: '',
+      employeeId: '',
+      email: '',
+      contactNumber: '',
+      homeAddress: '',
+      jobTitle: '',
+      department: '',
+      startDate: new Date().toISOString().split('T')[0],
+      employmentType: 'Full-time',
+      workLocation: 'Office',
+      education: [],
+      family: [],
+      bankName: '',
+      accName: '',
+      accNumber: '',
+      ifscCode: '',
+    },
+  })
+
+  const education = useFieldArray({ control, name: 'education' })
+  const family = useFieldArray({ control, name: 'family' })
+  const departments = employeeService.getDepartmentOptions()
+
+  const scrollTo = (id: string) => {
+    setActiveSection(id)
+  }
+
+  const onSubmit = handleSubmit(async (values) => {
+    setFormError(null)
+
+    // Financial block is all-or-nothing — a partial bank record is worse than none.
+    const financialFilled = [values.bankName, values.accName, values.accNumber, values.ifscCode].filter(Boolean)
+    if (financialFilled.length > 0 && financialFilled.length < 4) {
+      setFormError('Complete all four financial fields, or leave them all blank.')
+      scrollTo('financial')
+      return
+    }
+
+    if (photoUploading) {
+      setFormError('Their photo is still uploading — give it a moment and try again.')
+      scrollTo('basic')
+      return
+    }
+
+    try {
+      const result = await teamService.invite({
+        email: values.email,
+        // Employee Management always creates a baseline Employee — HR/Manager-level
+        // access is granted only through Team Members, never through this form.
+        role: 'EMPLOYEE',
+        source: 'employee-management',
+        firstName: values.firstName,
+        lastName: values.lastName,
+        employeeId: values.employeeId,
+        contactNumber: values.contactNumber || undefined,
+        homeAddress: values.homeAddress || undefined,
+        photoUrl: photoUrl ?? undefined,
+        jobTitle: values.jobTitle,
+        department: values.department,
+        startDate: values.startDate,
+        employmentType: values.employmentType,
+        workLocation: values.workLocation,
+        educationDetails: values.education.length ? values.education : undefined,
+        familyDetails: values.family.length
+          ? values.family.map((f) => ({
+              name: f.name,
+              relationship: f.relationship,
+              contactNumber: f.contactNumber || undefined,
+            }))
+          : undefined,
+        financialDetails:
+          financialFilled.length === 4
+            ? {
+                bankName: values.bankName,
+                accName: values.accName,
+                accNumber: values.accNumber,
+                ifscCode: values.ifscCode,
+              }
+            : undefined,
+      })
+
+      // Fire-and-forget: a transient SMTP hiccup shouldn't block the success screen.
+      if (result.tempPassword) {
+        sendInviteEmail({
+          to: values.email,
+          name: `${values.firstName} ${values.lastName}`.trim(),
+          link: result.inviteLink,
+          tempPassword: result.tempPassword,
+        }).then((r) => {
+          if (!r.ok) console.warn('[AddEmployee] Email send failed:', r.error)
+        })
+      }
+
+      setInviteResult({ link: result.inviteLink, tempPassword: result.tempPassword })
+    } catch (err) {
+      if (err instanceof TeamError && /email/i.test(err.message)) {
+        setError('email', { message: err.message })
+        scrollTo('basic')
+      }
+      setFormError(err instanceof TeamError ? err.message : 'Could not add employee.')
+    }
+  })
+
+  if (inviteResult) {
+    return (
+      <InviteResultPanel
+        link={inviteResult.link}
+        tempPassword={inviteResult.tempPassword}
+        onDone={() => navigate('/dashboard/employees')}
+      />
+    )
+  }
+
+  const setRef = (id: string) => (el: HTMLElement | null) => {
+    sectionRefs.current[id] = el
+  }
+
+  return (
+    <div>
+      {/* Header */}
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <button
+            type="button"
+            onClick={() => navigate('/dashboard/employees')}
+            className="mb-2 inline-flex items-center gap-1.5 text-[12.5px] font-medium text-muted transition-colors hover:text-pine"
+          >
+            <ArrowLeft size={14} />
+            Back to Employees
+          </button>
+          <h1 className="font-display text-[28px] leading-tight font-semibold tracking-[-0.02em] text-ink">
+            Add Employee
+          </h1>
+          <p className="mt-1 text-[13.5px] text-muted">
+            Create the employee record and send them an invite to join this company.
+          </p>
+        </div>
+      </div>
+
+      <form onSubmit={onSubmit} noValidate className="mt-6 flex flex-col gap-6 lg:flex-row lg:items-start">
+        {/* Section rail */}
+        <nav
+          aria-label="Form sections"
+          className="lg:sticky lg:top-6 lg:w-56 lg:shrink-0 space-y-4"
+        >
+          <Card flush className="p-1.5 font-sans">
+            <ul className="flex gap-1 overflow-x-auto lg:flex-col lg:overflow-visible">
+              {SECTIONS.map(({ id, label, icon: Icon }) => {
+                const active = activeSection === id
+                return (
+                  <li key={id} className="shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => scrollTo(id)}
+                      aria-current={active ? 'true' : undefined}
+                      className={`flex w-full items-center gap-2.5 rounded-ctl px-3 py-2 text-[13.5px] transition-all duration-200 cursor-pointer ${
+                        active ? 'bg-emerald-50 text-emerald-800 border border-emerald-100/50 font-bold shadow-sm' : 'text-muted hover:bg-wash hover:text-ink border border-transparent'
+                      }`}
+                    >
+                      <Icon size={16} className={active ? 'text-emerald-600' : 'text-muted'} />
+                      {label}
+                    </button>
+                  </li>
+                )
+              })}
+            </ul>
+          </Card>
+
+          {/* Onboarding illustration card */}
+          <div className="hidden lg:block rounded-card border border-hairline bg-surface p-4 text-center font-sans">
+            <img src="/employee_onboarding.png" alt="Onboarding Team" className="w-full rounded-ctl border border-hairline/30 object-cover aspect-video mb-3" />
+            <p className="text-[12px] font-bold text-ink leading-tight">Build your dream team</p>
+            <p className="text-[10px] text-muted mt-1 leading-normal">
+              Enter qualifications, contact details, next of kin, and bank information for seamless onboarding.
+            </p>
+          </div>
+        </nav>
+
+        {/* Form body */}
+        <div className="min-w-0 flex-1 space-y-6">
+          {formError && (
+            <div className="rounded-ctl border border-clay/30 bg-clay/5 p-3.5 text-[13px] text-clay">
+              {formError}
+            </div>
+          )}
+
+          {/* Section 1: Basic Info */}
+          <div style={{ display: activeSection === 'basic' ? 'block' : 'none' }}>
+            <SectionShell
+              id="basic"
+              refFn={setRef('basic')}
+              title="Basic Info"
+              description="Personal and contact details for this employee."
+            >
+              {/* Profile image picker layout */}
+              <div className="flex flex-col sm:flex-row items-center gap-6 mb-6 pb-6 border-b border-hairline/80">
+                <div className="relative size-20 rounded-full border border-hairline-strong bg-wash flex items-center justify-center shrink-0 overflow-hidden shadow-inner group">
+                  {avatarImg ? (
+                    <img src={avatarImg} alt="Preview" className="size-full object-cover" />
+                  ) : (
+                    <User className="size-10 text-muted" />
+                  )}
+                  <label className="absolute inset-0 bg-ink/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white text-[11px] font-bold cursor-pointer">
+                    Upload
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="sr-only"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0]
+                        if (file) handlePhotoSelect(file)
+                      }}
+                    />
+                  </label>
+                </div>
+                <div className="text-center sm:text-left">
+                  <p className="text-[14px] font-bold text-ink">Employee Portrait</p>
+                  <p className="text-[12px] text-muted mt-1 leading-normal">
+                    Upload a clear face photo. This will be shown on their workspace profile.
+                  </p>
+                  <div className="mt-2.5 flex items-center gap-2 justify-center sm:justify-start">
+                    <label className="h-8 inline-flex items-center justify-center rounded-ctl border border-hairline-strong bg-surface hover:bg-wash px-3.5 text-[12px] font-semibold text-ink transition-colors cursor-pointer shadow-sm">
+                      Select File
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="sr-only"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0]
+                          if (file) handlePhotoSelect(file)
+                        }}
+                      />
+                    </label>
+                    {avatarImg && avatarImg !== '/default_avatar.png' && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setAvatarImg('/default_avatar.png')
+                          setPhotoUrl(null)
+                          setPhotoError(null)
+                        }}
+                        className="h-8 text-[12px] font-semibold text-clay px-2 hover:underline cursor-pointer"
+                      >
+                        Remove
+                      </button>
+                    )}
+                  </div>
+                  {photoUploading && (
+                    <p className="mt-2 text-[11px] text-muted">Uploading…</p>
+                  )}
+                  {photoError && (
+                    <p className="mt-2 text-[11px] text-clay">{photoError}</p>
+                  )}
+                </div>
+              </div>
+
+              <div className="grid gap-4 sm:grid-cols-2">
+                <Input label="First Name" error={errors.firstName?.message} {...register('firstName', { required: 'Required' })} />
+                <Input label="Last Name" error={errors.lastName?.message} {...register('lastName', { required: 'Required' })} />
+                <Input label="Employee ID" placeholder="EMP-1008" error={errors.employeeId?.message} {...register('employeeId', { required: 'Required' })} />
+                <Input label="Email" type="email" error={errors.email?.message} {...register('email', { required: 'Required', pattern: { value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/, message: 'Enter a valid email.' } })} />
+                <Input label="Phone" type="tel" error={errors.contactNumber?.message} {...register('contactNumber')} />
+                <Input label="Home Address" {...register('homeAddress')} />
+              </div>
+
+              <div className="mt-6 flex justify-end gap-2 border-t border-hairline pt-5">
+                <Button type="button" onClick={() => setActiveSection('work')} className="font-bold shadow-sm">
+                  Next Section: Work Info
+                </Button>
+              </div>
+            </SectionShell>
+          </div>
+
+          {/* Section 2: Work Info */}
+          <div style={{ display: activeSection === 'work' ? 'block' : 'none' }}>
+            <SectionShell
+              id="work"
+              refFn={setRef('work')}
+              title="Work Info"
+              description="Role and department within this company."
+            >
+              <div className="mb-4 rounded-ctl border border-hairline bg-wash/50 p-3.5 text-[13px] leading-relaxed text-muted">
+                Employees added here always get baseline <span className="font-medium text-ink">Employee</span> access
+                (their own attendance, leave, performance and documents). To grant HR or Manager-level
+                access, invite them from{' '}
+                <Link to="/dashboard/team" className="font-medium text-pine hover:text-pine-deep">
+                  Team Members
+                </Link>{' '}
+                instead.
+              </div>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <Input label="Job Title" error={errors.jobTitle?.message} {...register('jobTitle', { required: 'Required' })} />
+                <Select label="Department" options={departments} {...register('department')} />
+                <Input label="Start Date" type="date" error={errors.startDate?.message} {...register('startDate', { required: 'Required' })} />
+                <Select label="Employment Type" options={[{ value: 'Full-time', label: 'Full-time' }, { value: 'Part-time', label: 'Part-time' }, { value: 'Contract', label: 'Contract' }, { value: 'Intern', label: 'Intern' }]} {...register('employmentType')} />
+                <Select label="Work Location" options={[{ value: 'Office', label: 'Office' }, { value: 'Remote', label: 'Remote' }, { value: 'Hybrid', label: 'Hybrid' }]} {...register('workLocation')} />
+              </div>
+
+              <div className="mt-6 flex justify-between gap-2 border-t border-hairline pt-5">
+                <Button type="button" variant="secondary" onClick={() => setActiveSection('basic')}>
+                  Back
+                </Button>
+                <Button type="button" onClick={() => setActiveSection('education')} className="font-bold shadow-sm">
+                  Next Section: Education
+                </Button>
+              </div>
+            </SectionShell>
+          </div>
+
+          {/* Section 3: Education */}
+          <div style={{ display: activeSection === 'education' ? 'block' : 'none' }}>
+            <SectionShell
+              id="education"
+              refFn={setRef('education')}
+              title="Education"
+              description="Add each qualification the employee holds."
+            >
+              {education.fields.length === 0 && (
+                <p className="mb-4 text-[13px] text-muted">No qualifications added yet.</p>
+              )}
+              <div className="space-y-4">
+                {education.fields.map((field, i) => (
+                  <div key={field.id} className="rounded-ctl border border-hairline bg-wash/30 p-4">
+                    <div className="grid gap-4 sm:grid-cols-3">
+                      <Input label="Degree" error={errors.education?.[i]?.degree?.message} {...register(`education.${i}.degree`, { required: 'Required' })} />
+                      <Input label="Institution" error={errors.education?.[i]?.institution?.message} {...register(`education.${i}.institution`, { required: 'Required' })} />
+                      <Input label="Year" placeholder="2021" error={errors.education?.[i]?.year?.message} {...register(`education.${i}.year`, { required: 'Required' })} />
+                    </div>
+                    <div className="mt-3 flex justify-end">
+                      <button
+                        type="button"
+                        onClick={() => education.remove(i)}
+                        className="inline-flex items-center gap-1.5 text-[12.5px] font-medium text-clay transition-colors hover:text-clay/80 cursor-pointer"
+                      >
+                        <Trash2 size={14} />
+                        Remove
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                onClick={() => education.append({ degree: '', institution: '', year: '' })}
+                className="mt-4"
+              >
+                <Plus size={15} />
+                Add qualification
+              </Button>
+
+              <div className="mt-6 flex justify-between gap-2 border-t border-hairline pt-5">
+                <Button type="button" variant="secondary" onClick={() => setActiveSection('work')}>
+                  Back
+                </Button>
+                <Button type="button" onClick={() => setActiveSection('family')} className="font-bold shadow-sm">
+                  Next Section: Family
+                </Button>
+              </div>
+            </SectionShell>
+          </div>
+
+          {/* Section 4: Family */}
+          <div style={{ display: activeSection === 'family' ? 'block' : 'none' }}>
+            <SectionShell
+              id="family"
+              refFn={setRef('family')}
+              title="Family"
+              description="Next of kin and family members."
+            >
+              {family.fields.length === 0 && (
+                <p className="mb-4 text-[13px] text-muted">No family members added yet.</p>
+              )}
+              <div className="space-y-4">
+                {family.fields.map((field, i) => (
+                  <div key={field.id} className="rounded-ctl border border-hairline bg-wash/30 p-4">
+                    <div className="grid gap-4 sm:grid-cols-3">
+                      <Input label="Name" error={errors.family?.[i]?.name?.message} {...register(`family.${i}.name`, { required: 'Required' })} />
+                      <Input label="Relationship" error={errors.family?.[i]?.relationship?.message} {...register(`family.${i}.relationship`, { required: 'Required' })} />
+                      <Input label="Contact Number" type="tel" {...register(`family.${i}.contactNumber`)} />
+                    </div>
+                    <div className="mt-3 flex justify-end">
+                      <button
+                        type="button"
+                        onClick={() => family.remove(i)}
+                        className="inline-flex items-center gap-1.5 text-[12.5px] font-medium text-clay transition-colors hover:text-clay/80 cursor-pointer"
+                      >
+                        <Trash2 size={14} />
+                        Remove
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                onClick={() => family.append({ name: '', relationship: '', contactNumber: '' })}
+                className="mt-4"
+              >
+                <Plus size={15} />
+                Add family member
+              </Button>
+
+              <div className="mt-6 flex justify-between gap-2 border-t border-hairline pt-5">
+                <Button type="button" variant="secondary" onClick={() => setActiveSection('education')}>
+                  Back
+                </Button>
+                <Button type="button" onClick={() => setActiveSection('financial')} className="font-bold shadow-sm">
+                  Next Section: Financial
+                </Button>
+              </div>
+            </SectionShell>
+          </div>
+
+          {/* Section 5: Financial */}
+          <div style={{ display: activeSection === 'financial' ? 'block' : 'none' }}>
+            <SectionShell
+              id="financial"
+              refFn={setRef('financial')}
+              title="Financial"
+              description="Bank account for payroll. Optional — fill all fields or leave blank."
+            >
+              <div className="grid gap-4 sm:grid-cols-2">
+                <Input label="Bank Name" {...register('bankName')} />
+                <Input label="Account Name" {...register('accName')} />
+                <Input label="Account Number" {...register('accNumber')} />
+                <Input label="IFSC Code" {...register('ifscCode')} />
+              </div>
+
+              <div className="mt-6 flex justify-between gap-2 border-t border-hairline pt-5">
+                <Button type="button" variant="secondary" onClick={() => setActiveSection('family')}>
+                  Back
+                </Button>
+                <div className="flex gap-2">
+                  <Button type="button" variant="secondary" onClick={() => navigate('/dashboard/employees')}>
+                    Cancel
+                  </Button>
+                  <Button type="submit" disabled={isSubmitting || photoUploading} className="font-bold shadow-sm">
+                    {isSubmitting ? (
+                      <>
+                        <Loader2 size={16} className="animate-spin" /> Saving…
+                      </>
+                    ) : (
+                      'Add Employee'
+                    )}
+                  </Button>
+                </div>
+              </div>
+            </SectionShell>
+          </div>
+        </div>
+      </form>
+    </div>
+  )
+}
