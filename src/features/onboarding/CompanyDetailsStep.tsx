@@ -6,6 +6,7 @@ import { OrganizationError, organizationService } from '@/services/organizationS
 import { useAuthStore } from '@/features/auth/store/authStore'
 import WizardShell from './components/WizardShell'
 import { useOnboardingStore } from './store/onboardingStore'
+import SectionHeading from '@/shared/components/SectionHeading'
 
 type CompanyForm = {
   name: string
@@ -196,10 +197,53 @@ export default function CompanyDetailsStep({ isAdditional = false }: { isAdditio
 
   if (isAdditional) {
     return (
-      <div className="mx-auto max-w-md pt-12">
-        <h1 className="mb-2 text-2xl font-bold">Add Company</h1>
-        <p className="mb-6 text-[14px] text-muted">Create an additional workspace.</p>
-        {formContent}
+      <div className="flex min-h-[calc(100vh-4rem)] items-center justify-center p-4 sm:p-6 lg:p-8 bg-gray-50/50">
+        <div className="w-full max-w-[960px] overflow-hidden rounded-3xl border border-gray-200/60 bg-white shadow-2xl shadow-teal-900/5 flex flex-col md:flex-row transition-all duration-300 hover:shadow-teal-900/10">
+          
+          {/* Left Panel: Branding & Context */}
+          <div className="relative flex flex-col justify-between overflow-hidden bg-gradient-to-br from-teal-900 via-teal-800 to-emerald-600 p-8 sm:p-12 md:w-[400px] md:shrink-0">
+            {/* Decorative background blurs */}
+            <div className="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-teal-400/20 blur-3xl transition-transform duration-700 hover:scale-110" />
+            <div className="absolute -bottom-32 -left-32 h-80 w-80 rounded-full bg-emerald-400/20 blur-3xl transition-transform duration-700 hover:scale-110" />
+            
+            <div className="relative z-10">
+              <div className="mb-8 inline-flex h-16 w-16 items-center justify-center rounded-2xl bg-white/10 shadow-[inset_0_1px_1px_rgba(255,255,255,0.2)] backdrop-blur-xl border border-white/10">
+                <Building className="text-white drop-shadow-md" size={32} />
+              </div>
+              <h1 className="mb-3 text-4xl font-extrabold tracking-tight text-white drop-shadow-sm font-display">
+                New Workspace
+              </h1>
+              <p className="text-[15px] leading-relaxed text-teal-50/90 max-w-[280px]">
+                Create a new workspace and become its owner instantly. Set up your team and manage everything in one centralized place.
+              </p>
+            </div>
+            
+            <div className="relative z-10 mt-16 rounded-2xl border border-white/10 bg-white/5 p-5 backdrop-blur-lg shadow-lg">
+              <div className="flex items-center gap-4">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-tr from-teal-500 to-emerald-400 shadow-inner">
+                  <Sparkles size={18} className="text-white" />
+                </div>
+                <div>
+                  <p className="text-[15px] font-semibold text-white drop-shadow-sm">{user?.name}</p>
+                  <p className="text-[13px] font-medium tracking-wide text-teal-100/80 uppercase mt-0.5">Will be Owner</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Right Panel: Form */}
+          <div className="flex flex-1 flex-col justify-center p-8 sm:p-12 lg:px-16 bg-white">
+            <SectionHeading
+              label="Company Details"
+              title="Add Company"
+              intro="Please provide your company details to set up the new workspace."
+              className="mb-8"
+            />
+            <div>
+              {formContent}
+            </div>
+          </div>
+        </div>
       </div>
     )
   }
