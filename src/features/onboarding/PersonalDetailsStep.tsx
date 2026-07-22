@@ -17,6 +17,7 @@ export default function PersonalDetailsStep() {
     handleSubmit,
     formState: { errors, isSubmitting },
   } = useForm<PersonalDetails>({
+    mode: 'onTouched',
     defaultValues: personal ?? {
       fullName: user?.name ?? '',
       phone: '',

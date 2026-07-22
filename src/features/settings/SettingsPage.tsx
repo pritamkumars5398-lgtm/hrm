@@ -634,7 +634,7 @@ export default function SettingsPage() {
             {TABS.map((t) => {
               const active = tab === t.key
               const Icon = t.icon
-              const activeColor = t.color
+
 
               return (
                 <li key={t.key} className="shrink-0 lg:shrink">
@@ -642,13 +642,13 @@ export default function SettingsPage() {
                     type="button"
                     onClick={() => setTab(t.key)}
                     aria-current={active ? 'page' : undefined}
-                    className={`flex w-full items-center gap-2.5 rounded-ctl px-3.5 py-2.5 text-[13.5px] font-semibold whitespace-nowrap transition-all duration-200 cursor-pointer ${
+                    className={`flex w-[80%] items-center gap-2.5 rounded-ctl px-3.5 py-2.5 text-[13.5px] font-semibold whitespace-nowrap transition-all duration-200 cursor-pointer ${
                       active
-                        ? 'bg-emerald-50 text-emerald-800 font-bold border-l-[3px] border-emerald-500 pl-3 rounded-l-none'
-                        : 'text-muted hover:bg-wash hover:text-ink border-l-[3px] border-transparent pl-3'
+                        ? 'bg-[#059669] text-white shadow-sm'
+                        : 'text-muted hover:bg-wash hover:text-ink'
                     }`}
                   >
-                    <Icon size={15} className={active ? activeColor : 'text-muted'} />
+                    <Icon size={15} className={active ? 'text-white' : 'text-muted'} />
                     {t.label}
                   </button>
                 </li>
