@@ -224,43 +224,66 @@ export default function TeamMembersPage() {
 
       {/* Invite — Owner and HR only (§10) */}
       {canManage && (
-        <Card className="p-5">
-          <h2 className="text-[14px] font-bold text-ink">Invite someone</h2>
-          <p className="mt-1 text-[13px] text-muted font-medium">
-            They'll join with the role you pick here — they cannot change it themselves.
-          </p>
+        <div className="w-full overflow-hidden rounded-3xl border border-gray-200/60 bg-white shadow-xl shadow-teal-900/5 flex flex-col md:flex-row transition-all duration-300 hover:shadow-teal-900/10">
+          {/* Left Panel: Context */}
+          <div className="relative flex flex-col justify-center overflow-hidden bg-gradient-to-br from-[#047857] via-[#059669] to-[#10b981] p-5 sm:p-6 md:w-[260px] md:shrink-0">
+            {/* Decorative background blurs */}
+            <div className="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-white/10 blur-3xl transition-transform duration-700 hover:scale-110" />
+            <div className="absolute -bottom-32 -left-32 h-80 w-80 rounded-full bg-[#34d399]/20 blur-3xl transition-transform duration-700 hover:scale-110" />
+            
+            <div className="relative z-10 flex flex-col items-start">
+              <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-xl bg-white shadow-lg shadow-emerald-900/20">
+                <MailPlus className="text-[#059669]" size={20} strokeWidth={2.5} />
+              </div>
+              <h2 className="mb-1 text-xl font-extrabold tracking-tight text-white drop-shadow-sm font-display">
+                Invite someone
+              </h2>
+              <p className="text-[12px] leading-relaxed text-emerald-50 max-w-[200px]">
+                They'll join with the role you pick here — they cannot change it themselves.
+              </p>
+            </div>
+          </div>
 
-          <form onSubmit={onInvite} noValidate className="mt-4">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-start">
-              <Input
-                label="Email"
-                type="email"
-                placeholder="colleague@company.com"
-                className="flex-1"
-                error={errors.email?.message}
-                {...register('email', {
-                  required: 'Enter an email.',
-                  pattern: {
-                    value: /^\S+@\S+\.\S+$/,
-                    message: 'That does not look like an email.',
-                  },
-                })}
-              />
+          {/* Right Panel: Content */}
+          <div className="flex flex-1 flex-col justify-center p-5 sm:p-6 bg-white">
+            <form onSubmit={onInvite} noValidate>
+              <div className="mb-5">
+                <h3 className="text-xl font-bold tracking-tight text-gray-900">Invite someone</h3>
+                <p className="mt-1 text-[13px] text-gray-500">
+                  They'll join with the role you pick here — they cannot change it themselves.
+                </p>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <Input
+                  label="Email"
+                  type="email"
+                  placeholder="colleague@company.com"
+                  className="w-full"
+                  error={errors.email?.message}
+                  {...register('email', {
+                    required: 'Enter an email.',
+                    pattern: {
+                      value: /^\S+@\S+\.\S+$/,
+                      message: 'That does not look like an email.',
+                    },
+                  })}
+                />
 
-              <Select
-                label="Role"
-                placeholder="Select a role"
-                className="sm:w-44"
-                options={[
-                  { value: 'HR', label: 'HR' },
-                  { value: 'MANAGER', label: 'Manager' },
-                ]}
-                error={errors.role?.message}
-                {...register('role', { required: 'Pick a role.' })}
-              />
+                <Select
+                  label="Role"
+                  placeholder="Select a role"
+                  className="w-full"
+                  options={[
+                    { value: 'HR', label: 'HR' },
+                    { value: 'MANAGER', label: 'Manager' },
+                  ]}
+                  error={errors.role?.message}
+                  {...register('role', { required: 'Pick a role.' })}
+                />
+              </div>
 
-              <div className="sm:pt-[26px]">
-                <Button type="submit" disabled={isSubmitting} className="w-full sm:w-auto shadow-sm">
+              <div className="mt-5 border-t border-gray-100 pt-4 flex justify-end">
+                <Button type="submit" disabled={isSubmitting} className="w-full sm:w-auto shadow-sm bg-[#059669] hover:bg-[#047857] text-white border-0">
                   {isSubmitting ? (
                     <>
                       <Loader2 size={15} className="animate-spin" />
@@ -274,11 +297,11 @@ export default function TeamMembersPage() {
                   )}
                 </Button>
               </div>
-            </div>
-          </form>
+            </form>
 
-          {inviteLink && <InviteLinkPanel link={inviteLink} tempPassword={inviteTempPassword} />}
-        </Card>
+            {inviteLink && <InviteLinkPanel link={inviteLink} tempPassword={inviteTempPassword} />}
+          </div>
+        </div>
       )}
 
       {/* Pending invites */}
