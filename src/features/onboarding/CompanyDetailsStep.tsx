@@ -10,6 +10,7 @@ import { useAuthStore } from '@/features/auth/store/authStore'
 import WizardShell from './components/WizardShell'
 import { useOnboardingStore } from './store/onboardingStore'
 
+
 type CompanyForm = {
   name: string
   address: string
@@ -93,7 +94,7 @@ export default function CompanyDetailsStep({ isAdditional = false }: { isAdditio
     handleSubmit,
     watch,
     formState: { errors, isSubmitting },
-  } = useForm<CompanyForm>({ defaultValues: { name: '', address: '', industry: '' } })
+  } = useForm<CompanyForm>({ mode: 'onTouched', defaultValues: { name: '', address: '', industry: '' } })
 
   const watchedName = watch('name')
   const watchedAddress = watch('address')
@@ -122,7 +123,7 @@ export default function CompanyDetailsStep({ isAdditional = false }: { isAdditio
     }
   })
 
-  const back = () => { goTo(1); navigate('/onboarding') }
+  const back = () => { goTo(1); navigate('/onboarding', { replace: true }) }
 
   /* ───────────────────────── wizard (non-additional) ────────────────────── */
   const inputClass = (hasError: boolean) =>
@@ -136,7 +137,7 @@ export default function CompanyDetailsStep({ isAdditional = false }: { isAdditio
       {formError && (
         <div role="alert" className="mb-5 flex gap-2 rounded-xl bg-red-50 border border-red-100 px-3.5 py-3">
           <AlertCircle size={14} className="mt-0.5 shrink-0 text-red-500" />
-          <p className="text-[12.5px] text-red-700 leading-relaxed">{formError}</p>
+          <p className="text-[12px] text-red-700 leading-relaxed">{formError}</p>
         </div>
       )}
       <div className="space-y-6">
@@ -151,7 +152,7 @@ export default function CompanyDetailsStep({ isAdditional = false }: { isAdditio
           {errors.name && <p className="mt-1.5 text-[11.5px] text-red-500">{errors.name.message}</p>}
         </div>
         <div>
-          <div className="flex items-center gap-2 mb-2">
+          <div className="flex items-center gap-2 mb-1">
             <MapPin size={12} className="text-gray-400 shrink-0" />
             <label className="text-[11px] font-bold uppercase tracking-widest text-gray-400">Address</label>
           </div>
@@ -163,7 +164,7 @@ export default function CompanyDetailsStep({ isAdditional = false }: { isAdditio
             : <p className="mt-1.5 text-[11.5px] text-gray-400">Appears on payslips and offer letters.</p>}
         </div>
         <div>
-          <div className="flex items-center gap-2 mb-2">
+          <div className="flex items-center gap-2 mb-1">
             <Briefcase size={12} className="text-gray-400 shrink-0" />
             <label className="text-[11px] font-bold uppercase tracking-widest text-gray-400">Industry</label>
           </div>

@@ -10,12 +10,16 @@ import {
   Target,
   Users,
   UserPlus,
+  UserX,
+  User,
   type LucideIcon,
 } from 'lucide-react'
 
 export type ModuleKey =
   | 'dashboard'
+  | 'profile'
   | 'employees'
+  | 'former-employees'
   | 'attendance'
   | 'leave'
   | 'payroll'
@@ -37,7 +41,9 @@ export type NavItem = {
 
 export const NAV_ITEMS: NavItem[] = [
   { key: 'dashboard', label: 'Dashboard', path: '/dashboard', icon: LayoutDashboard, group: 'main' },
+  { key: 'profile', label: 'Profile', path: '/dashboard/profile', icon: User, group: 'main' },
   { key: 'employees', label: 'Employees', path: '/dashboard/employees', icon: Users, group: 'main' },
+  { key: 'former-employees', label: 'Former Employees', path: '/dashboard/former-employees', icon: UserX, group: 'main' },
   { key: 'attendance', label: 'Attendance', path: '/dashboard/attendance', icon: Clock, group: 'main' },
   { key: 'leave', label: 'Leave', path: '/dashboard/leave', icon: CalendarDays, group: 'main' },
   { key: 'payroll', label: 'Payroll', path: '/dashboard/payroll', icon: Banknote, group: 'main' },
@@ -57,7 +63,9 @@ export type PermissionMatrix = Record<ModuleKey, string[]>
  */
 export const PERMISSION_MODULES: PermissionMatrix = {
   dashboard: [], // Handled by ALWAYS_GRANTED
+  profile: [], // Handled by ALWAYS_GRANTED
   employees: ['employees.view', 'employees.manage'],
+  'former-employees': ['employees.view', 'employees.manage'],
   attendance: [], // Handled by ALWAYS_GRANTED — self-service check-in is a baseline
   leave: [], // Handled by ALWAYS_GRANTED — applying for leave is a baseline
   payroll: ['payroll.view', 'payroll.manage'],
@@ -81,7 +89,7 @@ export const PERMISSION_MODULES: PermissionMatrix = {
  * (company-wide vs. just you), decided server-side (§4.1). `payslip` is NOT
  * unconditional like the others — see the carve-out in `canAccess` below.
  */
-export const ALWAYS_GRANTED: ModuleKey[] = ['dashboard', 'attendance', 'leave']
+export const ALWAYS_GRANTED: ModuleKey[] = ['dashboard', 'attendance', 'leave', 'profile']
 
 /**
  * Payslip is the "my own payslip" ESS view, distinct from the Payroll
@@ -99,6 +107,14 @@ export function canAccessPayslip(permissions: string[] | undefined): boolean {
 export function canAccess(permissions: string[] | undefined, moduleKey: ModuleKey): boolean {
   const perms = permissions ?? []
   if (moduleKey === 'payslip') return canAccessPayslip(perms)
+  if (moduleKey === 'profile') {
+    const hasEmployeeAccess =
+      perms.includes('*') ||
+      perms.includes('employees.view') ||
+      perms.includes('employees.manage') ||
+      perms.includes('employees.*')
+    return !hasEmployeeAccess
+  }
   if (perms.includes('*')) return true
   if (ALWAYS_GRANTED.includes(moduleKey)) return true
 

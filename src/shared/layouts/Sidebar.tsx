@@ -12,12 +12,7 @@ type SidebarProps = {
   onNavigate?: () => void
 }
 
-const ROLE_LABEL: Record<Role, string> = {
-  OWNER: 'Owner',
-  HR: 'HR Manager',
-  MANAGER: 'Manager',
-  EMPLOYEE: 'Employee',
-}
+// ROLE_LABEL constant removed as it is unused
 
 function NavSection({
   items,
@@ -85,8 +80,8 @@ function NavSection({
  */
 export default function Sidebar({
   permissions,
-  role,
-  organizationName,
+  role: _role,
+  organizationName: _organizationName,
   collapsed = false,
   onNavigate,
 }: SidebarProps) {
@@ -94,43 +89,13 @@ export default function Sidebar({
   const main = items.filter((i) => i.group === 'main')
   const admin = items.filter((i) => i.group === 'admin')
 
-  // Generate initials for organization selector
-  const orgInitials = organizationName
-    .split(' ')
-    .map((w) => w[0])
-    .join('')
-    .slice(0, 2)
-    .toUpperCase() || 'KS'
-
   return (
     <div className="flex h-full flex-col border-r border-hairline bg-paper">
       <div className={`flex h-16 shrink-0 items-center border-b border-hairline px-4 ${collapsed ? 'justify-center' : ''}`}>
         <Logo className={collapsed ? '[&>span:last-child]:hidden' : ''} />
       </div>
 
-      {!collapsed && (
-        <div className="border-b border-hairline bg-wash/10 px-4 py-3.5 flex items-center gap-3">
-          {/* Workspace Avatar box */}
-          <div className="size-8 rounded-ctl flex items-center justify-center text-[12px] font-bold text-white bg-gradient-to-br from-[#10b981] to-[#15803d] shadow-inner shrink-0 select-none">
-            {orgInitials}
-          </div>
-          
-          <div className="flex-1 min-w-0">
-            <p className="truncate text-[13px] font-bold text-ink leading-none">{organizationName}</p>
-            <div className="flex items-center gap-1.5 mt-1">
-              <span className="text-[9.5px] font-semibold text-muted uppercase tracking-wider">Role:</span>
-              <span className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-[9px] font-bold border ${
-                role === 'OWNER' ? 'bg-indigo-50 text-indigo-700 border-indigo-200/50' :
-                role === 'HR' ? 'bg-emerald-50 text-emerald-700 border-emerald-200/50' :
-                role === 'MANAGER' ? 'bg-amber-50 text-amber-700 border-amber-200/50' :
-                'bg-wash text-muted border-hairline-strong'
-              }`}>
-                {ROLE_LABEL[role]}
-              </span>
-            </div>
-          </div>
-        </div>
-      )}
+
 
       <nav aria-label="Modules" className={`flex-1 overflow-y-auto ${collapsed ? 'p-2' : 'p-3'}`}>
         <NavSection items={main} collapsed={collapsed} onNavigate={onNavigate} />

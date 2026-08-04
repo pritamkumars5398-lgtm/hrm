@@ -33,7 +33,7 @@ const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
           type={resolvedType}
           aria-invalid={error ? true : undefined}
           aria-describedby={error ? errorId : hint ? hintId : undefined}
-          className={`h-10 w-full rounded-ctl border bg-surface px-3 text-[14px] transition-colors placeholder:text-muted/60 ${
+          className={`h-10 w-full rounded-ctl border bg-surface px-3 text-[14px] transition-colors placeholder:text-muted/60 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none ${
             revealable ? 'pr-10' : ''
           } ${
             error

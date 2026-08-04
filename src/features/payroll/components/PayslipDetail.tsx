@@ -171,7 +171,7 @@ export default function PayslipDetail({ payslip, canManage, onSaveDraft, onFinal
   }
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-3">
       <div className="flex items-center justify-between">
         <Badge tone={isFinalized ? 'success' : 'neutral'}>{isFinalized ? 'Finalized' : 'Draft'}</Badge>
         {isFinalized && payslip.finalizedAt && (
@@ -211,9 +211,10 @@ export default function PayslipDetail({ payslip, canManage, onSaveDraft, onFinal
       )}
 
       <form onSubmit={onSubmit} noValidate>
-        <Card className="p-5 space-y-5">
-          {/* Earnings */}
-          <section className="space-y-3">
+        <Card className="p-4 space-y-4">
+          <div className="grid md:grid-cols-2 gap-8">
+            {/* Earnings */}
+            <section className="space-y-3">
             <h3 className="text-[11px] font-bold uppercase tracking-wider text-muted">Earnings</h3>
             <div className="space-y-2 rounded-ctl border border-hairline bg-wash/30 p-3 text-[13px]">
               <div className="flex justify-between">
@@ -230,11 +231,11 @@ export default function PayslipDetail({ payslip, canManage, onSaveDraft, onFinal
               </div>
             </div>
 
-            <div className="grid gap-4 sm:grid-cols-2">
+            <div className="grid gap-3 sm:grid-cols-2">
               <Input label="Bonus" type="number" min={0} disabled={!isEditable} {...register('bonus', { min: 0 })} />
               <Input label="Incentive" type="number" min={0} disabled={!isEditable} {...register('incentive', { min: 0 })} />
             </div>
-            <div className="grid gap-4 sm:grid-cols-2">
+            <div className="grid gap-3 sm:grid-cols-2">
               <Input label="Reimbursement" type="number" min={0} disabled={!isEditable} {...register('reimbursement', { min: 0 })} />
               <Input label="Other earnings" type="number" min={0} disabled={!isEditable} {...register('otherEarnings', { min: 0 })} />
             </div>
@@ -246,10 +247,10 @@ export default function PayslipDetail({ payslip, canManage, onSaveDraft, onFinal
           </section>
 
           {/* Deductions */}
-          <section className="space-y-3">
+          <section className="space-y-3 flex flex-col">
             <h3 className="text-[11px] font-bold uppercase tracking-wider text-muted">Deductions</h3>
 
-            <div className="grid gap-4 sm:grid-cols-2">
+            <div className="grid gap-3 sm:grid-cols-2">
               <Input label="Income tax" type="number" min={0} disabled={!isEditable} {...register('incomeTax', { min: 0 })} />
               <Input label="Other deduction" type="number" min={0} disabled={!isEditable} {...register('otherDeduction', { min: 0 })} />
             </div>
@@ -266,19 +267,22 @@ export default function PayslipDetail({ payslip, canManage, onSaveDraft, onFinal
               <span className="tnum font-medium text-ink">{formatMoney(lopDeduction)}</span>
             </div>
 
-            <div className="flex items-center justify-between text-[13px] font-semibold text-ink">
+            <div className="flex items-center justify-between text-[13px] font-semibold text-ink mt-auto">
               <span>Total deductions</span>
               <span className="tnum">{formatMoney(totalDeductions)}</span>
             </div>
           </section>
-
-          {/* Net */}
-          <div className="flex items-center justify-between rounded-ctl border border-emerald-500/15 bg-emerald-500/[0.03] px-3.5 py-3 text-[14px] font-bold text-emerald-800">
-            <span>Net salary</span>
-            <span className="tnum">{formatMoney(netSalary)}</span>
           </div>
 
-          <Input label="Notes" placeholder="Optional note for this payslip" disabled={!isEditable} {...register('notes')} />
+          <div className="grid md:grid-cols-2 gap-8 items-end">
+            {/* Net */}
+            <div className="flex items-center justify-between rounded-ctl border border-emerald-500/15 bg-emerald-500/[0.03] px-3.5 py-3 text-[14px] font-bold text-emerald-800">
+              <span>Net salary</span>
+              <span className="tnum">{formatMoney(netSalary)}</span>
+            </div>
+
+            <Input label="Notes" placeholder="Optional note for this payslip" disabled={!isEditable} {...register('notes')} />
+          </div>
 
           <div className="flex flex-wrap items-center justify-between gap-2 border-t border-hairline pt-4">
             <Button type="button" variant="secondary" onClick={() => void handleDownload()} disabled={downloading}>

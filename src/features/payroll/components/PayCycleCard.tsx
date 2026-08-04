@@ -102,110 +102,127 @@ export default function PayCycleCard({ canManage }: Props) {
   }
 
   return (
-    <Card className="p-5">
-      <div className="flex items-center gap-2">
-        <span className="flex size-7 items-center justify-center rounded-full bg-pine-tint text-pine">
-          <Calendar size={14} />
-        </span>
-        <div>
-          <h2 className="text-[14px] font-semibold text-ink">Pay cycle</h2>
-          <p className="text-[12px] text-muted">When salary lands, company-wide.</p>
+    <div className="w-full overflow-hidden rounded-3xl border border-gray-200/60 bg-white shadow-xl shadow-teal-900/5 flex flex-col md:flex-row transition-all duration-300 hover:shadow-teal-900/10">
+      {/* Left Panel: Context */}
+      <div className="relative flex flex-col justify-center overflow-hidden bg-gradient-to-br from-[#047857] via-[#059669] to-[#10b981] p-5 sm:p-6 md:w-[260px] md:shrink-0">
+        {/* Decorative background blurs */}
+        <div className="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-white/10 blur-3xl transition-transform duration-700 hover:scale-110" />
+        <div className="absolute -bottom-32 -left-32 h-80 w-80 rounded-full bg-[#34d399]/20 blur-3xl transition-transform duration-700 hover:scale-110" />
+        
+        <div className="relative z-10 flex flex-col items-start">
+          <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-xl bg-white shadow-lg shadow-emerald-900/20">
+            <Calendar className="text-[#059669]" size={20} strokeWidth={2.5} />
+          </div>
+          <h2 className="mb-1 text-xl font-extrabold tracking-tight text-white drop-shadow-sm font-display">
+            Pay cycle
+          </h2>
+          <p className="text-[12px] leading-relaxed text-emerald-50 max-w-[200px]">
+            When salary lands, company-wide.
+          </p>
         </div>
       </div>
 
-      {!canManage ? (
-        <p className="mt-4 text-[13px] text-muted">
-          {cycle && describe(cycle) ? describe(cycle) : 'Not set up yet.'}
-        </p>
-      ) : (
-        <form onSubmit={onSubmit} noValidate className="mt-4">
-          <div className="flex gap-1 rounded-ctl border border-hairline bg-wash/50 p-1">
-            {(
-              [
-                { value: 'FIXED', label: 'Fixed date' },
-                { value: 'RANGE', label: 'Date range' },
-              ] as const
-            ).map((opt) => (
-              <label
-                key={opt.value}
-                className={`flex-1 cursor-pointer rounded-[5px] px-3 py-1.5 text-center text-[12.5px] font-medium transition-colors ${
-                  type === opt.value ? 'bg-surface text-ink shadow-sm border border-hairline' : 'text-muted hover:text-ink'
-                }`}
-              >
-                <input type="radio" value={opt.value} className="sr-only" {...register('type')} />
-                {opt.label}
-              </label>
-            ))}
-          </div>
+      {/* Right Panel: Content */}
+      <div className="flex flex-1 flex-col justify-center p-5 sm:p-6 bg-white">
+        {!canManage ? (
+          <p className="text-[13px] text-muted">
+            {cycle && describe(cycle) ? describe(cycle) : 'Not set up yet.'}
+          </p>
+        ) : (
+          <form onSubmit={onSubmit} noValidate>
+            <div className="flex gap-1 rounded-ctl border border-hairline bg-wash/50 p-1">
+              {(
+                [
+                  { value: 'FIXED', label: 'Fixed date' },
+                  { value: 'RANGE', label: 'Date range' },
+                ] as const
+              ).map((opt) => (
+                <label
+                  key={opt.value}
+                  className={`flex-1 cursor-pointer rounded-[5px] px-3 py-1.5 text-center text-[12.5px] font-medium transition-colors ${
+                    type === opt.value ? 'bg-surface text-ink shadow-sm border border-hairline' : 'text-muted hover:text-ink'
+                  }`}
+                >
+                  <input type="radio" value={opt.value} className="sr-only" {...register('type')} />
+                  {opt.label}
+                </label>
+              ))}
+            </div>
 
-          <div className="mt-4">
-            {type === 'FIXED' ? (
-              <Input
-                label="Day of month"
-                type="number"
-                min={1}
-                max={31}
-                error={errors.fixedDay?.message}
-                hint="e.g. 1 for the 1st of every month"
-                {...register('fixedDay', {
-                  required: 'Pick a day.',
-                  min: { value: 1, message: 'Must be between 1 and 31.' },
-                  max: { value: 31, message: 'Must be between 1 and 31.' },
-                })}
-              />
-            ) : (
-              <div className="grid gap-4 sm:grid-cols-2">
+            <div className="mt-4">
+              {type === 'FIXED' ? (
                 <Input
-                  label="From day"
+                  label="Day of month"
                   type="number"
                   min={1}
                   max={31}
-                  error={errors.rangeStart?.message}
-                  {...register('rangeStart', {
-                    required: 'Pick a start day.',
+                  error={errors.fixedDay?.message}
+                  hint="e.g. 1 for the 1st of every month"
+                  {...register('fixedDay', {
+                    required: 'Pick a day.',
                     min: { value: 1, message: 'Must be between 1 and 31.' },
                     max: { value: 31, message: 'Must be between 1 and 31.' },
                   })}
                 />
-                <Input
-                  label="To day"
-                  type="number"
-                  min={1}
-                  max={31}
-                  error={errors.rangeEnd?.message}
-                  hint="Actual payment can vary a day or two within this window."
-                  {...register('rangeEnd', {
-                    required: 'Pick an end day.',
-                    min: { value: 1, message: 'Must be between 1 and 31.' },
-                    max: { value: 31, message: 'Must be between 1 and 31.' },
-                  })}
-                />
+              ) : (
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <Input
+                    label="From day"
+                    type="number"
+                    min={1}
+                    max={31}
+                    error={errors.rangeStart?.message}
+                    {...register('rangeStart', {
+                      required: 'Pick a start day.',
+                      min: { value: 1, message: 'Must be between 1 and 31.' },
+                      max: { value: 31, message: 'Must be between 1 and 31.' },
+                    })}
+                  />
+                  <Input
+                    label="To day"
+                    type="number"
+                    min={1}
+                    max={31}
+                    error={errors.rangeEnd?.message}
+                    hint="Actual payment can vary a day or two within this window."
+                    {...register('rangeEnd', {
+                      required: 'Pick an end day.',
+                      min: { value: 1, message: 'Must be between 1 and 31.' },
+                      max: { value: 31, message: 'Must be between 1 and 31.' },
+                    })}
+                  />
+                </div>
+              )}
+            </div>
+
+            {saveError && (
+              <div className="mt-3 flex gap-2 rounded-xl bg-red-50 border border-red-100 px-3 py-2">
+                <AlertCircle size={14} className="mt-0.5 shrink-0 text-red-500" />
+                <p className="text-[12px] text-red-700 leading-relaxed">{saveError}</p>
               </div>
             )}
-          </div>
 
-          {saveError && <p className="mt-2.5 text-[12px] text-clay">{saveError}</p>}
-
-          <div className="mt-4 flex items-center justify-end gap-3 border-t border-hairline pt-3.5">
-            {saved && (
-              <span className="inline-flex items-center gap-1.5 text-[12px] font-semibold text-pine">
-                <Check size={13} />
-                Saved
-              </span>
-            )}
-            <Button type="submit" size="sm" disabled={isSubmitting || !isDirty}>
-              {isSubmitting ? (
-                <>
-                  <Loader2 size={13} className="animate-spin" />
-                  Saving…
-                </>
-              ) : (
-                'Save pay cycle'
+            <div className="mt-4 pt-4 border-t border-gray-100 flex items-center justify-end gap-3">
+              {saved && (
+                <span className="inline-flex items-center gap-1.5 text-[12.5px] font-semibold text-[#059669]">
+                  <Check size={14} strokeWidth={3} />
+                  Saved
+                </span>
               )}
-            </Button>
-          </div>
-        </form>
-      )}
-    </Card>
+              <Button type="submit" size="sm" disabled={isSubmitting || !isDirty}>
+                {isSubmitting ? (
+                  <>
+                    <Loader2 size={13} className="animate-spin" />
+                    Saving…
+                  </>
+                ) : (
+                  'Save pay cycle'
+                )}
+              </Button>
+            </div>
+          </form>
+        )}
+      </div>
+    </div>
   )
 }

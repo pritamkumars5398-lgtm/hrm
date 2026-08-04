@@ -1,5 +1,6 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { motion, AnimatePresence } from 'framer-motion'
 import {
   AlertCircle,
   Banknote,
@@ -7,13 +8,14 @@ import {
   RotateCw,
   Target,
   UserPlus,
+  User,
   Activity,
   Star,
   Info,
 } from 'lucide-react'
 import Button from '@/shared/components/Button'
 import { useAuthStore } from '@/features/auth/store/authStore'
-import { hasPermission } from '@/shared/config/navigation'
+import { hasPermission, canAccess } from '@/shared/config/navigation'
 import { timeAgo } from '@/shared/utils/timeAgo'
 import { useAttendanceStore } from '@/features/attendance/store/attendanceStore'
 import CheckInOutCard from '@/features/attendance/components/CheckInOutCard'
@@ -118,6 +120,9 @@ export default function DashboardHome() {
     checkOut,
   } = useAttendanceStore()
 
+  const [hoveredBarIndex, setHoveredBarIndex] = useState<number | null>(null)
+  const [hoveredSlice, setHoveredSlice] = useState<string | null>(null)
+
   useEffect(() => {
     void load(user.permissions)
     void loadAttendance(viewer)
@@ -130,45 +135,119 @@ export default function DashboardHome() {
   const canSeeAttendanceOverview = hasPermission(user.permissions, 'attendance.manage')
   const canSeeLeaveOverview = hasPermission(user.permissions, 'leave.approve')
 
+  const getDaysUntilLabel = (startDateStr: string) => {
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    const startDate = new Date(`${startDateStr}T00:00:00`)
+    startDate.setHours(0, 0, 0, 0)
+    
+    const diffTime = startDate.getTime() - today.getTime()
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+    
+    if (diffDays === 0) return 'Today'
+    if (diffDays === 1) return 'Tomorrow'
+    if (diffDays < 0) return 'Passed'
+    return `In ${diffDays} day${diffDays === 1 ? '' : 's'}`
+  }
+
   return (
     <div className="space-y-6">
       {/* Welcome Banner Card */}
-      <div className="rounded-card border border-hairline bg-surface p-6 flex flex-col md:flex-row items-center justify-between gap-6 overflow-hidden">
-        <div className="flex-1 space-y-4 text-left">
-          <div>
-            <p className="text-[12px] font-semibold text-muted/70 uppercase tracking-wider mb-0.5">Welcome Back</p>
-            <h1 className="font-display text-[30px] leading-tight font-bold text-ink">
-              {greeting}.
-              <span className="block text-pine font-extrabold mt-1">{firstName} 👋</span>
-            </h1>
-            <p className="mt-2 text-[13.5px] leading-relaxed text-muted max-w-xl">
+      <motion.div
+        initial={{ opacity: 0, y: 15 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+        className="relative rounded-card border border-hairline bg-gradient-to-br from-pine-tint/40 via-surface to-surface p-6 flex flex-col md:flex-row items-center justify-between gap-6 overflow-hidden"
+      >
+        {/* Abstract background blobs for premium feel */}
+        <div className="absolute top-0 right-0 w-[300px] h-[300px] bg-gradient-to-bl from-pine-tint/30 to-transparent rounded-full blur-3xl pointer-events-none" />
+        
+        <div className="flex-1 space-y-4 text-left z-10">
+          <motion.div
+            initial="hidden"
+            animate="visible"
+            variants={{
+              hidden: { opacity: 0 },
+              visible: {
+                opacity: 1,
+                transition: { staggerChildren: 0.1 }
+              }
+            }}
+          >
+            <motion.p
+              variants={{ hidden: { opacity: 0, y: 5 }, visible: { opacity: 1, y: 0 } }}
+              className="text-[12px] font-bold text-pine/80 uppercase tracking-widest mb-1.5"
+            >
+              Welcome Back
+            </motion.p>
+            <motion.h1
+              variants={{ hidden: { opacity: 0, y: 10 }, visible: { opacity: 1, y: 0 } }}
+              className="font-display text-[32px] leading-tight font-extrabold text-ink"
+            >
+              {greeting},
+              <span className="block text-pine font-black mt-1.5">
+                {firstName}{' '}
+                <motion.span
+                  animate={{ rotate: [0, 14, -8, 14, -4, 10, 0] }}
+                  transition={{ repeat: Infinity, duration: 2.5, repeatDelay: 1 }}
+                  className="inline-block origin-[70%_70%]"
+                >
+                  👋
+                </motion.span>
+              </span>
+            </motion.h1>
+            <motion.p
+              variants={{ hidden: { opacity: 0, y: 10 }, visible: { opacity: 1, y: 0 } }}
+              className="mt-3 text-[13.5px] leading-relaxed text-muted max-w-xl"
+            >
               Welcome back to Keystone. Manage your team, track daily attendance records, process payroll, and view company analytics from your centralized workspace.
-            </p>
-          </div>
+            </motion.p>
+          </motion.div>
           {status === 'ready' && (
-            <div className="flex gap-2">
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.4 }}
+              className="flex gap-2.5 pt-1"
+            >
               <Button
                 variant="secondary"
                 size="sm"
-                className="h-9.5"
+                className="h-9.5 hover:bg-wash transition-colors"
                 onClick={() => void load(user.permissions, { force: true })}
               >
-                <RotateCw size={14} />
+                <RotateCw size={14} className="animate-[spin_4s_linear_infinite]" />
                 Refresh
               </Button>
-            </div>
+              {canAccess(user.permissions, 'profile') && (
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  className="h-9.5 hover:bg-wash transition-colors"
+                  to="/dashboard/profile"
+                >
+                  <User size={14} />
+                  My Profile
+                </Button>
+              )}
+            </motion.div>
           )}
         </div>
 
         {/* Dashboard Illustration */}
-        <div className="hidden md:block w-[420px] h-52 lg:w-[460px] lg:h-56 shrink-0 relative">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95, x: 20 }}
+          animate={{ opacity: 1, scale: 1, x: 0 }}
+          transition={{ duration: 0.6, delay: 0.2 }}
+          className="hidden md:block w-[380px] h-48 lg:w-[420px] lg:h-52 shrink-0 relative z-10"
+        >
           <img
             src="/admin.png"
             alt="Keystone Workspace Overview"
-            className="w-full h-full object-contain select-none"
+            className="w-full h-full object-contain select-none filter drop-shadow-[0_10px_15px_rgba(31,77,63,0.06)]"
           />
-        </div>
-      </div>
+        </motion.div>
+      </motion.div>
 
       {status === 'error' && (
         <div className="flex items-start gap-3 rounded-card border border-clay/30 bg-clay/5 p-5">
@@ -191,31 +270,55 @@ export default function DashboardHome() {
           {/* Stats Grid */}
           <div className="grid gap-3 grid-cols-2 sm:grid-cols-3 lg:grid-cols-5">
             {status === 'ready' && data
-              ? statsToShow.map((stat) => {
+              ? statsToShow.map((stat, index) => {
                 const style = getStatStyle(stat.id, stat.label)
                 const StatIcon = style.Icon
+                const normId = stat.id.toLowerCase()
+                
                 return (
-                  <div key={stat.id} className="group relative rounded-card border border-hairline bg-surface p-3 flex flex-col justify-between transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:border-hairline-strong overflow-hidden h-[104px]">
-                    <div className="flex items-start justify-between w-full">
-                      <div className={`p-2 rounded-full shrink-0 flex items-center justify-center transition-transform duration-300 group-hover:scale-105 ${style.iconBg}`}>
-                        <StatIcon className={`size-4 ${style.iconColor}`} />
+                  <motion.div
+                    key={stat.id}
+                    initial={{ opacity: 0, y: 15 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.4, delay: index * 0.05 }}
+                    whileHover={{ y: -4 }}
+                    className={`group relative rounded-card border border-hairline bg-surface p-4 flex flex-col justify-between transition-all duration-300 overflow-hidden h-[112px] cursor-pointer ${
+                      normId.includes('employee') ? 'hover:border-teal-300 hover:shadow-[0_8px_30px_rgba(20,184,166,0.05)]' :
+                      normId.includes('present') ? 'hover:border-emerald-300 hover:shadow-[0_8px_30px_rgba(16,185,129,0.05)]' :
+                      normId.includes('leave') ? 'hover:border-orange-300 hover:shadow-[0_8px_30px_rgba(249,115,22,0.05)]' :
+                      normId.includes('payroll') ? 'hover:border-indigo-300 hover:shadow-[0_8px_30px_rgba(99,102,241,0.05)]' :
+                      'hover:border-purple-300 hover:shadow-[0_8px_30px_rgba(168,85,247,0.05)]'
+                    }`}
+                  >
+                    {/* Soft background glow */}
+                    <div className={`absolute -right-6 -bottom-6 size-16 rounded-full blur-2xl opacity-0 group-hover:opacity-25 transition-opacity duration-500 pointer-events-none ${
+                      normId.includes('employee') ? 'bg-teal-400' :
+                      normId.includes('present') ? 'bg-emerald-400' :
+                      normId.includes('leave') ? 'bg-orange-400' :
+                      normId.includes('payroll') ? 'bg-indigo-400' :
+                      'bg-purple-400'
+                    }`} />
+
+                    <div className="flex items-start justify-between w-full z-10">
+                      <div className={`p-2 rounded-full shrink-0 flex items-center justify-center transition-transform duration-300 group-hover:scale-110 ${style.iconBg}`}>
+                        <StatIcon className={`size-4 transition-transform duration-300 ${style.iconColor}`} />
                       </div>
                     </div>
 
-                    <div className="min-w-0 flex-1 mt-2">
+                    <div className="min-w-0 flex-1 mt-2 z-10">
                       <p className="text-[10px] text-muted font-bold uppercase tracking-wider leading-none truncate">{stat.label}</p>
                       <div className="flex items-baseline justify-between gap-1 mt-1.5">
-                        <p className="tnum font-display text-[19px] leading-none font-bold text-ink truncate">
+                        <p className="tnum font-display text-[21px] leading-none font-bold text-ink truncate">
                           {stat.value}
                         </p>
                         {stat.delta && (
-                          <span className={`shrink-0 inline-flex items-center px-1.5 py-0.5 rounded-full text-[9px] font-bold border leading-none ${style.deltaColor}`}>
+                          <span className={`shrink-0 inline-flex items-center px-1.5 py-0.5 rounded-full text-[9.5px] font-bold border leading-none ${style.deltaColor}`}>
                             {stat.delta}
                           </span>
                         )}
                       </div>
                     </div>
-                  </div>
+                  </motion.div>
                 )
               })
               : [0, 1, 2, 3, 4].map((i) => <StatSkeleton key={i} />)}
@@ -225,39 +328,89 @@ export default function DashboardHome() {
           <div className="grid gap-4 lg:grid-cols-5">
             {/* Attendance Chart — real check-ins, last 7 days */}
             {canSeeAttendanceOverview && (
-              <div className="lg:col-span-3 rounded-card border border-hairline bg-surface p-4 flex flex-col justify-between relative">
-                <div className="flex items-center justify-between border-b border-hairline pb-3">
+              <div className="lg:col-span-3 rounded-card border border-hairline bg-surface p-5 flex flex-col justify-between relative overflow-hidden group">
+                <div className="flex items-center justify-between border-b border-hairline pb-3.5">
                   <div className="flex items-center gap-1.5">
                     <h2 className="text-[14px] font-semibold text-ink">Attendance Overview</h2>
-                    <Info size={13} className="text-muted cursor-pointer hover:text-ink transition-colors" />
+                    <div className="relative group/info">
+                      <Info size={13} className="text-muted cursor-pointer hover:text-ink transition-colors" />
+                      <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 p-2 bg-ink text-white text-[10px] rounded shadow-lg opacity-0 pointer-events-none group-hover/info:opacity-100 transition-opacity duration-200 z-25 text-center leading-normal">
+                        Shows the number of employees checked in each day over the last 7 days.
+                      </div>
+                    </div>
                   </div>
-                  <span className="rounded-ctl border border-hairline-strong bg-surface px-2.5 py-1 text-[11.5px] font-medium text-ink">
+                  <span className="rounded-ctl border border-hairline-strong bg-wash/50 px-2.5 py-1 text-[11px] font-bold text-ink">
                     Last 7 days
                   </span>
                 </div>
 
                 {data && data.weeklyAttendance.length > 0 ? (
                   <>
-                    <div className="mt-5 flex h-40 gap-2.5">
+                    <div className="mt-6 flex h-44 gap-3.5 relative">
+                      {/* Grid background lines */}
+                      <div className="absolute inset-x-0 bottom-[22px] top-[14px] flex flex-col justify-between pointer-events-none">
+                        {[0, 1, 2, 3].map((_, idx) => (
+                          <div key={idx} className="w-full border-b border-wash border-dashed relative" />
+                        ))}
+                      </div>
+
                       {data.weeklyAttendance.map((day, i) => {
                         const maxExpected = Math.max(1, ...data.weeklyAttendance.map((d) => d.expected))
                         const heightPct = (day.present / maxExpected) * 100
+                        const isHovered = hoveredBarIndex === i
+                        const attendancePct = Math.round((day.present / Math.max(1, day.expected)) * 100)
+
                         return (
-                          <div key={`${day.label}-${i}`} className="flex flex-1 flex-col items-center gap-2">
-                            <span className="tnum text-[11px] font-bold text-ink">{day.present}</span>
-                            <div className="w-full flex-1 relative overflow-hidden bg-wash rounded-t-[3px]">
-                              <div
-                                className="absolute bottom-0 w-full rounded-t-[3px] bg-emerald-500 transition-all"
-                                style={{ height: `${heightPct}%` }}
+                          <div
+                            key={`${day.label}-${i}`}
+                            className="flex flex-1 flex-col items-center gap-2.5 relative z-10"
+                            onMouseEnter={() => setHoveredBarIndex(i)}
+                            onMouseLeave={() => setHoveredBarIndex(null)}
+                          >
+                            {/* Hover Tooltip */}
+                            <AnimatePresence>
+                              {isHovered && (
+                                <motion.div
+                                  initial={{ opacity: 0, y: 6, scale: 0.9 }}
+                                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                                  exit={{ opacity: 0, y: 6, scale: 0.9 }}
+                                  transition={{ duration: 0.15 }}
+                                  className="absolute -top-12 z-20 px-2.5 py-1.5 bg-ink text-white rounded shadow-xl text-[10.5px] leading-tight font-semibold flex flex-col items-center pointer-events-none whitespace-nowrap"
+                                >
+                                  <span className="font-bold text-emerald-400">{day.present} Present</span>
+                                  <span className="opacity-75 text-[9px] mt-0.5">{day.expected} Expected ({attendancePct}%)</span>
+                                  <div className="size-1.5 bg-ink rotate-45 absolute -bottom-0.5 left-1/2 -translate-x-1/2" />
+                                </motion.div>
+                              )}
+                            </AnimatePresence>
+
+                            {/* Bar Value label */}
+                            <span className={`tnum text-[11px] font-bold transition-colors duration-200 ${isHovered ? 'text-pine' : 'text-ink'}`}>
+                              {day.present}
+                            </span>
+
+                            {/* Bar Container */}
+                            <div className="w-full flex-1 relative bg-wash rounded-ctl overflow-hidden cursor-pointer border border-hairline/30">
+                              <motion.div
+                                className="absolute bottom-0 w-full rounded-t-[3px] bg-gradient-to-t from-emerald-500 to-teal-400 group-hover:from-emerald-400 group-hover:to-teal-300"
+                                initial={{ height: 0 }}
+                                animate={{ height: `${heightPct}%` }}
+                                transition={{ duration: 0.8, ease: 'easeOut', delay: i * 0.05 }}
                               />
                             </div>
                           </div>
                         )
                       })}
                     </div>
-                    <div className="flex items-center justify-between text-[11px] text-muted px-1 mt-2.5 font-medium">
+                    {/* Days Labels */}
+                    <div className="flex items-center justify-between text-[11px] text-muted px-1 mt-3 font-semibold uppercase tracking-wider">
                       {data.weeklyAttendance.map((day, i) => (
-                        <span key={`${day.label}-lbl-${i}`}>{day.label}</span>
+                        <span
+                          key={`${day.label}-lbl-${i}`}
+                          className={`transition-colors duration-200 ${hoveredBarIndex === i ? 'text-pine font-bold' : ''}`}
+                        >
+                          {day.label}
+                        </span>
                       ))}
                     </div>
                   </>
@@ -277,11 +430,16 @@ export default function DashboardHome() {
               let cumulative = 0
 
               return (
-                <div className="lg:col-span-2 rounded-card border border-hairline bg-surface p-4 flex flex-col justify-between">
-                  <div className="flex items-center justify-between border-b border-hairline pb-3">
+                <div className="lg:col-span-2 rounded-card border border-hairline bg-surface p-5 flex flex-col justify-between">
+                  <div className="flex items-center justify-between border-b border-hairline pb-3.5">
                     <div className="flex items-center gap-1.5">
                       <h2 className="text-[14px] font-semibold text-ink">Leave Overview</h2>
-                      <Info size={13} className="text-muted cursor-pointer hover:text-ink transition-colors" />
+                      <div className="relative group/info">
+                        <Info size={13} className="text-muted cursor-pointer hover:text-ink transition-colors" />
+                        <div className="absolute bottom-full right-0 mb-2 w-48 p-2 bg-ink text-white text-[10px] rounded shadow-lg opacity-0 pointer-events-none group-hover/info:opacity-100 transition-opacity duration-200 z-25 text-center leading-normal">
+                          Shows approved leave days by category taken so far this year.
+                        </div>
+                      </div>
                     </div>
                   </div>
 
@@ -291,59 +449,97 @@ export default function DashboardHome() {
                       <p className="mt-1 text-[12px] text-muted">Approved leave will show up here.</p>
                     </div>
                   ) : (
-                    <div className="flex items-center gap-4 my-4 flex-1">
-                      {/* SVG Donut Chart — real per-type breakdown */}
-                      <div className="relative size-24 shrink-0 flex items-center justify-center">
+                    <div className="flex flex-col sm:flex-row items-center gap-6 my-4 flex-1">
+                      {/* SVG Donut Chart */}
+                      <div className="relative size-28 shrink-0 flex items-center justify-center">
                         <svg viewBox="0 0 100 100" className="size-full">
+                          {/* Background Track */}
+                          <circle
+                            cx="50"
+                            cy="50"
+                            r="36"
+                            fill="transparent"
+                            stroke="var(--color-wash)"
+                            strokeWidth="11"
+                          />
                           {data.leaveBreakdown.map((slice) => {
                             const length = (slice.days / totalDays) * circumference
                             const offset = -cumulative
                             cumulative += length
+                            const isHovered = hoveredSlice === slice.type
+                            const isAnyHovered = hoveredSlice !== null
+
                             return (
-                              <circle
+                              <motion.circle
                                 key={slice.type}
                                 cx="50"
                                 cy="50"
                                 r="36"
                                 fill="transparent"
                                 stroke={LEAVE_TYPE_COLOR[slice.type]}
-                                strokeWidth="11"
+                                strokeWidth={isHovered ? 14 : 11}
                                 strokeDasharray={`${length} ${circumference}`}
-                                strokeDashoffset={offset}
+                                initial={{ strokeDashoffset: offset + length }}
+                                animate={{ strokeDashoffset: offset }}
+                                transition={{ duration: 0.8, ease: 'easeOut' }}
                                 transform="rotate(-90 50 50)"
                                 strokeLinecap="round"
+                                className="transition-all duration-200 cursor-pointer"
+                                style={{ opacity: isAnyHovered && !isHovered ? 0.45 : 1 }}
+                                onMouseEnter={() => setHoveredSlice(slice.type)}
+                                onMouseLeave={() => setHoveredSlice(null)}
                               />
                             )
                           })}
                         </svg>
-                        <div className="absolute inset-0 flex flex-col items-center justify-center">
-                          <span className="text-[18px] font-bold leading-none text-ink">{totalDays}</span>
-                          <span className="text-[9.5px] text-muted mt-0.5 font-medium">Total</span>
+                        <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                          <motion.span
+                            key={totalDays}
+                            initial={{ scale: 0.8, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            className="text-[20px] font-black leading-none text-ink"
+                          >
+                            {totalDays}
+                          </motion.span>
+                          <span className="text-[9.5px] text-muted uppercase tracking-wider font-bold mt-1">Total Days</span>
                         </div>
                       </div>
 
                       {/* Legend */}
-                      <div className="flex-1 flex flex-col gap-1.5 text-[11.5px] font-medium text-ink">
-                        {data.leaveBreakdown.map((slice) => (
-                          <div key={slice.type} className="flex items-center justify-between">
-                            <span className="flex items-center gap-1.5">
-                              <span className="size-2 rounded-full" style={{ backgroundColor: LEAVE_TYPE_COLOR[slice.type] }} />
-                              <span className="text-muted">{LEAVE_TYPE_LABEL[slice.type]}</span>
-                            </span>
-                            <span className="font-semibold text-ink">
-                              {slice.days} ({Math.round((slice.days / totalDays) * 100)}%)
-                            </span>
-                          </div>
-                        ))}
+                      <div className="flex-1 w-full flex flex-col gap-1.5 text-[11.5px] font-medium text-ink">
+                        {data.leaveBreakdown.map((slice) => {
+                          const isHovered = hoveredSlice === slice.type
+                          const isAnyHovered = hoveredSlice !== null
+                          const slicePct = Math.round((slice.days / totalDays) * 100)
+                          return (
+                            <div
+                              key={slice.type}
+                              className={`flex items-center justify-between p-1.5 rounded-ctl transition-all duration-200 cursor-pointer ${
+                                isHovered ? 'bg-wash/80 font-bold scale-[1.02]' : 'hover:bg-wash/30'
+                              }`}
+                              style={{ opacity: isAnyHovered && !isHovered ? 0.5 : 1 }}
+                              onMouseEnter={() => setHoveredSlice(slice.type)}
+                              onMouseLeave={() => setHoveredSlice(null)}
+                            >
+                              <span className="flex items-center gap-2">
+                                <span className="size-2.5 rounded-full shrink-0" style={{ backgroundColor: LEAVE_TYPE_COLOR[slice.type] }} />
+                                <span className="text-muted">{LEAVE_TYPE_LABEL[slice.type]}</span>
+                              </span>
+                              <span className="font-semibold text-ink font-mono">
+                                {slice.days}d ({slicePct}%)
+                              </span>
+                            </div>
+                          )
+                        })}
                       </div>
                     </div>
                   )}
 
-                  <div className="flex items-center justify-between border-t border-hairline pt-3 mt-1">
-                    <span className="text-[12px] font-semibold text-orange-600">
+                  <div className="flex items-center justify-between border-t border-hairline pt-3.5 mt-1">
+                    <span className="text-[12px] font-bold text-orange-600 bg-orange-50 px-2.5 py-0.5 rounded-full border border-orange-100/30">
                       {data.pendingLeaveCount > 0 ? `${data.pendingLeaveCount} pending approval` : 'All caught up'}
                     </span>
-                    <Link to="/dashboard/leave" className="text-[12px] font-semibold text-pine hover:underline">View all</Link>
+                    <Link to="/dashboard/leave" className="text-[12.5px] font-bold text-pine hover:text-pine-deep hover:underline transition-colors">View all</Link>
                   </div>
                 </div>
               )
@@ -353,37 +549,47 @@ export default function DashboardHome() {
           {/* Activity / Upcoming Leave / Check In Grid */}
           <div className="grid gap-4 lg:grid-cols-3">
             {/* Recent Activity */}
-            <div className="rounded-card border border-hairline bg-surface p-4 flex flex-col justify-between">
+            <div className="rounded-card border border-hairline bg-surface p-5 flex flex-col justify-between">
               <div>
-                <div className="flex items-center justify-between border-b border-hairline pb-3">
+                <div className="flex items-center justify-between border-b border-hairline pb-3.5">
                   <h2 className="text-[14px] font-semibold text-ink">Recent Activity</h2>
                 </div>
 
                 {status === 'ready' && data ? (
                   data.activity.length > 0 ? (
-                    <ul className="mt-2.5 divide-y divide-hairline">
-                      {data.activity.map((item) => {
-                        const Icon = ACTIVITY_ICON[item.kind]
-                        const timeStr = timeAgo(item.occurredAt)
+                    <div className="relative mt-3">
+                      {/* Timeline connecting line */}
+                      <div className="absolute left-[15px] top-3.5 bottom-3.5 w-[1.5px] bg-hairline pointer-events-none" />
+                      <ul className="space-y-1">
+                        {data.activity.map((item, index) => {
+                          const Icon = ACTIVITY_ICON[item.kind]
+                          const timeStr = timeAgo(item.occurredAt)
 
-                        return (
-                          <li key={item.id} className="flex gap-3 py-3 items-start last:pb-0">
-                            <span className="flex size-7.5 shrink-0 items-center justify-center rounded-full bg-pine-tint">
-                              <Icon size={13} className="text-pine" aria-hidden="true" />
-                            </span>
-                            <div className="min-w-0 flex-1">
-                              <p className="text-[13px] leading-snug font-semibold text-ink">{item.title}</p>
-                              <p className="tnum mt-0.5 text-[11.5px] text-muted">{item.meta}</p>
-                            </div>
-                            <span className="shrink-0 text-[10.5px] font-bold text-muted bg-wash/80 px-1.5 py-0.5 rounded-ctl">
-                              {timeStr}
-                            </span>
-                          </li>
-                        )
-                      })}
-                    </ul>
+                          return (
+                            <motion.li
+                              key={item.id}
+                              initial={{ opacity: 0, y: 15 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              transition={{ duration: 0.3, delay: index * 0.05 }}
+                              className="flex gap-3.5 p-2.5 items-start rounded-ctl hover:bg-wash/50 transition-all duration-200 group relative"
+                            >
+                              <span className="flex size-7.5 shrink-0 items-center justify-center rounded-full bg-pine-tint z-10 relative group-hover:scale-110 transition-transform duration-200">
+                                <Icon size={13} className="text-pine" aria-hidden="true" />
+                              </span>
+                              <div className="min-w-0 flex-1">
+                                <p className="text-[13px] leading-snug font-semibold text-ink">{item.title}</p>
+                                <p className="tnum mt-0.5 text-[11.5px] text-muted">{item.meta}</p>
+                              </div>
+                              <span className="shrink-0 text-[10.5px] font-bold text-muted bg-wash/80 px-1.5 py-0.5 rounded-ctl group-hover:bg-wash transition-colors">
+                                {timeStr}
+                              </span>
+                            </motion.li>
+                          )
+                        })}
+                      </ul>
+                    </div>
                   ) : (
-                    <div className="py-10 text-center">
+                    <div className="py-12 text-center">
                       <p className="text-[13px] font-medium text-ink">Nothing to catch up on</p>
                       <p className="mt-1 text-[12px] text-muted">
                         Activity from your team will show up here.
@@ -391,7 +597,7 @@ export default function DashboardHome() {
                     </div>
                   )
                 ) : (
-                  <ul className="mt-2.5 divide-y divide-hairline">
+                  <ul className="mt-3 divide-y divide-hairline">
                     {[0, 1, 2, 3].map((i) => (
                       <li key={i} className="flex gap-3 py-3 last:pb-0 animate-pulse">
                         <div className="size-7.5 shrink-0 rounded-full bg-wash" />
@@ -406,59 +612,84 @@ export default function DashboardHome() {
               </div>
             </div>
 
-            {/* Upcoming Leave — real approved leave, not fake calendar events */}
+            {/* Upcoming Leave — real approved leave */}
             {canSeeLeaveOverview && (
-              <div className="rounded-card border border-hairline bg-surface p-4 flex flex-col justify-between">
+              <div className="rounded-card border border-hairline bg-surface p-5 flex flex-col justify-between">
                 <div>
-                  <div className="flex items-center justify-between border-b border-hairline pb-3">
+                  <div className="flex items-center justify-between border-b border-hairline pb-3.5">
                     <h2 className="text-[14px] font-semibold text-ink">Upcoming Leave</h2>
                   </div>
 
                   {data && data.upcomingLeave.length > 0 ? (
-                    <ul className="mt-2.5 divide-y divide-hairline">
-                      {data.upcomingLeave.map((item) => (
-                        <li key={item.id} className="flex gap-3 py-3 items-center last:pb-0">
-                          <span
-                            className="flex size-7.5 shrink-0 items-center justify-center rounded-full"
-                            style={{ backgroundColor: `${LEAVE_TYPE_COLOR[item.type]}1a`, color: LEAVE_TYPE_COLOR[item.type] }}
-                          >
-                            <CalendarDays size={13} aria-hidden="true" />
-                          </span>
-                          <div className="min-w-0">
-                            <p className="text-[13px] leading-snug font-semibold text-ink">
-                              {item.employeeName} · {LEAVE_TYPE_LABEL[item.type]}
-                            </p>
-                            <p className="mt-0.5 text-[11.5px] text-muted font-medium">
-                              {formatLeaveDate(item.startDate)} – {formatLeaveDate(item.endDate)} · {item.days} day{item.days === 1 ? '' : 's'}
-                            </p>
-                          </div>
-                        </li>
-                      ))}
-                    </ul>
+                    <div className="relative mt-3">
+                      {/* Timeline connecting line */}
+                      <div className="absolute left-[15px] top-3.5 bottom-3.5 w-[1.5px] bg-hairline pointer-events-none" />
+                      <ul className="space-y-1">
+                        {data.upcomingLeave.map((item, index) => {
+                          const daysUntil = getDaysUntilLabel(item.startDate)
+                          return (
+                            <motion.li
+                              key={item.id}
+                              initial={{ opacity: 0, y: 15 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              transition={{ duration: 0.3, delay: index * 0.05 }}
+                              className="flex gap-3.5 p-2.5 items-start rounded-ctl hover:bg-wash/50 transition-all duration-200 group relative"
+                            >
+                              <span
+                                className="flex size-7.5 shrink-0 items-center justify-center rounded-full z-10 relative group-hover:scale-110 transition-transform duration-200"
+                                style={{ backgroundColor: `${LEAVE_TYPE_COLOR[item.type]}1a`, color: LEAVE_TYPE_COLOR[item.type] }}
+                              >
+                                <CalendarDays size={13} aria-hidden="true" />
+                              </span>
+                              <div className="min-w-0 flex-1">
+                                <p className="text-[13px] leading-snug font-semibold text-ink">
+                                  {item.employeeName} · <span className="opacity-80 font-normal">{LEAVE_TYPE_LABEL[item.type]}</span>
+                                </p>
+                                <p className="mt-0.5 text-[11.5px] text-muted font-medium">
+                                  {formatLeaveDate(item.startDate)} – {formatLeaveDate(item.endDate)} · {item.days} day{item.days === 1 ? '' : 's'}
+                                </p>
+                              </div>
+                              <span className={`shrink-0 text-[10.5px] font-bold px-1.5 py-0.5 rounded-ctl border transition-all duration-200 ${
+                                daysUntil === 'Today' ? 'bg-emerald-50 text-emerald-700 border-emerald-200/20' :
+                                daysUntil === 'Tomorrow' ? 'bg-amber-50 text-amber-700 border-amber-200/20' :
+                                'bg-wash text-muted border-hairline/30 group-hover:bg-wash'
+                              }`}>
+                                {daysUntil}
+                              </span>
+                            </motion.li>
+                          )
+                        })}
+                      </ul>
+                    </div>
                   ) : (
-                    <div className="py-10 text-center">
+                    <div className="py-12 text-center">
                       <p className="text-[13px] font-medium text-ink">No upcoming leave</p>
                       <p className="mt-1 text-[12px] text-muted">Approved leave coming up will show up here.</p>
                     </div>
                   )}
                 </div>
-                <div className="border-t border-hairline pt-3 mt-3">
-                  <Link to="/dashboard/leave" className="text-[12px] font-semibold text-pine hover:underline">View all leave</Link>
+                <div className="border-t border-hairline pt-3.5 mt-3">
+                  <Link to="/dashboard/leave" className="text-[12.5px] font-bold text-pine hover:text-pine-deep hover:underline transition-colors">View all leave</Link>
                 </div>
               </div>
             )}
 
-            {/* Check In / Out — a real shortcut, same store and endpoint as /attendance.
-                Hidden entirely (not an explanatory dead-end) for anyone with no Employee
-                record — e.g. an Owner isn't necessarily an employee of their own company. */}
+            {/* Check In / Out */}
             {attendanceData && attendanceData.myTodayStatus !== null && (
-              <CheckInOutCard
-                status={attendanceData.myTodayStatus}
-                loading={checkingInOut}
-                name={user.name}
-                onCheckIn={() => checkIn(viewer)}
-                onCheckOut={() => checkOut(viewer)}
-              />
+              <motion.div
+                initial={{ opacity: 0, y: 15 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3, delay: 0.1 }}
+                className="h-full"
+              >
+                <CheckInOutCard
+                  status={attendanceData.myTodayStatus}
+                  loading={checkingInOut}
+                  name={user.name}
+                  onCheckIn={() => checkIn(viewer)}
+                  onCheckOut={() => checkOut(viewer)}
+                />
+              </motion.div>
             )}
           </div>
         </>

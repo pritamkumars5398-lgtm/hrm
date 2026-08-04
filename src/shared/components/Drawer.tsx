@@ -8,10 +8,17 @@ type DrawerProps = {
   title: string
   subtitle?: string
   children: ReactNode
+  size?: 'md' | 'lg' | 'xl'
+}
+
+const sizes = {
+  md: 'max-w-md',
+  lg: 'max-w-lg',
+  xl: 'max-w-xl',
 }
 
 /** A right-hand side panel. Same rules as Modal: Escape, backdrop, focus restore. */
-export default function Drawer({ open, onClose, title, subtitle, children }: DrawerProps) {
+export default function Drawer({ open, onClose, title, subtitle, children, size = 'md' }: DrawerProps) {
   const panelRef = useRef<HTMLDivElement>(null)
   const reduced = useReducedMotion()
 
@@ -58,7 +65,7 @@ export default function Drawer({ open, onClose, title, subtitle, children }: Dra
             animate={{ x: 0 }}
             exit={reduced ? undefined : { x: '100%' }}
             transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
-            className="absolute inset-y-0 right-0 flex w-full max-w-md flex-col border-l border-hairline bg-paper outline-none"
+            className={`absolute inset-y-0 right-0 flex w-full ${sizes[size]} flex-col border-l border-hairline bg-paper outline-none`}
           >
             <div className="flex shrink-0 items-start justify-between gap-4 border-b border-hairline px-5 py-4">
               <div className="min-w-0">

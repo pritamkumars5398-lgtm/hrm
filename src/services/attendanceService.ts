@@ -73,6 +73,7 @@ export type AttendanceQuery = {
   permissions: string[]
   /** The signed-in person's name — used to filter the mock's 'me' scope. */
   viewerName: string
+  employeeId?: string
 }
 
 /**
@@ -87,7 +88,7 @@ export const attendanceService = {
     if (hasBackend) {
       try {
         const { data } = await apiClient.get<AttendanceMonth>('/attendance/month', {
-          params: { year: query.year, month: query.month, selectedDate: query.selectedDate },
+          params: { year: query.year, month: query.month, selectedDate: query.selectedDate, employeeId: query.employeeId },
         })
         return data
       } catch (error) {
@@ -102,7 +103,9 @@ export const attendanceService = {
 
     let records = buildMonth(year, month)
 
-    if (!manage) {
+    if (query.employeeId && manage) {
+      records = records.filter((r) => r.employeeId === query.employeeId)
+    } else if (!manage) {
       records = records.filter((r) => r.employeeName === query.viewerName)
     }
 
