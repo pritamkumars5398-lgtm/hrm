@@ -13,6 +13,8 @@ import DashboardHome from '@/features/dashboard/DashboardHome'
 import TeamMembersPage from '@/features/team/TeamMembersPage'
 import EmployeesPage from '@/features/employees/EmployeesPage'
 import AddEmployeePage from '@/features/employees/components/AddEmployeePage'
+import EmployeeDetailsPage from '@/features/employees/EmployeeDetailsPage'
+import FormerEmployeesPage from '@/features/employees/FormerEmployeesPage'
 import AttendancePage from '@/features/attendance/AttendancePage'
 import LeavePage from '@/features/leave/LeavePage'
 import PayrollPage from '@/features/payroll/PayrollPage'
@@ -23,12 +25,13 @@ import DocumentsPage from '@/features/documents/DocumentsPage'
 import ReportsPage from '@/features/reports/ReportsPage'
 import SettingsPage from '@/features/settings/SettingsPage'
 import ComingSoon from '@/shared/components/ComingSoon'
-import { registerWorkspaceGetter } from '@/services/apiClient'
+import { registerWorkspaceGetter, registerUnauthorizedHandler } from '@/services/apiClient'
 import { useAuthStore } from '@/features/auth/store/authStore'
 
 // Wire up the active workspace so every API request includes X-Workspace-Id.
 // This runs once at module-load time before any request is made.
 registerWorkspaceGetter(() => useAuthStore.getState().user?.activeOrganizationId)
+registerUnauthorizedHandler(() => useAuthStore.getState().clearSession())
 
 export default function App() {
   return (
@@ -98,6 +101,29 @@ export default function App() {
           element={
             <RequireModule module="employees">
               <AddEmployeePage />
+            </RequireModule>
+          }
+        />
+
+        <Route
+          path="employees/:employeeId"
+          element={
+            <RequireModule module="employees">
+              <EmployeeDetailsPage />
+            </RequireModule>
+          }
+        />
+
+        <Route
+          path="profile"
+          element={<EmployeeDetailsPage isSelfProfile />}
+        />
+
+        <Route
+          path="former-employees"
+          element={
+            <RequireModule module="former-employees">
+              <FormerEmployeesPage />
             </RequireModule>
           }
         />

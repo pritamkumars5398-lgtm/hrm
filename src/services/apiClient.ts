@@ -18,9 +18,14 @@ export const apiClient = axios.create({
  * (which would create a circular dependency: apiClient → authStore → authService → apiClient).
  */
 let _getActiveOrgId: (() => string | null | undefined) | null = null
+let _onUnauthorized: (() => void) | null = null
 
 export function registerWorkspaceGetter(fn: () => string | null | undefined): void {
   _getActiveOrgId = fn
+}
+
+export function registerUnauthorizedHandler(fn: () => void): void {
+  _onUnauthorized = fn
 }
 
 /**
@@ -35,6 +40,24 @@ apiClient.interceptors.request.use((config) => {
   }
   return config
 })
+
+/**
+ * Response interceptor — clears local session if backend responds with 401 (Unauthorized)
+ * indicating that the JWT cookie has expired or was cleared. We ignore login and password-change
+ * routes to let validation/incorrect-password errors render naturally on the page.
+ */
+apiClient.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    const url = error.config?.url || ''
+    const isAuthRequest = url.includes('/auth/login') || url.includes('/auth/change-password')
+
+    if (error.response?.status === 401 && !isAuthRequest) {
+      _onUnauthorized?.()
+    }
+    return Promise.reject(error)
+  }
+)
 
 type ApiErrorBody = {
   message?: string | string[]

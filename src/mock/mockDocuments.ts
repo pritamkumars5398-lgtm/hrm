@@ -19,6 +19,7 @@ export type CompanyDocument = {
   updatedBy: string
   /** Real backend only — the Cloudinary secure_url to open/download. Mock docs have no real file behind them. */
   cloudinaryUrl?: string
+  uploadedByUserId?: string
 }
 
 export const DOCUMENT_CATEGORIES: DocumentCategory[] = [

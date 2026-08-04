@@ -13,9 +13,12 @@ export type EmploymentEvent = {
 export type EmployeeDocument = {
   id: string
   name: string
-  category: 'Contract' | 'Identity' | 'Certification' | 'Policy'
+  category: string
   uploadedAt: string
   sizeKb: number
+  fileType?: string
+  description?: string
+  cloudinaryUrl?: string
 }
 
 export type Employee = {
@@ -46,6 +49,9 @@ export type Employee = {
   lastName?: string
   employeeId?: string
   homeAddress?: string
+  photoUrl?: string | null
+  /** True when the record was hard/soft deleted — for Former Employees page display only. */
+  isDeleted?: boolean
 }
 
 export const DEPARTMENTS = [

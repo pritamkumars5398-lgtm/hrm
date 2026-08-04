@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
-import { Bell, LogOut, Menu, Search, Settings, User, Building, Check, CheckCheck, ChevronDown, Plus } from 'lucide-react'
+import { Bell, LogOut, Menu, Search, Settings, User, Building, Check, CheckCheck, ChevronDown, Plus, ArrowRight } from 'lucide-react'
 import Card from '@/shared/components/Card'
+import Modal from '@/shared/components/Modal'
+import Button from '@/shared/components/Button'
 import { useAuthStore, type SessionUser } from '@/features/auth/store/authStore'
 import { useNotificationsStore } from '@/features/notifications/store/notificationsStore'
 import { timeAgo } from '@/shared/utils/timeAgo'
@@ -52,6 +54,7 @@ export default function Topbar({
   const { notifications, unreadCount, load: loadNotifications, markRead, markAllRead, receiveRealtime } = useNotificationsStore()
 
   const [openMenu, setOpenMenu] = useState<'profile' | 'notifications' | 'workspaces' | null>(null)
+  const [targetOrg, setTargetOrg] = useState<{ id: string; name: string } | null>(null)
   const ref = useDismiss(() => setOpenMenu(null))
 
   useEffect(() => {
@@ -161,10 +164,12 @@ export default function Topbar({
                       <button
                         type="button"
                         onClick={() => {
-                          useAuthStore.getState().setActiveOrg(m.organizationId)
+                          if (isActive) {
+                            setOpenMenu(null)
+                            return
+                          }
+                          setTargetOrg({ id: m.organizationId, name: m.organizationName || 'Unknown Company' })
                           setOpenMenu(null)
-                          // Force reload to refresh data for new workspace
-                          window.location.href = '/dashboard'
                         }}
                         className={`flex w-full items-center justify-between px-4 py-2.5 text-left text-[13px] transition-colors hover:bg-wash ${
                           isActive ? 'bg-pine-tint/30 font-medium text-pine-deep' : 'text-ink'
@@ -302,7 +307,15 @@ export default function Topbar({
                 {user.avatarInitials}
               </span>
             )}
-            <span className="hidden text-[13px] font-medium sm:block">{user.name}</span>
+            <div className="hidden text-left sm:block">
+              <p className="text-[13px] font-semibold text-ink leading-none">{user.name}</p>
+              <p className="text-[10px] text-muted font-medium mt-0.5 leading-none">
+                {user.role === 'OWNER' ? 'Owner' :
+                 user.role === 'HR' ? 'HR Manager' :
+                 user.role === 'MANAGER' ? 'Manager' :
+                 'Employee'}
+              </p>
+            </div>
           </button>
 
           {openMenu === 'profile' && (
@@ -314,13 +327,14 @@ export default function Topbar({
 
               <ul className="p-1">
                 <li>
-                  <button
-                    type="button"
+                  <Link
+                    to="/dashboard/profile"
+                    onClick={() => setOpenMenu(null)}
                     className="flex w-full items-center gap-2.5 rounded-ctl px-3 py-2 text-left text-[13px] text-muted transition-colors hover:bg-wash hover:text-ink"
                   >
                     <User size={15} />
                     Your profile
-                  </button>
+                  </Link>
                 </li>
                 <li>
                   <button
@@ -347,6 +361,63 @@ export default function Topbar({
           )}
         </div>
       </div>
+
+      <Modal
+        open={targetOrg !== null}
+        onClose={() => setTargetOrg(null)}
+        title="Switch Workspace"
+      >
+        <div className="space-y-4">
+          <p className="text-[13px] leading-relaxed text-muted">
+            Are you sure you want to switch workspaces? Any unsaved progress will be lost.
+          </p>
+
+          <div className="flex items-center justify-between gap-3 py-3.5 px-4 rounded-ctl bg-wash border border-hairline">
+            <div className="flex flex-col items-center flex-1 min-w-0">
+              <span className="text-[10px] font-bold text-muted uppercase tracking-wider">Current</span>
+              <span className="text-[13px] font-medium text-ink truncate w-full text-center mt-0.5">
+                {user.memberships.find((m) => m.organizationId === user.activeOrganizationId)?.organizationName || 'Workspace'}
+              </span>
+            </div>
+            
+            <div className="flex size-7 items-center justify-center rounded-full bg-pine-tint/50 text-pine shrink-0 shadow-sm border border-pine-tint">
+              <ArrowRight size={13} className="text-pine-deep font-bold" />
+            </div>
+
+            <div className="flex flex-col items-center flex-1 min-w-0">
+              <span className="text-[10px] font-bold text-pine uppercase tracking-wider">Target</span>
+              <span className="text-[13px] font-semibold text-pine-deep truncate w-full text-center mt-0.5">
+                {targetOrg?.name}
+              </span>
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-2.5 pt-1">
+            <Button
+              variant="secondary"
+              size="sm"
+              className="flex-1"
+              onClick={() => setTargetOrg(null)}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="primary"
+              size="sm"
+              className="flex-1"
+              onClick={() => {
+                if (targetOrg) {
+                  useAuthStore.getState().setActiveOrg(targetOrg.id)
+                  setTargetOrg(null)
+                  window.location.href = '/dashboard'
+                }
+              }}
+            >
+              Confirm Switch
+            </Button>
+          </div>
+        </div>
+      </Modal>
     </header>
   )
 }

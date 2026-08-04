@@ -9,6 +9,7 @@ import {
   ChevronDown,
   Search,
   Users,
+  UserX,
   X,
 } from 'lucide-react'
 import Card from '@/shared/components/Card'
@@ -20,7 +21,7 @@ import {
 } from '@/services/employeeService'
 import { useEmployeeStore } from './store/employeeStore'
 import EmployeeStatusBadge from './components/EmployeeStatusBadge'
-import EmployeeDrawer from './components/EmployeeDrawer'
+
 import { STATUS_LABEL } from './labels'
 
 const formatDate = (iso: string) =>
@@ -76,7 +77,7 @@ const initialsColor = (initials: string) => {
 export default function EmployeesPage() {
   const { status, result, query, error, fetch, setQuery, toggleSort, reset } = useEmployeeStore()
   const navigate = useNavigate()
-  const [selectedId, setSelectedId] = useState<string | null>(null)
+
   const [searchInput, setSearchInput] = useState(query.search)
 
   const departments = employeeService.getDepartmentOptions()
@@ -95,7 +96,9 @@ export default function EmployeesPage() {
 
   const hasFilters = Boolean(query.search || query.department || query.status)
   const isBusy = status === 'loading'
-  const rows = result?.rows ?? []
+  // Exclude employees who have left — they live in the "Former Employees" page
+  const FORMER_STATUSES = ['INACTIVE', 'NOTICE']
+  const rows = (result?.rows ?? []).filter((e) => !FORMER_STATUSES.includes(e.status))
 
   const clearAll = () => {
     setSearchInput('')
@@ -122,7 +125,14 @@ export default function EmployeesPage() {
             {hasFilters ? 'Showing filtered results from company directory.' : 'Manage and view your company directory.'}
           </p>
         </div>
-        <div>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => navigate('/dashboard/former-employees')}
+            className="inline-flex items-center gap-1.5 rounded-ctl border border-hairline-strong bg-surface px-3 py-2 text-[13px] font-medium text-muted hover:bg-wash hover:text-ink transition-colors"
+          >
+            <UserX size={14} />
+            Former Employees
+          </button>
           <Button onClick={() => navigate('/dashboard/employees/new')}>
             Add Employee
           </Button>
@@ -256,12 +266,12 @@ export default function EmployeesPage() {
                   rows.map((employee) => (
                     <tr
                       key={employee.id}
-                      onClick={() => setSelectedId(employee.id)}
+                      onClick={() => navigate(`/dashboard/employees/${employee.id}`)}
                       tabIndex={0}
                       onKeyDown={(e) => {
                         if (e.key === 'Enter' || e.key === ' ') {
                           e.preventDefault()
-                          setSelectedId(employee.id)
+                          navigate(`/dashboard/employees/${employee.id}`)
                         }
                       }}
                       aria-label={`View ${employee.name}`}
@@ -269,9 +279,17 @@ export default function EmployeesPage() {
                     >
                       <td className="px-4 py-3.5">
                         <div className="flex items-center gap-3">
-                          <span className={`inline-flex size-8 shrink-0 items-center justify-center rounded-full border text-[11.5px] font-bold ${initialsColor(employee.avatarInitials)}`}>
-                            {employee.avatarInitials}
-                          </span>
+                          {employee.photoUrl ? (
+                            <img
+                              src={employee.photoUrl}
+                              alt={employee.name}
+                              className="size-8 shrink-0 rounded-full border border-hairline object-cover shadow-sm"
+                            />
+                          ) : (
+                            <span className={`inline-flex size-8 shrink-0 items-center justify-center rounded-full border text-[11.5px] font-bold ${initialsColor(employee.avatarInitials)}`}>
+                              {employee.avatarInitials}
+                            </span>
+                          )}
                           <div className="min-w-0">
                             <p className="truncate text-[13.5px] font-semibold text-ink leading-tight">{employee.name}</p>
                             <p className="truncate text-[11.5px] text-muted mt-1 leading-none">
@@ -287,7 +305,19 @@ export default function EmployeesPage() {
                         {formatDate(employee.joinedAt)}
                       </td>
                       <td className="px-4 py-3.5">
-                        <EmployeeStatusBadge status={employee.status} />
+                        <div className="flex items-center justify-between gap-3">
+                          <EmployeeStatusBadge status={employee.status} />
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              navigate(`/dashboard/employees/${employee.id}`)
+                            }}
+                            className="inline-flex items-center gap-1.5 rounded-ctl border border-hairline-strong bg-surface px-2.5 py-1 text-[11.5px] font-semibold text-ink transition-colors hover:border-pine hover:bg-wash hover:text-pine cursor-pointer"
+                          >
+                            Details
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -355,11 +385,7 @@ export default function EmployeesPage() {
         </Card>
       )}
 
-      <EmployeeDrawer
-        employeeId={selectedId}
-        onClose={() => setSelectedId(null)}
-        onChanged={() => void fetch()}
-      />
+
     </div>
   )
 }

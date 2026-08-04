@@ -232,7 +232,7 @@ export const teamService = {
         const form = new FormData()
         form.append('file', file)
         const { data } = await apiClient.post<{ url: string }>('/invites/photo', form, {
-          headers: { 'Content-Type': undefined },
+          headers: { 'Content-Type': 'multipart/form-data' },
         })
         return data.url
       } catch (error) {

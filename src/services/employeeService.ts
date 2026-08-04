@@ -47,6 +47,7 @@ export type EmployeeUpdate = {
   employmentType?: string
   workLocation?: string
   managerId?: string
+  status?: string
 }
 
 const LATENCY_MS = 550
@@ -144,6 +145,39 @@ export const employeeService = {
     return applyQuery(mockState, query)
   },
 
+  /** Returns soft-deleted employees AND employees with INACTIVE/NOTICE status. */
+  async getFormer(): Promise<Employee[]> {
+    if (hasBackend) {
+      try {
+        const { data } = await apiClient.get<Employee[]>('/employees/former')
+        return data
+      } catch (error) {
+        throw new EmployeeError(apiErrorMessage(error, 'Could not load former employee records.'))
+      }
+    }
+
+    await delay()
+    const FORMER_STATUSES = ['INACTIVE', 'NOTICE']
+    // In mock mode, return employees marked as INACTIVE or NOTICE
+    return mockState.filter((e) => FORMER_STATUSES.includes(e.status ?? ''))
+  },
+
+  async getMe(): Promise<Employee> {
+    if (hasBackend) {
+      try {
+        const { data } = await apiClient.get<Employee>('/employees/me')
+        return data
+      } catch (error) {
+        throw new EmployeeError(apiErrorMessage(error, 'Could not load your profile.'))
+      }
+    }
+
+    await delay()
+    const employee = mockState.find((e) => e.name.toLowerCase().includes('uday')) ?? mockState[0]
+    if (!employee) throw new EmployeeError('Could not load your profile.')
+    return employee
+  },
+
   async getById(id: string): Promise<Employee> {
     if (hasBackend) {
       try {
@@ -190,6 +224,7 @@ export const employeeService = {
       ...(patch.department !== undefined ? { department: patch.department } : {}),
       ...(patch.workLocation !== undefined ? { location: patch.workLocation } : {}),
       ...(patch.startDate !== undefined ? { joinedAt: patch.startDate } : {}),
+      ...(patch.status !== undefined ? { status: patch.status as any } : {}),
       name,
     }
     mockState = mockState.map((e) => (e.id === id ? updated : e))

@@ -44,6 +44,7 @@ function DocumentCard({
   canManage: boolean
   onRequestDelete: (doc: CompanyDocument) => void
 }) {
+  const user = useAuthStore((s) => s.user)
   // Category-based styling config
   const categoryConfig = {
     Policies: {
@@ -119,7 +120,7 @@ function DocumentCard({
           </div>
 
           <div className="flex items-center gap-1.5 shrink-0">
-            {canManage && (
+            {(canManage || (user && doc.uploadedByUserId === user.id)) && (
               <button
                 type="button"
                 onClick={() => onRequestDelete(doc)}
@@ -409,7 +410,7 @@ export default function DocumentsPage() {
           </p>
         </div>
 
-        {canManage && (
+        {(canManage || hasPermission(user.permissions, 'documents.view')) && (
           <Button onClick={() => setUploadOpen(true)} className="self-start sm:self-auto shadow-sm">
             <Upload size={15} />
             Upload
@@ -419,9 +420,9 @@ export default function DocumentsPage() {
 
       {!canManage && status === 'ready' && (
         <div className="flex items-center gap-2 bg-wash/50 border border-hairline px-3 py-2 rounded-ctl text-[12.5px] text-muted max-w-max">
-          <Badge tone="neutral">View only</Badge>
+          <Badge tone="neutral">Standard Access</Badge>
           <p>
-            Your role can read these documents but not change them.
+            Your role can read these documents and upload new files, but cannot delete documents uploaded by others.
           </p>
         </div>
       )}
