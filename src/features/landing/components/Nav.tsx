@@ -118,19 +118,22 @@ export default function Nav() {
       desc: 'Learn about Keystone and our platform mission.',
       Icon: Building2,
       color: 'text-purple-600 bg-purple-50/80 border-purple-100/50',
+      href: '#top',
     },
     {
       title: 'Careers',
-      desc: 'We are hiring! Join our engineering team.',
+      desc: 'We are hiring! Join our team.',
       Icon: Briefcase,
       color: 'text-teal-600 bg-teal-50/80 border-teal-100/50',
       badge: 'Hiring',
+      href: '/careers',
     },
     {
       title: 'Contact Sales',
       desc: 'Get custom pricing and demo details.',
       Icon: PhoneCall,
       color: 'text-rose-600 bg-rose-50/80 border-rose-100/50',
+      href: '#top',
     },
   ]
 
@@ -375,6 +378,7 @@ export default function Nav() {
             >
               <button
                 type="button"
+                onClick={() => setCompanyOpen((v) => !v)}
                 className="relative flex items-center gap-1 text-[13.5px] font-bold text-muted transition-all duration-300 hover:text-ink cursor-pointer px-3 py-1.5 rounded-full"
               >
                 {hoveredTab === 'company' && (
@@ -401,13 +405,10 @@ export default function Nav() {
                   >
                     {companyItems.map((c) => {
                       const IconComponent = c.Icon
-                      return (
-                        <a
-                          key={c.title}
-                          href="#top"
-                          onClick={() => setCompanyOpen(false)}
-                          className="flex items-start gap-3 p-2 rounded-ctl hover:bg-wash transition-colors group text-left"
-                        >
+                      const isRouterLink = c.href.startsWith('/')
+
+                      const content = (
+                        <>
                           <div className={`p-1.5 rounded-full border shrink-0 ${c.color}`}>
                             <IconComponent size={12} />
                           </div>
@@ -426,6 +427,30 @@ export default function Nav() {
                               {c.desc}
                             </p>
                           </div>
+                        </>
+                      )
+
+                      if (isRouterLink) {
+                        return (
+                          <Link
+                            key={c.title}
+                            to={c.href}
+                            onClick={() => setCompanyOpen(false)}
+                            className="flex items-start gap-3 p-2 rounded-ctl hover:bg-wash transition-colors group text-left cursor-pointer"
+                          >
+                            {content}
+                          </Link>
+                        )
+                      }
+
+                      return (
+                        <a
+                          key={c.title}
+                          href={c.href}
+                          onClick={() => setCompanyOpen(false)}
+                          className="flex items-start gap-3 p-2 rounded-ctl hover:bg-wash transition-colors group text-left cursor-pointer"
+                        >
+                          {content}
                         </a>
                       )
                     })}
@@ -669,16 +694,10 @@ export default function Nav() {
                       >
                         {companyItems.map((c) => {
                           const IconComponent = c.Icon
-                          return (
-                            <a
-                              key={c.title}
-                              href="#top"
-                              onClick={() => {
-                                setOpen(false)
-                                setMobileCompanyOpen(false)
-                              }}
-                              className="flex items-start gap-3 p-2 rounded-ctl hover:bg-wash/60 transition-colors group"
-                            >
+                          const isRouterLink = c.href.startsWith('/')
+
+                          const content = (
+                            <>
                               <div className={`p-1.5 rounded-full border shrink-0 ${c.color}`}>
                                 <IconComponent size={12} />
                               </div>
@@ -697,6 +716,36 @@ export default function Nav() {
                                   {c.desc}
                                 </p>
                               </div>
+                            </>
+                          )
+
+                          if (isRouterLink) {
+                            return (
+                              <Link
+                                key={c.title}
+                                to={c.href}
+                                onClick={() => {
+                                  setOpen(false)
+                                  setMobileCompanyOpen(false)
+                                }}
+                                className="flex items-start gap-3 p-2 rounded-ctl hover:bg-wash/60 transition-colors group cursor-pointer"
+                              >
+                                {content}
+                              </Link>
+                            )
+                          }
+
+                          return (
+                            <a
+                              key={c.title}
+                              href={c.href}
+                              onClick={() => {
+                                setOpen(false)
+                                setMobileCompanyOpen(false)
+                              }}
+                              className="flex items-start gap-3 p-2 rounded-ctl hover:bg-wash/60 transition-colors group cursor-pointer"
+                            >
+                              {content}
                             </a>
                           )
                         })}

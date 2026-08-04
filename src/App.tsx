@@ -22,6 +22,13 @@ import PerformancePage from '@/features/performance/PerformancePage'
 import DocumentsPage from '@/features/documents/DocumentsPage'
 import ReportsPage from '@/features/reports/ReportsPage'
 import SettingsPage from '@/features/settings/SettingsPage'
+import CareersPage from '@/features/careers/CareersPage'
+import RecruitmentPage from '@/features/recruitment/RecruitmentPage'
+import { FormsListPage } from '@/features/forms/FormsListPage'
+import { FormBuilder } from '@/features/forms/FormBuilder'
+import { FormResponsesPage } from '@/features/forms/FormResponsesPage'
+import { MyFormsPage } from '@/features/forms/MyFormsPage'
+import { FillFormPage } from '@/features/forms/FillFormPage'
 import ComingSoon from '@/shared/components/ComingSoon'
 import { registerWorkspaceGetter } from '@/services/apiClient'
 import { useAuthStore } from '@/features/auth/store/authStore'
@@ -34,10 +41,10 @@ export default function App() {
   return (
     <Routes>
       <Route path="/" element={<LandingPage />} />
+      <Route path="/careers" element={<CareersPage />} />
       <Route path="/login" element={<LoginPage />} />
       <Route path="/signup" element={<SignupPage />} />
       <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-
 
       <Route
         path="/onboarding"
@@ -170,6 +177,64 @@ export default function App() {
           element={
             <RequireModule module="reports">
               <ReportsPage />
+            </RequireModule>
+          }
+        />
+
+        <Route
+          path="forms"
+          element={
+            <RequireModule module="forms">
+              <FormsListPage />
+            </RequireModule>
+          }
+        />
+        <Route
+          path="forms/builder"
+          element={
+            <RequireModule module="forms">
+              <FormBuilder />
+            </RequireModule>
+          }
+        />
+        <Route
+          path="forms/builder/:id"
+          element={
+            <RequireModule module="forms">
+              <FormBuilder />
+            </RequireModule>
+          }
+        />
+        <Route
+          path="forms/:formId/responses"
+          element={
+            <RequireModule module="forms">
+              <FormResponsesPage />
+            </RequireModule>
+          }
+        />
+        <Route
+          path="my-forms"
+          element={
+            <RequireModule module="myforms">
+              <MyFormsPage />
+            </RequireModule>
+          }
+        />
+        <Route
+          path="my-forms/:formId"
+          element={
+            <RequireModule module="myforms">
+              <FillFormPage />
+            </RequireModule>
+          }
+        />
+
+        <Route
+          path="recruitment"
+          element={
+            <RequireModule module="recruitment">
+              <RecruitmentPage />
             </RequireModule>
           }
         />

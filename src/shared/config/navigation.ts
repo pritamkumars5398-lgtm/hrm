@@ -1,6 +1,7 @@
 import {
   BarChart3,
   Banknote,
+  Briefcase,
   CalendarDays,
   Clock,
   FileText,
@@ -15,6 +16,8 @@ import {
 
 export type ModuleKey =
   | 'dashboard'
+  | 'forms'
+  | 'myforms'
   | 'employees'
   | 'attendance'
   | 'leave'
@@ -23,6 +26,7 @@ export type ModuleKey =
   | 'performance'
   | 'documents'
   | 'reports'
+  | 'recruitment'
   | 'team'
   | 'settings'
 
@@ -37,6 +41,8 @@ export type NavItem = {
 
 export const NAV_ITEMS: NavItem[] = [
   { key: 'dashboard', label: 'Dashboard', path: '/dashboard', icon: LayoutDashboard, group: 'main' },
+  { key: 'forms', label: 'Form Builder', path: '/dashboard/forms', icon: FileText, group: 'main' },
+  { key: 'myforms', label: 'My Forms', path: '/dashboard/my-forms', icon: FileText, group: 'main' },
   { key: 'employees', label: 'Employees', path: '/dashboard/employees', icon: Users, group: 'main' },
   { key: 'attendance', label: 'Attendance', path: '/dashboard/attendance', icon: Clock, group: 'main' },
   { key: 'leave', label: 'Leave', path: '/dashboard/leave', icon: CalendarDays, group: 'main' },
@@ -45,6 +51,7 @@ export const NAV_ITEMS: NavItem[] = [
   { key: 'performance', label: 'Performance', path: '/dashboard/performance', icon: Target, group: 'main' },
   { key: 'documents', label: 'Documents', path: '/dashboard/documents', icon: FileText, group: 'main' },
   { key: 'reports', label: 'Reports', path: '/dashboard/reports', icon: BarChart3, group: 'main' },
+  { key: 'recruitment', label: 'Recruitment (ATS)', path: '/dashboard/recruitment', icon: Briefcase, group: 'main' },
   { key: 'team', label: 'Team Members', path: '/dashboard/team', icon: UserPlus, group: 'admin' },
   { key: 'settings', label: 'Settings', path: '/dashboard/settings', icon: Settings, group: 'admin' },
 ]
@@ -57,6 +64,8 @@ export type PermissionMatrix = Record<ModuleKey, string[]>
  */
 export const PERMISSION_MODULES: PermissionMatrix = {
   dashboard: [], // Handled by ALWAYS_GRANTED
+  forms: ['forms.manage', 'forms.view'],
+  myforms: [], // Handled by ALWAYS_GRANTED - employee form filling is a baseline
   employees: ['employees.view', 'employees.manage'],
   attendance: [], // Handled by ALWAYS_GRANTED — self-service check-in is a baseline
   leave: [], // Handled by ALWAYS_GRANTED — applying for leave is a baseline
@@ -65,6 +74,7 @@ export const PERMISSION_MODULES: PermissionMatrix = {
   performance: ['performance.view', 'performance.manage'],
   documents: ['documents.view', 'documents.manage'],
   reports: ['reports.view'],
+  recruitment: ['recruitment.view', 'recruitment.manage'],
   team: ['team.view', 'team.invite', 'team.managePermissions'],
   settings: ['settings.manage'],
 }
@@ -81,7 +91,7 @@ export const PERMISSION_MODULES: PermissionMatrix = {
  * (company-wide vs. just you), decided server-side (§4.1). `payslip` is NOT
  * unconditional like the others — see the carve-out in `canAccess` below.
  */
-export const ALWAYS_GRANTED: ModuleKey[] = ['dashboard', 'attendance', 'leave']
+export const ALWAYS_GRANTED: ModuleKey[] = ['dashboard', 'attendance', 'leave', 'myforms']
 
 /**
  * Payslip is the "my own payslip" ESS view, distinct from the Payroll
@@ -137,6 +147,13 @@ export const PERMISSION_KEY_GROUPS: Array<{ label: string; keys: Array<{ key: st
     keys: [
       { key: 'employees.view', label: 'View employee directory' },
       { key: 'employees.manage', label: 'Manage employee records' },
+    ],
+  },
+  {
+    label: 'Forms',
+    keys: [
+      { key: 'forms.view', label: 'View form list and responses' },
+      { key: 'forms.manage', label: 'Create, edit, and publish forms' },
     ],
   },
   {
