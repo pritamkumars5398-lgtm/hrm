@@ -73,6 +73,11 @@ const getStatStyle = (id: string, label: string) => {
       iconColor: 'text-teal-600',
       iconBg: 'bg-teal-50/80 border border-teal-100/50',
       deltaColor: 'text-emerald-700 bg-emerald-50/60 border border-emerald-100/30',
+      gradStart: 'rgba(20, 184, 166, 0.45)',
+      gradEnd: 'rgba(20, 184, 166, 0)',
+      strokeColor: 'text-teal-500',
+      linePath: 'M0,14 C20,6 40,22 60,14 C80,6 90,14 100,10',
+      fillPath: 'M0,14 C20,6 40,22 60,14 C80,6 90,14 100,10 L100,24 L0,24 Z',
     }
   }
   if (normId.includes('present') || normLabel.includes('present')) {
@@ -81,6 +86,11 @@ const getStatStyle = (id: string, label: string) => {
       iconColor: 'text-emerald-600',
       iconBg: 'bg-emerald-50/80 border border-emerald-100/50',
       deltaColor: 'text-muted-deep bg-wash/60 border border-hairline/60',
+      gradStart: 'rgba(249, 115, 22, 0.45)',
+      gradEnd: 'rgba(249, 115, 22, 0)',
+      strokeColor: 'text-orange-500',
+      linePath: 'M0,18 C25,20 40,4 50,4 C60,4 75,20 100,18',
+      fillPath: 'M0,18 C25,20 40,4 50,4 C60,4 75,20 100,18 L100,24 L0,24 Z',
     }
   }
   if (normId.includes('leave') || normLabel.includes('leave')) {
@@ -89,6 +99,11 @@ const getStatStyle = (id: string, label: string) => {
       iconColor: 'text-orange-600',
       iconBg: 'bg-orange-50/80 border border-orange-100/50',
       deltaColor: 'text-orange-700 bg-orange-50/60 border border-orange-100/30',
+      gradStart: 'rgba(168, 85, 247, 0.45)',
+      gradEnd: 'rgba(168, 85, 247, 0)',
+      strokeColor: 'text-purple-500',
+      linePath: 'M0,8 C30,24 70,24 100,8',
+      fillPath: 'M0,8 C30,24 70,24 100,8 L100,24 L0,24 Z',
     }
   }
   if (normId.includes('payroll') || normLabel.includes('payroll')) {
@@ -97,6 +112,11 @@ const getStatStyle = (id: string, label: string) => {
       iconColor: 'text-indigo-600',
       iconBg: 'bg-indigo-50/80 border border-indigo-100/50',
       deltaColor: 'text-indigo-700 bg-indigo-50/60 border border-indigo-100/30',
+      gradStart: 'rgba(16, 185, 129, 0.45)',
+      gradEnd: 'rgba(16, 185, 129, 0)',
+      strokeColor: 'text-emerald-500',
+      linePath: 'M0,16 C30,22 50,6 100,10',
+      fillPath: 'M0,16 C30,22 50,6 100,10 L100,24 L0,24 Z',
     }
   }
 
@@ -105,6 +125,11 @@ const getStatStyle = (id: string, label: string) => {
     iconColor: 'text-purple-600',
     iconBg: 'bg-purple-50/80 border border-purple-100/50',
     deltaColor: 'text-purple-700 bg-purple-50/60 border border-purple-100/30',
+    gradStart: 'rgba(99, 102, 241, 0.45)',
+    gradEnd: 'rgba(99, 102, 241, 0)',
+    strokeColor: 'text-indigo-500',
+    linePath: 'M0,12 C30,6 70,18 100,12',
+    fillPath: 'M0,12 C30,6 70,18 100,12 L100,24 L0,24 Z',
   }
 }
 
@@ -140,10 +165,10 @@ export default function DashboardHome() {
     today.setHours(0, 0, 0, 0)
     const startDate = new Date(`${startDateStr}T00:00:00`)
     startDate.setHours(0, 0, 0, 0)
-    
+
     const diffTime = startDate.getTime() - today.getTime()
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
-    
+
     if (diffDays === 0) return 'Today'
     if (diffDays === 1) return 'Tomorrow'
     if (diffDays < 0) return 'Passed'
@@ -161,7 +186,7 @@ export default function DashboardHome() {
       >
         {/* Abstract background blobs for premium feel */}
         <div className="absolute top-0 right-0 w-[300px] h-[300px] bg-gradient-to-bl from-pine-tint/30 to-transparent rounded-full blur-3xl pointer-events-none" />
-        
+
         <div className="flex-1 space-y-4 text-left z-10">
           <motion.div
             initial="hidden"
@@ -274,7 +299,7 @@ export default function DashboardHome() {
                 const style = getStatStyle(stat.id, stat.label)
                 const StatIcon = style.Icon
                 const normId = stat.id.toLowerCase()
-                
+
                 return (
                   <motion.div
                     key={stat.id}
@@ -282,41 +307,48 @@ export default function DashboardHome() {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.4, delay: index * 0.05 }}
                     whileHover={{ y: -4 }}
-                    className={`group relative rounded-card border border-hairline bg-surface p-4 flex flex-col justify-between transition-all duration-300 overflow-hidden h-[112px] cursor-pointer ${
-                      normId.includes('employee') ? 'hover:border-teal-300 hover:shadow-[0_8px_30px_rgba(20,184,166,0.05)]' :
-                      normId.includes('present') ? 'hover:border-emerald-300 hover:shadow-[0_8px_30px_rgba(16,185,129,0.05)]' :
-                      normId.includes('leave') ? 'hover:border-orange-300 hover:shadow-[0_8px_30px_rgba(249,115,22,0.05)]' :
-                      normId.includes('payroll') ? 'hover:border-indigo-300 hover:shadow-[0_8px_30px_rgba(99,102,241,0.05)]' :
-                      'hover:border-purple-300 hover:shadow-[0_8px_30px_rgba(168,85,247,0.05)]'
-                    }`}
+                    className={`group relative rounded-card border border-hairline bg-surface p-5 flex flex-col justify-between transition-all duration-300 overflow-hidden h-[152px] cursor-pointer ${normId.includes('employee') ? 'hover:border-teal-300 hover:shadow-[0_8px_30px_rgba(20,184,166,0.08)]' :
+                        normId.includes('present') ? 'hover:border-emerald-300 hover:shadow-[0_8px_30px_rgba(16,185,129,0.08)]' :
+                          normId.includes('leave') ? 'hover:border-orange-300 hover:shadow-[0_8px_30px_rgba(249,115,22,0.08)]' :
+                            normId.includes('payroll') ? 'hover:border-indigo-300 hover:shadow-[0_8px_30px_rgba(99,102,241,0.08)]' :
+                              'hover:border-purple-300 hover:shadow-[0_8px_30px_rgba(168,85,247,0.08)]'
+                      }`}
                   >
                     {/* Soft background glow */}
-                    <div className={`absolute -right-6 -bottom-6 size-16 rounded-full blur-2xl opacity-0 group-hover:opacity-25 transition-opacity duration-500 pointer-events-none ${
-                      normId.includes('employee') ? 'bg-teal-400' :
-                      normId.includes('present') ? 'bg-emerald-400' :
-                      normId.includes('leave') ? 'bg-orange-400' :
-                      normId.includes('payroll') ? 'bg-indigo-400' :
-                      'bg-purple-400'
-                    }`} />
+                    <div className={`absolute -right-6 -bottom-6 size-20 rounded-full blur-2xl opacity-0 group-hover:opacity-30 transition-opacity duration-500 pointer-events-none ${normId.includes('employee') ? 'bg-teal-400' :
+                        normId.includes('present') ? 'bg-emerald-400' :
+                          normId.includes('leave') ? 'bg-orange-400' :
+                            normId.includes('payroll') ? 'bg-indigo-400' :
+                              'bg-purple-400'
+                      }`} />
 
-                    <div className="flex items-start justify-between w-full z-10">
-                      <div className={`p-2 rounded-full shrink-0 flex items-center justify-center transition-transform duration-300 group-hover:scale-110 ${style.iconBg}`}>
-                        <StatIcon className={`size-4 transition-transform duration-300 ${style.iconColor}`} />
-                      </div>
+                    {/* Wavy Chart Design */}
+                    <div className="absolute inset-x-0 bottom-0 h-[80px] overflow-hidden pointer-events-none rounded-b-[11px]">
+                      <svg viewBox="0 0 100 24" preserveAspectRatio="none" className="w-full h-full opacity-70 group-hover:opacity-100 transition-all duration-500">
+                        <defs>
+                          <linearGradient id={`grad-${stat.id}`} x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stopColor={style.gradStart} />
+                            <stop offset="100%" stopColor={style.gradEnd} />
+                          </linearGradient>
+                        </defs>
+                        <path d={style.fillPath} fill={`url(#grad-${stat.id})`} />
+                        <path d={style.linePath} fill="none" stroke="currentColor" strokeWidth="2" className={style.strokeColor} vectorEffect="non-scaling-stroke" />
+                      </svg>
                     </div>
 
-                    <div className="min-w-0 flex-1 mt-2 z-10">
-                      <p className="text-[10px] text-muted font-bold uppercase tracking-wider leading-none truncate">{stat.label}</p>
-                      <div className="flex items-baseline justify-between gap-1 mt-1.5">
-                        <p className="tnum font-display text-[21px] leading-none font-bold text-ink truncate">
-                          {stat.value}
-                        </p>
-                        {stat.delta && (
-                          <span className={`shrink-0 inline-flex items-center px-1.5 py-0.5 rounded-full text-[9.5px] font-bold border leading-none ${style.deltaColor}`}>
-                            {stat.delta}
-                          </span>
-                        )}
+                    <div className="flex items-start justify-between z-10 w-full mt-1">
+                      <div className={`p-3 rounded-full shrink-0 flex items-center justify-center transition-transform duration-300 group-hover:scale-110 shadow-sm ${style.iconBg}`}>
+                        <StatIcon className={`size-5 transition-transform duration-300 ${style.iconColor}`} />
                       </div>
+                      <p className="tnum font-display text-[38px] leading-none font-bold text-ink tracking-tight text-right pt-0.5">
+                        {stat.value}
+                      </p>
+                    </div>
+
+                    <div className="flex flex-col mt-3.5 z-10 flex-1">
+                      <p className="text-[12px] text-ink/75 font-bold uppercase tracking-wider leading-snug">
+                        {stat.label}
+                      </p>
                     </div>
                   </motion.div>
                 )
@@ -346,11 +378,11 @@ export default function DashboardHome() {
 
                 {data && data.weeklyAttendance.length > 0 ? (
                   <>
-                    <div className="mt-6 flex h-44 gap-3.5 relative">
+                    <div className="mt-6 flex h-[210px] gap-4 relative">
                       {/* Grid background lines */}
-                      <div className="absolute inset-x-0 bottom-[22px] top-[14px] flex flex-col justify-between pointer-events-none">
+                      <div className="absolute inset-x-0 bottom-[34px] top-[18px] flex flex-col justify-between pointer-events-none">
                         {[0, 1, 2, 3].map((_, idx) => (
-                          <div key={idx} className="w-full border-b border-wash border-dashed relative" />
+                          <div key={idx} className="w-full border-b border-hairline border-dashed relative opacity-70" />
                         ))}
                       </div>
 
@@ -363,7 +395,7 @@ export default function DashboardHome() {
                         return (
                           <div
                             key={`${day.label}-${i}`}
-                            className="flex flex-1 flex-col items-center gap-2.5 relative z-10"
+                            className="flex flex-1 flex-col items-center gap-3 relative z-10 group/bar"
                             onMouseEnter={() => setHoveredBarIndex(i)}
                             onMouseLeave={() => setHoveredBarIndex(null)}
                           >
@@ -375,43 +407,37 @@ export default function DashboardHome() {
                                   animate={{ opacity: 1, y: 0, scale: 1 }}
                                   exit={{ opacity: 0, y: 6, scale: 0.9 }}
                                   transition={{ duration: 0.15 }}
-                                  className="absolute -top-12 z-20 px-2.5 py-1.5 bg-ink text-white rounded shadow-xl text-[10.5px] leading-tight font-semibold flex flex-col items-center pointer-events-none whitespace-nowrap"
+                                  className="absolute -top-14 z-20 px-3 py-2 bg-ink/95 backdrop-blur-sm text-white rounded-lg shadow-[0_8px_30px_rgba(0,0,0,0.12)] text-[11px] leading-tight flex flex-col items-center pointer-events-none whitespace-nowrap"
                                 >
-                                  <span className="font-bold text-emerald-400">{day.present} Present</span>
-                                  <span className="opacity-75 text-[9px] mt-0.5">{day.expected} Expected ({attendancePct}%)</span>
-                                  <div className="size-1.5 bg-ink rotate-45 absolute -bottom-0.5 left-1/2 -translate-x-1/2" />
+                                  <span className="font-bold text-teal-300 text-[12px]">{day.present} Present</span>
+                                  <span className="opacity-80 text-[10px] mt-1">{day.expected} Expected ({attendancePct}%)</span>
+                                  <div className="size-2 bg-ink/95 rotate-45 absolute -bottom-1 left-1/2 -translate-x-1/2" />
                                 </motion.div>
                               )}
                             </AnimatePresence>
 
                             {/* Bar Value label */}
-                            <span className={`tnum text-[11px] font-bold transition-colors duration-200 ${isHovered ? 'text-pine' : 'text-ink'}`}>
+                            <span className={`tnum text-[13px] font-bold transition-all duration-300 ${isHovered ? 'text-teal-600 scale-110' : 'text-ink/80'}`}>
                               {day.present}
                             </span>
 
                             {/* Bar Container */}
-                            <div className="w-full flex-1 relative bg-wash rounded-ctl overflow-hidden cursor-pointer border border-hairline/30">
+                            <div className={`w-full flex-1 relative rounded-[8px] overflow-hidden cursor-pointer transition-all duration-300 border border-hairline/50 ${isHovered ? 'bg-wash/80 shadow-inner' : 'bg-wash/30'}`}>
                               <motion.div
-                                className="absolute bottom-0 w-full rounded-t-[3px] bg-gradient-to-t from-emerald-500 to-teal-400 group-hover:from-emerald-400 group-hover:to-teal-300"
+                                className={`absolute bottom-0 w-full rounded-[8px] bg-gradient-to-t from-emerald-500 to-teal-400 transition-opacity duration-300 ${isHovered ? 'opacity-100' : 'opacity-90'} ${heightPct > 0 ? 'shadow-[0_0_20px_rgba(20,184,166,0.3)]' : ''}`}
                                 initial={{ height: 0 }}
                                 animate={{ height: `${heightPct}%` }}
                                 transition={{ duration: 0.8, ease: 'easeOut', delay: i * 0.05 }}
                               />
                             </div>
+
+                            {/* Day Label */}
+                            <span className={`text-[11px] font-bold uppercase tracking-wider transition-colors duration-300 ${isHovered ? 'text-teal-700' : 'text-muted-deep'}`}>
+                              {day.label}
+                            </span>
                           </div>
                         )
                       })}
-                    </div>
-                    {/* Days Labels */}
-                    <div className="flex items-center justify-between text-[11px] text-muted px-1 mt-3 font-semibold uppercase tracking-wider">
-                      {data.weeklyAttendance.map((day, i) => (
-                        <span
-                          key={`${day.label}-lbl-${i}`}
-                          className={`transition-colors duration-200 ${hoveredBarIndex === i ? 'text-pine font-bold' : ''}`}
-                        >
-                          {day.label}
-                        </span>
-                      ))}
                     </div>
                   </>
                 ) : (
@@ -514,9 +540,8 @@ export default function DashboardHome() {
                           return (
                             <div
                               key={slice.type}
-                              className={`flex items-center justify-between p-1.5 rounded-ctl transition-all duration-200 cursor-pointer ${
-                                isHovered ? 'bg-wash/80 font-bold scale-[1.02]' : 'hover:bg-wash/30'
-                              }`}
+                              className={`flex items-center justify-between p-1.5 rounded-ctl transition-all duration-200 cursor-pointer ${isHovered ? 'bg-wash/80 font-bold scale-[1.02]' : 'hover:bg-wash/30'
+                                }`}
                               style={{ opacity: isAnyHovered && !isHovered ? 0.5 : 1 }}
                               onMouseEnter={() => setHoveredSlice(slice.type)}
                               onMouseLeave={() => setHoveredSlice(null)}
@@ -649,11 +674,10 @@ export default function DashboardHome() {
                                   {formatLeaveDate(item.startDate)} – {formatLeaveDate(item.endDate)} · {item.days} day{item.days === 1 ? '' : 's'}
                                 </p>
                               </div>
-                              <span className={`shrink-0 text-[10.5px] font-bold px-1.5 py-0.5 rounded-ctl border transition-all duration-200 ${
-                                daysUntil === 'Today' ? 'bg-emerald-50 text-emerald-700 border-emerald-200/20' :
-                                daysUntil === 'Tomorrow' ? 'bg-amber-50 text-amber-700 border-amber-200/20' :
-                                'bg-wash text-muted border-hairline/30 group-hover:bg-wash'
-                              }`}>
+                              <span className={`shrink-0 text-[10.5px] font-bold px-1.5 py-0.5 rounded-ctl border transition-all duration-200 ${daysUntil === 'Today' ? 'bg-emerald-50 text-emerald-700 border-emerald-200/20' :
+                                  daysUntil === 'Tomorrow' ? 'bg-amber-50 text-amber-700 border-amber-200/20' :
+                                    'bg-wash text-muted border-hairline/30 group-hover:bg-wash'
+                                }`}>
                                 {daysUntil}
                               </span>
                             </motion.li>

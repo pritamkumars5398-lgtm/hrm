@@ -52,7 +52,7 @@ function localApiPlugin(env: Record<string, string>): Plugin {
             const body = JSON.parse(Buffer.concat(chunks).toString())
             const { to, name, link, tempPassword } = body
             const displayName = name || to.split('@')[0]
-            const loginUrl = link || 'http://localhost:5173/login'
+            const loginUrl = link || 'http://localhost:5180/login'
 
             await sendViaSmtp(env, {
               to,
@@ -194,7 +194,7 @@ export default defineConfig(({ mode }) => {
       // Pinned: the backend allows this origin by name (credentialed cookie requests
       // cannot use a wildcard). If Vite silently fell back to 5174, every auth call
       // would fail CORS and look like "the server is down".
-      port: 5173,
+      port: 5180,
       strictPort: true,
     },
     resolve: {
