@@ -92,6 +92,9 @@ export default function Sidebar({
 }: SidebarProps) {
   const items = navItemsFor(permissions)
   const main = items.filter((i) => i.group === 'main')
+  const operations = items.filter((i) => i.group === 'operations')
+  const engagement = items.filter((i) => i.group === 'engagement')
+  const aiSaas = items.filter((i) => i.group === 'ai_saas')
   const admin = items.filter((i) => i.group === 'admin')
 
   // Generate initials for organization selector
@@ -100,7 +103,7 @@ export default function Sidebar({
     .map((w) => w[0])
     .join('')
     .slice(0, 2)
-    .toUpperCase() || 'KS'
+    .toUpperCase() || 'EM'
 
   return (
     <div className="flex h-full flex-col border-r border-hairline bg-paper">
@@ -132,22 +135,61 @@ export default function Sidebar({
         </div>
       )}
 
-      <nav aria-label="Modules" className={`flex-1 overflow-y-auto ${collapsed ? 'p-2' : 'p-3'}`}>
-        <NavSection items={main} collapsed={collapsed} onNavigate={onNavigate} />
+      <nav aria-label="Modules" className={`flex-1 overflow-y-auto space-y-4 ${collapsed ? 'p-2' : 'p-3'}`}>
+        <div>
+          {!collapsed && (
+            <p className="mb-1.5 px-3 text-[10px] font-bold tracking-widest text-muted/70 uppercase select-none">
+              Core HR
+            </p>
+          )}
+          <NavSection items={main} collapsed={collapsed} onNavigate={onNavigate} />
+        </div>
+
+        {operations.length > 0 && (
+          <div>
+            {!collapsed && (
+              <p className="mb-1.5 px-3 text-[10px] font-bold tracking-widest text-muted/70 uppercase select-none">
+                Operations & Talent
+              </p>
+            )}
+            <NavSection items={operations} collapsed={collapsed} onNavigate={onNavigate} />
+          </div>
+        )}
+
+        {engagement.length > 0 && (
+          <div>
+            {!collapsed && (
+              <p className="mb-1.5 px-3 text-[10px] font-bold tracking-widest text-muted/70 uppercase select-none">
+                Engagement & Desk
+              </p>
+            )}
+            <NavSection items={engagement} collapsed={collapsed} onNavigate={onNavigate} />
+          </div>
+        )}
+
+        {aiSaas.length > 0 && (
+          <div>
+            {!collapsed && (
+              <p className="mb-1.5 px-3 text-[10px] font-bold tracking-widest text-muted/70 uppercase select-none">
+                Intelligence & SaaS
+              </p>
+            )}
+            <NavSection items={aiSaas} collapsed={collapsed} onNavigate={onNavigate} />
+          </div>
+        )}
 
         {admin.length > 0 && (
-          <>
-            {collapsed ? (
-              <hr className="my-4 border-hairline" />
-            ) : (
-              <p className="mt-6 mb-2 px-3 text-[10px] font-bold tracking-widest text-muted/70 uppercase select-none">
+          <div>
+            {!collapsed && (
+              <p className="mb-1.5 px-3 text-[10px] font-bold tracking-widest text-muted/70 uppercase select-none">
                 Administration
               </p>
             )}
             <NavSection items={admin} collapsed={collapsed} onNavigate={onNavigate} />
-          </>
+          </div>
         )}
       </nav>
     </div>
   )
 }
+

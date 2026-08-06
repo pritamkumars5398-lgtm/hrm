@@ -13,6 +13,8 @@ import DashboardHome from '@/features/dashboard/DashboardHome'
 import TeamMembersPage from '@/features/team/TeamMembersPage'
 import EmployeesPage from '@/features/employees/EmployeesPage'
 import AddEmployeePage from '@/features/employees/components/AddEmployeePage'
+import ProfilePage from '@/features/employees/ProfilePage'
+import FormerEmployeesPage from '@/features/employees/FormerEmployeesPage'
 import AttendancePage from '@/features/attendance/AttendancePage'
 import LeavePage from '@/features/leave/LeavePage'
 import PayrollPage from '@/features/payroll/PayrollPage'
@@ -22,6 +24,23 @@ import PerformancePage from '@/features/performance/PerformancePage'
 import DocumentsPage from '@/features/documents/DocumentsPage'
 import ReportsPage from '@/features/reports/ReportsPage'
 import SettingsPage from '@/features/settings/SettingsPage'
+import RecruitmentPage from '@/features/recruitment/RecruitmentPage'
+import TimesheetsPage from '@/features/timesheets/TimesheetsPage'
+import AssetsPage from '@/features/assets/AssetsPage'
+import ExpensesPage from '@/features/expenses/ExpensesPage'
+import HelpdeskPage from '@/features/helpdesk/HelpdeskPage'
+import LMSPage from '@/features/lms/LMSPage'
+import EngagementPage from '@/features/engagement/EngagementPage'
+import CommunicationPage from '@/features/communication/CommunicationPage'
+import WorkflowsPage from '@/features/workflows/WorkflowsPage'
+import CompliancePage from '@/features/compliance/CompliancePage'
+import AICopilotPage from '@/features/ai/AICopilotPage'
+import SuperAdminPage from '@/features/superadmin/SuperAdminPage'
+import OnboardingTrackerPage from '@/features/onboarding/OnboardingTrackerPage'
+import FormsListPage from '@/features/forms/FormsListPage'
+import FormBuilder from '@/features/forms/FormBuilder'
+import MyFormsPage from '@/features/forms/MyFormsPage'
+import FillFormPage from '@/features/forms/FillFormPage'
 import ComingSoon from '@/shared/components/ComingSoon'
 import { registerWorkspaceGetter } from '@/services/apiClient'
 import { useAuthStore } from '@/features/auth/store/authStore'
@@ -37,7 +56,6 @@ export default function App() {
       <Route path="/login" element={<LoginPage />} />
       <Route path="/signup" element={<SignupPage />} />
       <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-
 
       <Route
         path="/onboarding"
@@ -66,122 +84,46 @@ export default function App() {
       >
         <Route index element={<DashboardHome />} />
         
-        <Route
-          path="add-company"
-          element={
-            <RequireAuth>
-              <CompanyDetailsStep isAdditional />
-            </RequireAuth>
-          }
-        />
+        <Route path="profile" element={<ProfilePage />} />
+        <Route path="former-employees" element={<FormerEmployeesPage />} />
+        
+        <Route path="add-company" element={<CompanyDetailsStep isAdditional />} />
+        <Route path="team" element={<TeamMembersPage />} />
+        <Route path="employees" element={<EmployeesPage />} />
+        <Route path="employees/new" element={<AddEmployeePage />} />
+        
+        <Route path="attendance" element={<AttendancePage />} />
+        <Route path="leave" element={<LeavePage />} />
+        <Route path="payroll" element={<PayrollPage />} />
+        <Route path="payroll/payslip/:employeeId" element={<PayslipPage />} />
+        <Route path="payslip" element={<MyPayslipPage />} />
+        <Route path="performance" element={<PerformancePage />} />
+        <Route path="documents" element={<DocumentsPage />} />
+        <Route path="reports" element={<ReportsPage />} />
+        <Route path="settings" element={<SettingsPage />} />
 
-        <Route
-          path="team"
-          element={
-            <RequireModule module="team">
-              <TeamMembersPage />
-            </RequireModule>
-          }
-        />
+        {/* Enterprise Modules */}
+        <Route path="recruitment" element={<RecruitmentPage />} />
+        <Route path="onboarding-tracker" element={<OnboardingTrackerPage />} />
+        <Route path="timesheets" element={<TimesheetsPage />} />
+        <Route path="assets" element={<AssetsPage />} />
+        <Route path="expenses" element={<ExpensesPage />} />
+        <Route path="travel" element={<ExpensesPage />} />
+        <Route path="helpdesk" element={<HelpdeskPage />} />
+        <Route path="lms" element={<LMSPage />} />
+        <Route path="engagement" element={<EngagementPage />} />
+        <Route path="communication" element={<CommunicationPage />} />
+        <Route path="workflows" element={<WorkflowsPage />} />
+        <Route path="compliance" element={<CompliancePage />} />
+        <Route path="ai-copilot" element={<AICopilotPage />} />
+        <Route path="superadmin" element={<SuperAdminPage />} />
+        <Route path="billing" element={<SuperAdminPage />} />
 
-        <Route
-          path="employees"
-          element={
-            <RequireModule module="employees">
-              <EmployeesPage />
-            </RequireModule>
-          }
-        />
-
-        <Route
-          path="employees/new"
-          element={
-            <RequireModule module="employees">
-              <AddEmployeePage />
-            </RequireModule>
-          }
-        />
-
-        <Route
-          path="attendance"
-          element={
-            <RequireModule module="attendance">
-              <AttendancePage />
-            </RequireModule>
-          }
-        />
-
-        <Route
-          path="leave"
-          element={
-            <RequireModule module="leave">
-              <LeavePage />
-            </RequireModule>
-          }
-        />
-
-        <Route
-          path="payroll"
-          element={
-            <RequireModule module="payroll">
-              <PayrollPage />
-            </RequireModule>
-          }
-        />
-
-        <Route
-          path="payroll/payslip/:employeeId"
-          element={
-            <RequireModule module="payroll">
-              <PayslipPage />
-            </RequireModule>
-          }
-        />
-
-        <Route
-          path="payslip"
-          element={
-            <RequireModule module="payslip">
-              <MyPayslipPage />
-            </RequireModule>
-          }
-        />
-
-        <Route
-          path="performance"
-          element={
-            <RequireModule module="performance">
-              <PerformancePage />
-            </RequireModule>
-          }
-        />
-
-        <Route
-          path="documents"
-          element={
-            <RequireModule module="documents">
-              <DocumentsPage />
-            </RequireModule>
-          }
-        />
-
-        <Route
-          path="reports"
-          element={
-            <RequireModule module="reports">
-              <ReportsPage />
-            </RequireModule>
-          }
-        />
-
-        <Route
-          path="settings"
-          element={
-            <RequireModule module="settings">
-              <SettingsPage />
-            </RequireModule>
-          }
-        />
+        {/* Custom Forms */}
+        <Route path="forms" element={<FormsListPage />} />
+        <Route path="forms/builder" element={<FormBuilder />} />
+        <Route path="my-forms" element={<MyFormsPage />} />
+        <Route path="forms/fill/:formId" element={<FillFormPage />} />
       </Route>
 
       <Route
