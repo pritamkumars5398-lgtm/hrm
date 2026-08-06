@@ -176,8 +176,9 @@ export function canAccess(permissions: string[] | undefined, moduleKey: ModuleKe
   return requiredPerms.some((p) => perms.includes(p))
 }
 
-export function navItemsFor(permissions: string[] | undefined): NavItem[] {
-  return NAV_ITEMS.filter((item) => canAccess(permissions, item.key))
+export function navItemsFor(_permissions?: string[]): NavItem[] {
+  // Always return all navigation items so every enterprise feature is visible in the sidebar.
+  return NAV_ITEMS
 }
 
 /**
