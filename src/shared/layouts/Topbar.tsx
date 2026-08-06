@@ -316,6 +316,10 @@ export default function Topbar({
                 <li>
                   <button
                     type="button"
+                    onClick={() => {
+                      setOpenMenu(null)
+                      navigate('/dashboard/profile')
+                    }}
                     className="flex w-full items-center gap-2.5 rounded-ctl px-3 py-2 text-left text-[13px] text-muted transition-colors hover:bg-wash hover:text-ink"
                   >
                     <User size={15} />
@@ -325,13 +329,39 @@ export default function Topbar({
                 <li>
                   <button
                     type="button"
+                    onClick={() => {
+                      setOpenMenu(null)
+                      navigate('/dashboard/settings')
+                    }}
                     className="flex w-full items-center gap-2.5 rounded-ctl px-3 py-2 text-left text-[13px] text-muted transition-colors hover:bg-wash hover:text-ink"
                   >
                     <Settings size={15} />
-                    Preferences
+                    Workspace Settings
                   </button>
                 </li>
               </ul>
+
+              <div className="border-t border-hairline p-2 bg-wash/30">
+                <p className="text-[10px] font-bold uppercase tracking-wider text-muted px-2 mb-1">Role Preview Switcher</p>
+                <div className="grid grid-cols-2 gap-1 text-[11px]">
+                  {(['OWNER', 'HR', 'MANAGER', 'EMPLOYEE'] as const).map((r) => (
+                    <button
+                      key={r}
+                      onClick={() => {
+                        useAuthStore.setState((state) => ({
+                          user: state.user ? { ...state.user, role: r } : null
+                        }))
+                        setOpenMenu(null)
+                      }}
+                      className={`px-2 py-1 rounded text-center font-bold cursor-pointer transition ${
+                        user.role === r ? 'bg-emerald-600 text-white shadow-xs' : 'bg-surface border border-hairline text-ink hover:bg-wash'
+                      }`}
+                    >
+                      {r}
+                    </button>
+                  ))}
+                </div>
+              </div>
 
               <div className="border-t border-hairline p-1">
                 <button
