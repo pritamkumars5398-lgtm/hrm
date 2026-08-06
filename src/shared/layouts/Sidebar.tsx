@@ -95,13 +95,19 @@ export default function Sidebar({
       .slice(0, 2)
       .toUpperCase() || 'EM'
 
+  // Find active item label for top header
+  const activeItem = items.find((item) =>
+    item.key === 'dashboard' ? pathname === '/dashboard' : pathname.startsWith(item.path)
+  )
+  const pageTitle = activeItem?.label || 'Home'
+
   return (
     <div className="flex h-full flex-col border-r border-hairline bg-[#f9fafb] text-ink select-none w-[210px]">
-      {/* Top Header: Home title on Left, + Create button on Right (Matching Screenshot UI) */}
+      {/* Top Header: Current Page Title on Left, + Create button on Right (Matching Screenshot UI) */}
       <div className={`flex h-14 shrink-0 items-center justify-between border-b border-hairline px-3.5 ${collapsed ? 'justify-center' : ''}`}>
         {!collapsed ? (
           <div className="flex items-center gap-2">
-            <span className="font-display font-extrabold text-[15px] text-ink tracking-tight">Home</span>
+            <span className="font-display font-extrabold text-[15px] text-ink tracking-tight truncate max-w-[120px]">{pageTitle}</span>
           </div>
         ) : (
           <Logo className="[&>span:last-child]:hidden" />
@@ -110,7 +116,7 @@ export default function Sidebar({
         {!collapsed && (
           <button
             onClick={() => navigate('/dashboard/forms/builder')}
-            className="flex items-center gap-1 bg-[#18181b] hover:bg-[#27272a] text-white text-[11px] font-extrabold px-2.5 py-1 rounded-lg transition cursor-pointer shadow-xs"
+            className="flex items-center gap-1 bg-[#18181b] hover:bg-[#27272a] text-white text-[11px] font-extrabold px-2.5 py-1 rounded-lg transition cursor-pointer shadow-xs shrink-0"
           >
             <Plus size={12} /> Create
           </button>
