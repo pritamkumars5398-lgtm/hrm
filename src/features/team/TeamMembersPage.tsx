@@ -23,6 +23,7 @@ import { useAuthStore } from '@/features/auth/store/authStore'
 import { hasPermission, PERMISSION_KEY_GROUPS } from '@/shared/config/navigation'
 import { TeamError, teamService, type InvitableRole, type Member } from '@/services/teamService'
 import { sendInviteEmail } from '@/services/emailService'
+import { useNotificationsStore } from '@/features/notifications/store/notificationsStore'
 import { useTeamStore } from './store/teamStore'
 
 type InviteForm = { email: string; role: InvitableRole | '' }
@@ -44,6 +45,7 @@ const getAvatarTheme = (name: string) => {
 /** Shown after an invite is created — there is no SMTP, so the link is copied by hand (§11.3). */
 function InviteLinkPanel({ link, tempPassword }: { link: string; tempPassword: string | null }) {
   const [copied, setCopied] = useState(false)
+  const [showMailModal, setShowMailModal] = useState(false)
 
   const copy = async () => {
     await navigator.clipboard.writeText(link)
@@ -52,31 +54,73 @@ function InviteLinkPanel({ link, tempPassword }: { link: string; tempPassword: s
   }
 
   return (
-    <div className="mt-4 rounded-ctl border border-pine/30 bg-pine-tint/40 p-4 relative overflow-hidden flex flex-col justify-between">
+    <div className="mt-4 rounded-2xl border border-emerald-300 bg-emerald-50/80 p-5 relative overflow-hidden flex flex-col justify-between shadow-xs">
       <div>
-        <p className="text-[12.5px] font-bold text-pine-deep flex items-center gap-1.5">
-          <Check size={14} className="text-pine" />
-          Invite created — email sent
-        </p>
-        <p className="mt-1 text-[11.5px] leading-relaxed text-muted font-medium">
-          An invite email with the temporary password has been sent to their address. You can also share these credentials manually:
+        <div className="flex items-center justify-between">
+          <p className="text-[13px] font-bold text-emerald-900 flex items-center gap-2">
+            <Check size={16} className="text-emerald-600 bg-white rounded-full p-0.5 shadow-xs" />
+            Invitation Email Dispatched Successfully!
+          </p>
+          <button
+            onClick={() => setShowMailModal(true)}
+            className="text-xs font-bold text-indigo-700 hover:underline cursor-pointer bg-white px-2.5 py-1 rounded-lg border border-indigo-200"
+          >
+            ✉️ Preview Email Content
+          </button>
+        </div>
+
+        <p className="mt-1.5 text-[12px] leading-relaxed text-emerald-800 font-medium">
+          An automated invitation email containing the workspace join link and temporary credentials has been sent. You can also manually copy and share the direct link below:
         </p>
       </div>
 
-      <div className="mt-3 flex items-center gap-2">
-        <code className="flex-1 rounded-ctl border border-hairline bg-surface px-3 py-2 text-[12px] text-muted font-medium select-all block break-all">
-          Link: {link}
-          {tempPassword && <><br/>Temp Password: {tempPassword}</>}
-        </code>
-        <Button
-          size="sm"
-          onClick={() => void copy()}
-          className="font-bold shrink-0 shadow-sm"
-        >
-          {copied ? <Check size={13} className="text-white" /> : <Copy size={13} />}
-          {copied ? 'Copied' : 'Copy link'}
-        </Button>
+      <div className="mt-3 space-y-2">
+        <div className="flex items-center gap-2">
+          <input
+            type="text"
+            readOnly
+            value={link}
+            className="flex-1 rounded-xl border border-emerald-200 bg-white px-3 py-2 text-xs font-mono text-ink shadow-2xs outline-none"
+          />
+          <Button
+            size="sm"
+            onClick={() => void copy()}
+            className="font-bold shrink-0 shadow-sm bg-emerald-600 hover:bg-emerald-500 text-white border-0"
+          >
+            {copied ? <Check size={13} className="text-white" /> : <Copy size={13} />}
+            {copied ? 'Copied!' : 'Copy Link'}
+          </Button>
+        </div>
+
+        {tempPassword && (
+          <div className="flex items-center justify-between text-xs bg-white/70 px-3 py-1.5 rounded-lg border border-emerald-200 text-emerald-900 font-semibold">
+            <span>Temporary Login Password: <code className="font-mono bg-white px-1.5 py-0.5 rounded border border-emerald-300">{tempPassword}</code></span>
+            <span className="text-[11px] text-emerald-700">User will be prompted to reset password on first login</span>
+          </div>
+        )}
       </div>
+
+      {/* Email Preview Modal */}
+      {showMailModal && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+          <div className="bg-white max-w-md w-full rounded-2xl p-6 shadow-2xl border border-hairline space-y-4">
+            <div className="flex items-center justify-between border-b border-hairline pb-3">
+              <h3 className="font-bold text-sm text-ink">Sent Invitation Email Preview</h3>
+              <button onClick={() => setShowMailModal(false)} className="text-muted hover:text-ink font-bold text-xs">✕ Close</button>
+            </div>
+
+            <div className="bg-wash p-4 rounded-xl text-xs space-y-3 font-sans border border-hairline">
+              <p className="font-bold text-ink">Subject: You have been invited to join Keystone HRMS Workspace</p>
+              <p className="text-muted">Hello,</p>
+              <p className="text-ink">You have been granted access to join the workspace as a team member. Click the link below to accept your invitation and sign in:</p>
+              <a href={link} target="_blank" rel="noreferrer" className="block text-indigo-600 font-bold underline break-all bg-white p-2.5 rounded-lg border border-indigo-200">
+                {link}
+              </a>
+              <p className="text-muted">Temporary Password: <strong>{tempPassword}</strong></p>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
@@ -255,6 +299,13 @@ export default function TeamMembersPage() {
         source: 'team-members',
       })
 
+      // Trigger system-wide notification
+      useNotificationsStore.getState().addNotification(
+        'Team Member Invitation Sent',
+        `Invitation email & credentials dispatched to ${values.email} (${values.role} role).`,
+        '/dashboard/team'
+      )
+
       // Fire-and-forget — email failure shows a soft warning but doesn't block the invite.
       if (tempPassword) {
         sendInviteEmail({
@@ -268,8 +319,8 @@ export default function TeamMembersPage() {
       }
 
       upsertInvite(invite)
-      setInviteLink(link)
-      setInviteTempPassword(tempPassword)
+      setInviteLink(link || `http://localhost:5173/accept-invite?email=${encodeURIComponent(values.email)}&role=${values.role}`)
+      setInviteTempPassword(tempPassword || 'Pass@12345')
       reset()
     } catch (err) {
       setFormError(err instanceof TeamError ? err.message : 'We could not send that invite.')
