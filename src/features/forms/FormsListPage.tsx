@@ -1,11 +1,10 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { FormInput, Plus, Share2, Copy, Check, Send, QrCode, X, Eye, Power, Download, Users, FileText, CheckCircle2 } from 'lucide-react'
+import { FormInput, Plus, Share2, Copy, Check, Send, QrCode, X, Eye, Download, Users, FileText, CheckCircle2 } from 'lucide-react'
 import { useFormStore, type FormDefinition } from './store/formStore'
 
 export default function FormsListPage() {
-  const { forms, toggleStatus, deleteForm } = useFormStore()
-  const [filter, setFilter] = useState<'ALL' | 'PUBLISHED' | 'INACTIVE'>('ALL')
+  const { forms } = useFormStore()
   const [search, setSearch] = useState('')
   
   const [sharingForm, setSharingForm] = useState<FormDefinition | null>(null)
@@ -15,8 +14,6 @@ export default function FormsListPage() {
   const [dispatched, setDispatched] = useState(false)
 
   const filteredForms = forms.filter((f) => {
-    if (filter === 'PUBLISHED' && f.status !== 'PUBLISHED') return false
-    if (filter === 'INACTIVE' && f.status !== 'INACTIVE') return false
     if (search && !f.title.toLowerCase().includes(search.toLowerCase())) return false
     return true
   })
@@ -59,7 +56,7 @@ export default function FormsListPage() {
             <FormInput size={14} /> Custom Form Builder & Appraisal Engine
           </div>
           <h1 className="text-2xl font-bold font-display">Survey, Appraisal & Onboarding Forms</h1>
-          <p className="text-slate-300 text-sm mt-1">Build dynamic drag-and-drop feedback forms, toggle active/inactive status, and inspect submission analytics.</p>
+          <p className="text-slate-300 text-sm mt-1">Build dynamic feedback forms, share links, and inspect single-submission response analytics.</p>
         </div>
         <Link
           to="/dashboard/forms/builder"
@@ -69,30 +66,16 @@ export default function FormsListPage() {
         </Link>
       </div>
 
-      {/* Filter Toolbar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-3 rounded-2xl border border-hairline shadow-2xs">
-        <div className="flex items-center gap-1">
-          {(['ALL', 'PUBLISHED', 'INACTIVE'] as const).map((tab) => (
-            <button
-              key={tab}
-              onClick={() => setFilter(tab)}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer ${
-                filter === tab
-                  ? 'bg-indigo-600 text-white shadow-xs'
-                  : 'text-muted hover:text-ink hover:bg-wash'
-              }`}
-            >
-              {tab === 'ALL' ? `All Forms (${forms.length})` : tab === 'PUBLISHED' ? `Active Published (${forms.filter(f => f.status === 'PUBLISHED').length})` : `Inactive Drafts (${forms.filter(f => f.status === 'INACTIVE').length})`}
-            </button>
-          ))}
-        </div>
+      {/* Toolbar */}
+      <div className="flex items-center justify-between gap-3 bg-white p-3 rounded-2xl border border-hairline shadow-2xs">
+        <span className="text-xs font-bold text-ink px-2">Total Forms Catalog ({forms.length})</span>
 
         <input
           type="text"
           placeholder="Search forms by title…"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="px-3 py-1.5 text-xs rounded-xl border border-hairline focus:border-indigo-500 focus:outline-none w-full sm:w-64"
+          className="px-3 py-1.5 text-xs rounded-xl border border-hairline focus:border-indigo-500 focus:outline-none w-full sm:w-72"
         />
       </div>
 
@@ -101,9 +84,7 @@ export default function FormsListPage() {
         {filteredForms.map((f) => (
           <div
             key={f.id}
-            className={`bg-white p-5 rounded-2xl border shadow-xs flex flex-col justify-between space-y-4 transition ${
-              f.status === 'PUBLISHED' ? 'border-hairline hover:border-indigo-300' : 'border-dashed border-slate-300 opacity-80'
-            }`}
+            className="bg-white p-5 rounded-2xl border border-hairline hover:border-indigo-300 shadow-xs flex flex-col justify-between space-y-4 transition"
           >
             <div>
               <div className="flex items-center justify-between">
@@ -111,18 +92,9 @@ export default function FormsListPage() {
                   {f.category}
                 </span>
 
-                {/* Status Toggle Switch */}
-                <button
-                  onClick={() => toggleStatus(f.id)}
-                  title="Click to toggle Active / Inactive"
-                  className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold transition cursor-pointer ${
-                    f.status === 'PUBLISHED'
-                      ? 'bg-emerald-100 text-emerald-800 hover:bg-emerald-200'
-                      : 'bg-slate-200 text-slate-700 hover:bg-slate-300'
-                  }`}
-                >
-                  <Power size={11} /> {f.status === 'PUBLISHED' ? 'Active' : 'Inactive'}
-                </button>
+                <span className="text-[10px] font-bold text-muted bg-slate-100 px-2 py-0.5 rounded-md">
+                  Single Submission
+                </span>
               </div>
 
               <h3 className="font-bold text-sm text-ink mt-3 leading-snug">{f.title}</h3>
