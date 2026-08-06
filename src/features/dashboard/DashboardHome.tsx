@@ -170,6 +170,43 @@ export default function DashboardHome() {
         </div>
       </div>
 
+      {/* Enterprise Operations Quick Access Grid */}
+      <div className="bg-wash/40 p-4 rounded-card border border-hairline space-y-3">
+        <div className="flex items-center justify-between">
+          <span className="text-[11px] font-extrabold uppercase tracking-wider text-muted">
+            Enterprise Operations & Custom Tools Launchpad
+          </span>
+          <span className="text-emerald-700 text-[11px] font-bold">100% Operational</span>
+        </div>
+
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2.5 text-xs">
+          <Link to="/dashboard/forms" className="bg-white p-3 rounded-xl border border-hairline shadow-2xs hover:border-emerald-500 hover:shadow-xs transition flex flex-col items-center text-center gap-1.5 font-semibold text-ink">
+            <span className="p-2 rounded-lg bg-indigo-50 text-indigo-600 font-bold">📝</span>
+            <span>Form Builder</span>
+          </Link>
+          <Link to="/dashboard/recruitment" className="bg-white p-3 rounded-xl border border-hairline shadow-2xs hover:border-emerald-500 hover:shadow-xs transition flex flex-col items-center text-center gap-1.5 font-semibold text-ink">
+            <span className="p-2 rounded-lg bg-emerald-50 text-emerald-600 font-bold">💼</span>
+            <span>Recruitment ATS</span>
+          </Link>
+          <Link to="/dashboard/lms" className="bg-white p-3 rounded-xl border border-hairline shadow-2xs hover:border-emerald-500 hover:shadow-xs transition flex flex-col items-center text-center gap-1.5 font-semibold text-ink">
+            <span className="p-2 rounded-lg bg-purple-50 text-purple-600 font-bold">🎓</span>
+            <span>LMS Academy</span>
+          </Link>
+          <Link to="/dashboard/assets" className="bg-white p-3 rounded-xl border border-hairline shadow-2xs hover:border-emerald-500 hover:shadow-xs transition flex flex-col items-center text-center gap-1.5 font-semibold text-ink">
+            <span className="p-2 rounded-lg bg-blue-50 text-blue-600 font-bold">💻</span>
+            <span>Asset Control</span>
+          </Link>
+          <Link to="/dashboard/expenses" className="bg-white p-3 rounded-xl border border-hairline shadow-2xs hover:border-emerald-500 hover:shadow-xs transition flex flex-col items-center text-center gap-1.5 font-semibold text-ink">
+            <span className="p-2 rounded-lg bg-amber-50 text-amber-600 font-bold">💳</span>
+            <span>Expense Claims</span>
+          </Link>
+          <Link to="/dashboard/ai-copilot" className="bg-white p-3 rounded-xl border border-hairline shadow-2xs hover:border-emerald-500 hover:shadow-xs transition flex flex-col items-center text-center gap-1.5 font-semibold text-ink">
+            <span className="p-2 rounded-lg bg-pink-50 text-pink-600 font-bold">✨</span>
+            <span>AI HR Copilot</span>
+          </Link>
+        </div>
+      </div>
+
       {status === 'error' && (
         <div className="flex items-start gap-3 rounded-card border border-clay/30 bg-clay/5 p-5">
           <AlertCircle size={17} className="mt-px shrink-0 text-clay" />
