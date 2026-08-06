@@ -1,9 +1,9 @@
 import { useState } from 'react'
-import { NavLink, useLocation } from 'react-router-dom'
+import { NavLink, useLocation, useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { ChevronDown, ChevronRight, Layers, FormInput, Sparkles, Building2 } from 'lucide-react'
+import { ChevronDown, ChevronRight, Layers, FormInput, Sparkles, Building2, Plus } from 'lucide-react'
 import Logo from '@/shared/components/Logo'
-import { navItemsFor, type NavItem, type ModuleKey } from '@/shared/config/navigation'
+import { navItemsFor, type NavItem } from '@/shared/config/navigation'
 import type { Role } from '@/services/authService'
 
 type SidebarProps = {
@@ -35,13 +35,14 @@ export default function Sidebar({
   collapsed = false,
   onNavigate,
 }: SidebarProps) {
+  const navigate = useNavigate()
   const { pathname } = useLocation()
   const items = navItemsFor(permissions)
 
   const groups: GroupConfig[] = [
     {
       key: 'main',
-      title: 'Core HR & Workforce',
+      title: 'Core HR',
       icon: Layers,
       items: items.filter((i) => i.group === 'main'),
     },
@@ -71,7 +72,6 @@ export default function Sidebar({
     },
   ]
 
-  // Track expanded accordion categories (by default, expanding category containing current pathname)
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>(() => {
     const activeGroup = groups.find((g) => g.items.some((item) => pathname.startsWith(item.path)))?.key
     return {
@@ -96,24 +96,39 @@ export default function Sidebar({
       .toUpperCase() || 'EM'
 
   return (
-    <div className="flex h-full flex-col border-r border-hairline bg-paper select-none">
-      {/* Brand Header */}
-      <div className={`flex h-16 shrink-0 items-center border-b border-hairline px-4 ${collapsed ? 'justify-center' : ''}`}>
-        <Logo className={collapsed ? '[&>span:last-child]:hidden' : ''} />
+    <div className="flex h-full flex-col border-r border-hairline bg-[#f9fafb] text-ink select-none w-[210px]">
+      {/* Top Header: Home title on Left, + Create button on Right (Matching Screenshot UI) */}
+      <div className={`flex h-14 shrink-0 items-center justify-between border-b border-hairline px-3.5 ${collapsed ? 'justify-center' : ''}`}>
+        {!collapsed ? (
+          <div className="flex items-center gap-2">
+            <span className="font-display font-extrabold text-[15px] text-ink tracking-tight">Home</span>
+          </div>
+        ) : (
+          <Logo className="[&>span:last-child]:hidden" />
+        )}
+
+        {!collapsed && (
+          <button
+            onClick={() => navigate('/dashboard/forms/builder')}
+            className="flex items-center gap-1 bg-[#18181b] hover:bg-[#27272a] text-white text-[11px] font-extrabold px-2.5 py-1 rounded-lg transition cursor-pointer shadow-xs"
+          >
+            <Plus size={12} /> Create
+          </button>
+        )}
       </div>
 
       {/* Org Badge */}
       {!collapsed && (
-        <div className="border-b border-hairline bg-wash/30 px-4 py-3 flex items-center gap-3">
-          <div className="size-8 rounded-xl flex items-center justify-center text-[11px] font-bold text-white bg-gradient-to-br from-emerald-600 to-teal-700 shadow-sm shrink-0">
+        <div className="border-b border-hairline bg-white/60 px-3 py-2 flex items-center gap-2.5">
+          <div className="size-7 rounded-lg flex items-center justify-center text-[10px] font-bold text-white bg-gradient-to-br from-emerald-600 to-teal-700 shadow-xs shrink-0">
             {orgInitials}
           </div>
           <div className="flex-1 min-w-0">
-            <p className="truncate text-[13px] font-bold text-ink leading-none">{organizationName}</p>
-            <div className="flex items-center gap-1.5 mt-1">
-              <span className="text-[9px] font-semibold text-muted uppercase">Role:</span>
+            <p className="truncate text-[12px] font-bold text-ink leading-none">{organizationName}</p>
+            <div className="flex items-center gap-1 mt-0.5">
+              <span className="text-[9px] font-bold text-muted uppercase">Role:</span>
               <span
-                className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-[9px] font-bold border ${
+                className={`inline-flex items-center px-1.5 py-0.2 rounded text-[8.5px] font-bold border ${
                   role === 'OWNER'
                     ? 'bg-indigo-50 text-indigo-700 border-indigo-200'
                     : role === 'HR'
@@ -131,7 +146,7 @@ export default function Sidebar({
       )}
 
       {/* Navigation Accordion Sections */}
-      <nav aria-label="Modules" className={`flex-1 overflow-y-auto space-y-2 ${collapsed ? 'p-2' : 'p-3'}`}>
+      <nav aria-label="Modules" className={`flex-1 overflow-y-auto space-y-1.5 ${collapsed ? 'p-1.5' : 'p-2'}`}>
         {groups.map((group) => {
           const isOpen = openGroups[group.key] ?? false
           const hasActiveChild = group.items.some((item) =>
@@ -140,7 +155,7 @@ export default function Sidebar({
 
           if (collapsed) {
             return (
-              <div key={group.key} className="space-y-1.5 border-b border-hairline/60 pb-2 mb-2 last:border-0">
+              <div key={group.key} className="space-y-1 border-b border-hairline/60 pb-1.5 mb-1.5 last:border-0">
                 {group.items.map((item) => {
                   const Icon = item.icon
                   const isActive = item.key === 'dashboard' ? pathname === '/dashboard' : pathname.startsWith(item.path)
@@ -150,13 +165,13 @@ export default function Sidebar({
                       to={item.path}
                       onClick={onNavigate}
                       title={item.label}
-                      className={`flex size-9 items-center justify-center rounded-xl transition ${
+                      className={`flex size-8 items-center justify-center rounded-lg transition ${
                         isActive
-                          ? 'bg-emerald-600 text-white font-bold shadow-xs'
+                          ? 'bg-gray-200 text-ink font-bold shadow-2xs'
                           : 'text-muted hover:bg-wash hover:text-ink'
                       }`}
                     >
-                      <Icon size={16} />
+                      <Icon size={15} />
                     </NavLink>
                   )
                 })}
@@ -165,18 +180,18 @@ export default function Sidebar({
           }
 
           return (
-            <div key={group.key} className="rounded-xl border border-hairline/40 bg-wash/10 overflow-hidden">
+            <div key={group.key} className="rounded-lg border border-hairline/50 bg-white/70 overflow-hidden">
               {/* Category Accordion Header */}
               <button
                 type="button"
                 onClick={() => toggleGroup(group.key)}
-                className={`w-full flex items-center justify-between px-3 py-2 text-left text-[11px] font-extrabold uppercase tracking-wider transition cursor-pointer ${
-                  hasActiveChild ? 'text-emerald-700 bg-emerald-500/5' : 'text-muted hover:text-ink hover:bg-wash/40'
+                className={`w-full flex items-center justify-between px-2.5 py-1.5 text-left text-[10px] font-extrabold uppercase tracking-wider transition cursor-pointer ${
+                  hasActiveChild ? 'text-ink bg-gray-100/70' : 'text-muted hover:text-ink hover:bg-wash/50'
                 }`}
               >
                 <span>{group.title}</span>
                 <span className="text-muted">
-                  {isOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+                  {isOpen ? <ChevronDown size={13} /> : <ChevronRight size={13} />}
                 </span>
               </button>
 
@@ -187,10 +202,10 @@ export default function Sidebar({
                     initial={{ height: 0, opacity: 0 }}
                     animate={{ height: 'auto', opacity: 1 }}
                     exit={{ height: 0, opacity: 0 }}
-                    transition={{ duration: 0.2, ease: 'easeInOut' }}
-                    className="overflow-hidden bg-surface"
+                    transition={{ duration: 0.18, ease: 'easeInOut' }}
+                    className="overflow-hidden bg-white"
                   >
-                    <ul className="p-1 space-y-0.5 border-t border-hairline/30">
+                    <ul className="p-1 space-y-0.5 border-t border-hairline/40">
                       {group.items.map((item) => {
                         const Icon = item.icon
                         const isActive =
@@ -201,28 +216,28 @@ export default function Sidebar({
                             <NavLink
                               to={item.path}
                               onClick={onNavigate}
-                              className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-[12.5px] transition ${
+                              className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-[12px] transition ${
                                 isActive
-                                  ? 'bg-emerald-600 text-white font-bold shadow-xs'
-                                  : 'text-ink font-medium hover:bg-wash'
+                                  ? 'bg-[#e5e7eb] text-ink font-bold shadow-2xs'
+                                  : 'text-gray-700 font-medium hover:bg-gray-100/80 hover:text-ink'
                               }`}
                             >
-                              <Icon size={15} className={isActive ? 'text-white' : 'text-muted'} />
+                              <Icon size={14} className={isActive ? 'text-ink' : 'text-gray-500'} />
                               <span className="flex-1 truncate">{item.label}</span>
                             </NavLink>
                           </li>
                         )
                       })}
 
-                      {/* Explicit Form Builder Quick Action under Engagement */}
+                      {/* Form Builder Quick Action */}
                       {group.key === 'engagement' && (
                         <li className="pt-1 mt-1 border-t border-hairline/40">
                           <NavLink
                             to="/dashboard/forms/builder"
                             onClick={onNavigate}
-                            className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-[11.5px] font-bold text-indigo-600 hover:bg-indigo-50 transition"
+                            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[11px] font-bold text-indigo-700 hover:bg-indigo-50 transition"
                           >
-                            <FormInput size={14} />
+                            <FormInput size={13} />
                             <span>+ Create New Form</span>
                           </NavLink>
                         </li>
