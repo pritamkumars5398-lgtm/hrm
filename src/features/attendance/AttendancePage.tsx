@@ -166,6 +166,17 @@ export default function AttendancePage() {
           </p>
         </div>
 
+        {/* Punch Mode Simulator Badges */}
+        <div className="flex items-center gap-2">
+          <span className="text-[10px] font-bold uppercase tracking-wider text-muted">Punch Mode:</span>
+          <span className="px-2.5 py-1 rounded-lg text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center gap-1">
+            <Clock size={12} /> Web & Geofence GPS Active
+          </span>
+          <span className="px-2.5 py-1 rounded-lg text-[11px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-200 flex items-center gap-1">
+            <UserCheck size={12} /> Face Match Ready
+          </span>
+        </div>
+
         {/* Month navigation */}
         <div className="flex items-center gap-2 bg-surface border border-hairline/80 p-1.5 rounded-ctl transition-all duration-300">
           <button

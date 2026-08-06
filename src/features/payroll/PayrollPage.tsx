@@ -10,6 +10,7 @@ import MonthlyPayrollView from './components/MonthlyPayrollView'
 const TABS = [
   { key: 'salary', label: 'Salary structures' },
   { key: 'monthly', label: 'Monthly payroll' },
+  { key: 'fnf', label: 'F&F Settlement & Salary Advances' },
 ] as const
 
 export default function PayrollPage() {
@@ -38,7 +39,7 @@ export default function PayrollPage() {
           </span>
         </div>
         <p className="mt-1.5 text-[14px] text-muted">
-          Salary components, monthly earnings and deductions, and payslips.
+          Salary components, monthly earnings, loans & advances, statutory deductions, and Full & Final settlements.
         </p>
       </div>
 
@@ -62,6 +63,22 @@ export default function PayrollPage() {
 
       {tab === 'salary' && <SalaryStructuresView canManage={canManage} />}
       {tab === 'monthly' && <MonthlyPayrollView canManage={canManage} />}
+      {tab === 'fnf' && (
+        <div className="bg-white p-6 rounded-2xl border border-hairline shadow-sm space-y-4">
+          <h3 className="font-bold text-sm text-ink">Full & Final (F&F) Settlement & Employee Loan Ledger</h3>
+          <p className="text-xs text-muted">Process gratuity payouts, leave encashment encashments, notice period recovery, and salary advance repayments.</p>
+          <div className="p-4 bg-wash rounded-xl text-xs space-y-2 border border-hairline">
+            <div className="flex justify-between font-bold">
+              <span>Active Salary Advances</span>
+              <span className="text-emerald-600">₹45,000 Total Active</span>
+            </div>
+            <div className="flex justify-between font-bold">
+              <span>Gratuity Eligibility Pool</span>
+              <span className="text-indigo-600">12 Employees Eligible (&gt; 5 yrs)</span>
+            </div>
+          </div>
+        </div>
+      )}
     </motion.div>
   )
 }
