@@ -131,98 +131,42 @@ export default function DashboardHome() {
   const canSeeLeaveOverview = hasPermission(user.permissions, 'leave.approve')
 
   return (
-    <div className="space-y-6 max-w-6xl mx-auto">
-      {/* Top Header Title */}
-      <div className="flex items-center justify-between">
-        <h1 className="font-display text-xl font-bold text-ink">Meetings</h1>
-      </div>
-
-      {/* Hero Centered Section (Matching Screenshot) */}
-      <div className="text-center py-6 space-y-5">
-        <h2 className="font-display text-2xl sm:text-3xl font-extrabold text-ink tracking-tight">
-          Hey {firstName}! Ready to dive into your meetings?
-        </h2>
-
-        {/* AI Glowing Input Card */}
-        <div className="max-w-2xl mx-auto relative group">
-          <div className="absolute -inset-1 rounded-2xl bg-gradient-to-r from-blue-400 via-indigo-300 to-pink-300 opacity-60 blur-xs transition duration-300 group-hover:opacity-100" />
-          
-          <div className="relative bg-white rounded-2xl p-4 shadow-sm border border-blue-200/80 flex flex-col justify-between min-h-[110px]">
-            <div className="flex items-center gap-2">
-              <input
-                type="text"
-                placeholder="Find decisions made in previous meetings"
-                className="w-full text-sm font-medium text-ink outline-none bg-transparent placeholder:text-gray-400"
-              />
-            </div>
-
-            <div className="flex items-center justify-between text-gray-400 pt-2 text-xs">
-              <span className="font-mono text-sm">@</span>
-              <button title="Voice Input" className="hover:text-ink transition cursor-pointer">
-                🎙️
-              </button>
-            </div>
+    <div className="space-y-6">
+      {/* Welcome Banner Card */}
+      <div className="rounded-card border border-hairline bg-surface p-6 flex flex-col md:flex-row items-center justify-between gap-6 overflow-hidden">
+        <div className="flex-1 space-y-4 text-left">
+          <div>
+            <p className="text-[12px] font-semibold text-muted/70 uppercase tracking-wider mb-0.5">Welcome Back</p>
+            <h1 className="font-display text-[30px] leading-tight font-bold text-ink">
+              {greeting}.
+              <span className="block text-pine font-extrabold mt-1">{firstName} 👋</span>
+            </h1>
+            <p className="mt-2 text-[13.5px] leading-relaxed text-muted max-w-xl">
+              Welcome back to Keystone. Manage your team, track daily attendance records, process payroll, and view company analytics from your centralized workspace.
+            </p>
           </div>
+          {status === 'ready' && (
+            <div className="flex gap-2">
+              <Button
+                variant="secondary"
+                size="sm"
+                className="h-9.5"
+                onClick={() => void load(user.permissions, { force: true })}
+              >
+                <RotateCw size={14} />
+                Refresh
+              </Button>
+            </div>
+          )}
         </div>
 
-        {/* Horizontal Sub-Pill Bar */}
-        <div className="max-w-2xl mx-auto grid grid-cols-2 gap-3">
-          <div className="h-9 bg-white/70 rounded-full border border-hairline/60 shadow-2xs" />
-          <div className="h-9 bg-white/70 rounded-full border border-hairline/60 shadow-2xs" />
-        </div>
-      </div>
-
-      {/* Upcoming Meetings Section Header */}
-      <div className="space-y-4 pt-2">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2 text-sm font-bold text-ink">
-            <span className="text-muted font-normal">📅</span> Upcoming Meetings
-          </div>
-          <div className="flex items-center gap-3 text-xs font-semibold text-muted">
-            <button className="hover:text-ink transition cursor-pointer">Send AI Notetaker</button>
-            <span>•</span>
-            <button className="hover:text-ink transition cursor-pointer">Open Calendar</button>
-          </div>
-        </div>
-
-        {/* AI Notetaker & Calendar Visual Card (Matching Screenshot) */}
-        <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-2xs flex flex-col lg:flex-row items-center justify-between gap-6 overflow-hidden">
-          <div className="space-y-4 max-w-md">
-            <div className="size-9 rounded-xl bg-red-50 border border-red-100 flex flex-col items-center justify-center text-red-600 shadow-2xs">
-              <span className="text-[9px] font-extrabold uppercase leading-none mt-0.5">AUG</span>
-              <span className="text-sm font-bold leading-none">6</span>
-            </div>
-
-            <div className="space-y-1.5">
-              <h3 className="font-display text-lg font-bold text-ink">AI Notetaker works best with Calendar</h3>
-              <p className="text-xs text-muted leading-relaxed">
-                Connect your calendar to manage your events and get the most out of AI Notetaker
-              </p>
-            </div>
-
-            <button
-              onClick={() => alert("Calendar Sync Activated!")}
-              className="bg-[#18181b] hover:bg-[#27272a] text-white text-xs font-bold px-4 py-2 rounded-xl transition cursor-pointer shadow-xs"
-            >
-              Connect Calendar
-            </button>
-          </div>
-
-          {/* Right Visual Graphic Card */}
-          <div className="w-full lg:w-[380px] bg-slate-50 rounded-xl border border-hairline p-4 space-y-3 shadow-2xs text-xs">
-            <div className="flex items-center justify-between">
-              <span className="bg-teal-600 text-white font-bold text-[10px] px-2 py-0.5 rounded-md flex items-center gap-1">
-                🎥 Join
-              </span>
-              <span className="font-bold text-ink truncate text-[11.5px]">Design Sprint Feedback</span>
-              <span className="text-[10px] font-bold text-rose-600 bg-rose-50 px-1.5 py-0.5 rounded border border-rose-100">in 5m</span>
-            </div>
-
-            <div className="bg-emerald-500/10 border-l-4 border-emerald-500 p-2.5 rounded-r-lg space-y-1">
-              <p className="font-bold text-emerald-900 text-xs">Design Sprint Feedback</p>
-              <p className="text-[11px] text-emerald-700 font-mono">12 - 1pm</p>
-            </div>
-          </div>
+        {/* Dashboard Illustration */}
+        <div className="hidden md:block w-[420px] h-52 lg:w-[460px] lg:h-56 shrink-0 relative">
+          <img
+            src="/admin.png"
+            alt="Keystone Workspace Overview"
+            className="w-full h-full object-contain select-none"
+          />
         </div>
       </div>
 
