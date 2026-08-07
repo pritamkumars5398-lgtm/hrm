@@ -66,8 +66,17 @@ type ApiErrorBody = {
  */
 export function apiErrorMessage(error: unknown, fallback: string): string {
   if (error instanceof AxiosError) {
+    const status = error.response?.status
     const body = error.response?.data as ApiErrorBody | undefined
     const message = body?.message
+
+    // 503 = database / backend temporarily unavailable
+    if (status === 503) {
+      return (
+        (typeof message === 'string' && message) ||
+        'The server is temporarily unavailable. Please try again in a moment.'
+      )
+    }
 
     if (Array.isArray(message) && message.length > 0) return message[0]!
     if (typeof message === 'string' && message) return message
