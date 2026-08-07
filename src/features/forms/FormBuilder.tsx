@@ -41,7 +41,6 @@ export default function FormBuilder() {
       title,
       description: description || 'Custom feedback & performance review form.',
       category,
-      status: 'PUBLISHED',
       fields,
     })
 
