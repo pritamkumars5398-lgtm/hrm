@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { NavLink, useLocation, useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { ChevronDown, ChevronRight, Layers, FormInput, Sparkles, Building2, Plus } from 'lucide-react'
+import { ChevronDown, ChevronRight, Layers, FormInput, Sparkles, Building2 } from 'lucide-react'
 import Logo from '@/shared/components/Logo'
 import { navItemsFor, type NavItem } from '@/shared/config/navigation'
 import type { Role } from '@/services/authService'
@@ -14,12 +14,7 @@ type SidebarProps = {
   onNavigate?: () => void
 }
 
-const ROLE_LABEL: Record<Role, string> = {
-  OWNER: 'Owner',
-  HR: 'HR Manager',
-  MANAGER: 'Manager',
-  EMPLOYEE: 'Employee',
-}
+
 
 type GroupConfig = {
   key: string
@@ -87,14 +82,6 @@ export default function Sidebar({
     setOpenGroups((prev) => ({ ...prev, [key]: !prev[key] }))
   }
 
-  const orgInitials =
-    organizationName
-      .split(' ')
-      .map((w) => w[0])
-      .join('')
-      .slice(0, 2)
-      .toUpperCase() || 'EM'
-
   // Find active item label for top header
   const activeItem = items.find((item) =>
     item.key === 'dashboard' ? pathname === '/dashboard' : pathname.startsWith(item.path)
@@ -104,7 +91,7 @@ export default function Sidebar({
   return (
     <div className="flex h-full flex-col border-r border-hairline bg-[#f9fafb] text-ink select-none w-[210px]">
       {/* Top Header: Current Page Title on Left, + Create button on Right (Matching Screenshot UI) */}
-      <div className={`flex h-14 shrink-0 items-center justify-between border-b border-hairline px-3.5 ${collapsed ? 'justify-center' : ''}`}>
+      <div className={`flex h-14 shrink-0 items-center border-b border-hairline px-3.5 ${collapsed ? 'justify-center' : ''}`}>
         {!collapsed ? (
           <div className="flex items-center gap-2">
             <span className="font-display font-extrabold text-[15px] text-ink tracking-tight truncate max-w-[120px]">{pageTitle}</span>
@@ -112,44 +99,7 @@ export default function Sidebar({
         ) : (
           <Logo className="[&>span:last-child]:hidden" />
         )}
-
-        {!collapsed && (
-          <button
-            onClick={() => navigate('/dashboard/forms/builder')}
-            className="flex items-center gap-1 bg-[#18181b] hover:bg-[#27272a] text-white text-[11px] font-extrabold px-2.5 py-1 rounded-lg transition cursor-pointer shadow-xs shrink-0"
-          >
-            <Plus size={12} /> Create
-          </button>
-        )}
       </div>
-
-      {/* Org Badge */}
-      {!collapsed && (
-        <div className="border-b border-hairline bg-white/60 px-3 py-2 flex items-center gap-2.5">
-          <div className="size-7 rounded-lg flex items-center justify-center text-[10px] font-bold text-white bg-gradient-to-br from-emerald-600 to-teal-700 shadow-xs shrink-0">
-            {orgInitials}
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="truncate text-[12px] font-bold text-ink leading-none">{organizationName}</p>
-            <div className="flex items-center gap-1 mt-0.5">
-              <span className="text-[9px] font-bold text-muted uppercase">Role:</span>
-              <span
-                className={`inline-flex items-center px-1.5 py-0.2 rounded text-[8.5px] font-bold border ${
-                  role === 'OWNER'
-                    ? 'bg-indigo-50 text-indigo-700 border-indigo-200'
-                    : role === 'HR'
-                    ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                    : role === 'MANAGER'
-                    ? 'bg-amber-50 text-amber-700 border-amber-200'
-                    : 'bg-wash text-muted border-hairline'
-                }`}
-              >
-                {ROLE_LABEL[role]}
-              </span>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Navigation Accordion Sections */}
       <nav aria-label="Modules" className={`flex-1 overflow-y-auto space-y-1.5 ${collapsed ? 'p-1.5' : 'p-2'}`}>
