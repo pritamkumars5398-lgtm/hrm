@@ -36,6 +36,25 @@ apiClient.interceptors.request.use((config) => {
   return config
 })
 
+apiClient.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    if (error.response?.status === 401) {
+      const path = window.location.pathname
+      if (path !== '/login' && path !== '/signup' && path !== '/') {
+        try {
+          const { useAuthStore } = await import('@/features/auth/store/authStore')
+          useAuthStore.getState().clearSession()
+        } catch {
+          localStorage.removeItem('keystone.session')
+        }
+        window.location.href = '/login'
+      }
+    }
+    return Promise.reject(error)
+  }
+)
+
 type ApiErrorBody = {
   message?: string | string[]
   error?: string
