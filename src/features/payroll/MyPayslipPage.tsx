@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { AlertCircle, ChevronLeft, ChevronRight, Receipt, Sparkles } from 'lucide-react'
+import { AlertCircle, ChevronLeft, ChevronRight, Receipt, Sparkles, CheckCircle } from 'lucide-react'
 import Card from '@/shared/components/Card'
 import { payslipService, PayslipError, type Payslip } from '@/services/payslipService'
 import PayslipDetail from './components/PayslipDetail'
@@ -123,14 +123,48 @@ export default function MyPayslipPage() {
       )}
 
       {status === 'ready' && !payslip && (
-        <Card className="p-10 text-center">
-          <Receipt size={22} className="mx-auto text-muted/50" aria-hidden="true" />
-          <p className="mt-3 text-[14px] font-medium text-ink">No payslip for {formatMonthLabel(month)}</p>
-          <p className="mx-auto mt-1 max-w-xs text-[13px] text-muted">
-            Either payroll for this month hasn't been finalized yet, or there's no employee record for you in this
-            company.
-          </p>
-        </Card>
+        <div className="relative overflow-hidden rounded-card border border-hairline bg-surface p-10 text-center shadow-sm">
+          {/* Beautiful background gradient */}
+          <div className="absolute inset-x-0 top-0 h-40 bg-gradient-to-b from-pine/5 to-transparent pointer-events-none" />
+          
+          <div className="relative z-10">
+            <div className="mx-auto flex size-16 items-center justify-center rounded-full bg-white shadow-sm ring-1 ring-hairline mb-5">
+              <Receipt className="text-pine size-7" strokeWidth={1.5} />
+            </div>
+            
+            <h3 className="text-[19px] font-display font-semibold text-ink tracking-tight">No payslip generated yet</h3>
+            <p className="mx-auto mt-2 max-w-md text-[14px] text-muted leading-relaxed">
+              Your payslip for <strong className="text-ink font-semibold">{formatMonthLabel(month)}</strong> is not available. This usually means payroll hasn't been finalized by the admin yet.
+            </p>
+
+            {/* Skeleton preview of what's inside */}
+            <div className="mx-auto mt-10 max-w-sm rounded-ctl border border-hairline bg-wash/40 p-6 text-left shadow-[inset_0_1px_4px_rgba(0,0,0,0.02)] relative">
+              <div className="absolute -top-3 left-6 bg-surface px-2 text-[11px] font-bold text-pine uppercase tracking-wider border border-hairline rounded-full shadow-sm">
+                What's inside?
+              </div>
+              <ul className="space-y-4 mt-2">
+                <li className="flex items-center gap-3">
+                  <div className="flex size-7 items-center justify-center rounded-full bg-teal-50 border border-teal-100 text-teal-600">
+                    <CheckCircle size={14} />
+                  </div>
+                  <span className="text-[13.5px] text-ink font-medium">Earnings & Deductions breakdown</span>
+                </li>
+                <li className="flex items-center gap-3">
+                  <div className="flex size-7 items-center justify-center rounded-full bg-teal-50 border border-teal-100 text-teal-600">
+                    <CheckCircle size={14} />
+                  </div>
+                  <span className="text-[13.5px] text-ink font-medium">Net Take-Home Salary</span>
+                </li>
+                <li className="flex items-center gap-3">
+                  <div className="flex size-7 items-center justify-center rounded-full bg-teal-50 border border-teal-100 text-teal-600">
+                    <CheckCircle size={14} />
+                  </div>
+                  <span className="text-[13.5px] text-ink font-medium">Downloadable PDF for your records</span>
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   )

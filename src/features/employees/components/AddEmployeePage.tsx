@@ -431,12 +431,63 @@ export default function AddEmployeePage() {
               </div>
 
               <div className="grid gap-4 sm:grid-cols-2">
-                <Input label="First Name" error={errors.firstName?.message} {...register('firstName', { required: 'Required' })} />
-                <Input label="Last Name" error={errors.lastName?.message} {...register('lastName', { required: 'Required' })} />
-                <Input label="Employee ID" placeholder="EMP-1008" error={errors.employeeId?.message} {...register('employeeId', { required: 'Required' })} />
-                <Input label="Email" type="email" error={errors.email?.message} {...register('email', { required: 'Required', pattern: { value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/, message: 'Enter a valid email.' } })} />
-                <Input label="Phone" type="tel" error={errors.contactNumber?.message} {...register('contactNumber')} />
-                <Input label="Home Address" {...register('homeAddress')} />
+                <Input 
+                  label="First Name" 
+                  error={errors.firstName?.message} 
+                  {...register('firstName', { 
+                    required: 'First name is required.',
+                    minLength: { value: 2, message: 'Name must be at least 2 characters.' }
+                  })} 
+                />
+                <Input 
+                  label="Last Name" 
+                  error={errors.lastName?.message} 
+                  {...register('lastName', { 
+                    required: 'Last name is required.',
+                    minLength: { value: 2, message: 'Name must be at least 2 characters.' }
+                  })} 
+                />
+                <Input 
+                  label="Employee ID" 
+                  placeholder="EMP-1008" 
+                  error={errors.employeeId?.message} 
+                  {...register('employeeId', { 
+                    required: 'Employee ID is required.' 
+                  })} 
+                />
+                <Input 
+                  label="Email" 
+                  type="email" 
+                  error={errors.email?.message} 
+                  {...register('email', { 
+                    required: 'Email address is required.', 
+                    pattern: { value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/, message: 'Enter a valid email address.' } 
+                  })} 
+                />
+                <Input 
+                  label="Phone" 
+                  type="tel" 
+                  maxLength={10}
+                  error={errors.contactNumber?.message} 
+                  {...register('contactNumber', {
+                    required: 'Phone number is required.',
+                    pattern: {
+                      value: /^[0-9]{10}$/,
+                      message: 'Phone number must be exactly 10 digits.',
+                    },
+                    onChange: (e) => {
+                      e.target.value = e.target.value.replace(/[^0-9]/g, '')
+                    }
+                  })} 
+                />
+                <Input 
+                  label="Home Address" 
+                  error={errors.homeAddress?.message}
+                  {...register('homeAddress', {
+                    required: 'Home address is required.',
+                    minLength: { value: 5, message: 'Please enter a complete address.' }
+                  })} 
+                />
               </div>
 
               <div className="mt-6 flex justify-end gap-2 border-t border-hairline pt-5">
@@ -552,9 +603,37 @@ export default function AddEmployeePage() {
                 {family.fields.map((field, i) => (
                   <div key={field.id} className="rounded-ctl border border-hairline bg-wash/30 p-4">
                     <div className="grid gap-4 sm:grid-cols-3">
-                      <Input label="Name" error={errors.family?.[i]?.name?.message} {...register(`family.${i}.name`, { required: 'Required' })} />
-                      <Input label="Relationship" error={errors.family?.[i]?.relationship?.message} {...register(`family.${i}.relationship`, { required: 'Required' })} />
-                      <Input label="Contact Number" type="tel" {...register(`family.${i}.contactNumber`)} />
+                      <Input 
+                        label="Name" 
+                        error={errors.family?.[i]?.name?.message} 
+                        {...register(`family.${i}.name`, { 
+                          required: 'Name is required.',
+                          minLength: { value: 2, message: 'Must be at least 2 characters.' }
+                        })} 
+                      />
+                      <Input 
+                        label="Relationship" 
+                        error={errors.family?.[i]?.relationship?.message} 
+                        {...register(`family.${i}.relationship`, { 
+                          required: 'Relationship is required.' 
+                        })} 
+                      />
+                      <Input 
+                        label="Contact Number" 
+                        type="tel" 
+                        maxLength={10}
+                        error={errors.family?.[i]?.contactNumber?.message}
+                        {...register(`family.${i}.contactNumber`, {
+                          required: 'Contact number is required.',
+                          pattern: {
+                            value: /^[0-9]{10}$/,
+                            message: 'Must be exactly 10 digits.',
+                          },
+                          onChange: (e) => {
+                            e.target.value = e.target.value.replace(/[^0-9]/g, '')
+                          }
+                        })} 
+                      />
                     </div>
                     <div className="mt-3 flex justify-end">
                       <button
@@ -600,10 +679,58 @@ export default function AddEmployeePage() {
               description="Bank account for payroll. Optional — fill all fields or leave blank."
             >
               <div className="grid gap-4 sm:grid-cols-2">
-                <Input label="Bank Name" {...register('bankName')} />
-                <Input label="Account Name" {...register('accName')} />
-                <Input label="Account Number" {...register('accNumber')} />
-                <Input label="IFSC Code" {...register('ifscCode')} />
+                <Input 
+                  label="Bank Name" 
+                  error={errors.bankName?.message}
+                  {...register('bankName', {
+                    validate: (value, formValues) => {
+                      if (!value && (formValues.accName || formValues.accNumber || formValues.ifscCode)) return 'Required if adding bank details.';
+                      return true;
+                    }
+                  })} 
+                />
+                <Input 
+                  label="Account Name" 
+                  error={errors.accName?.message}
+                  {...register('accName', {
+                    validate: (value, formValues) => {
+                      if (!value && (formValues.bankName || formValues.accNumber || formValues.ifscCode)) return 'Required if adding bank details.';
+                      return true;
+                    }
+                  })} 
+                />
+                <Input 
+                  label="Account Number" 
+                  type="text"
+                  maxLength={18}
+                  error={errors.accNumber?.message}
+                  {...register('accNumber', {
+                    validate: (value, formValues) => {
+                      if (!value && (formValues.bankName || formValues.accName || formValues.ifscCode)) return 'Required if adding bank details.';
+                      if (value && !/^\d{9,18}$/.test(value)) return 'Must be 9 to 18 digits.';
+                      return true;
+                    },
+                    onChange: (e) => {
+                      e.target.value = e.target.value.replace(/[^0-9]/g, '')
+                    }
+                  })} 
+                />
+                <Input 
+                  label="IFSC Code"
+                  className="uppercase"
+                  maxLength={11}
+                  error={errors.ifscCode?.message} 
+                  {...register('ifscCode', {
+                    validate: (value, formValues) => {
+                      if (!value && (formValues.bankName || formValues.accName || formValues.accNumber)) return 'Required if adding bank details.';
+                      if (value && !/^[A-Z]{4}0[A-Z0-9]{6}$/i.test(value)) return 'Invalid IFSC (e.g. HDFC0001234).';
+                      return true;
+                    },
+                    onChange: (e) => {
+                      e.target.value = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '')
+                    }
+                  })} 
+                />
               </div>
 
               <div className="mt-6 flex justify-between gap-2 border-t border-hairline pt-5">

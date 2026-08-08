@@ -1,6 +1,6 @@
 import { useNavigate, Navigate } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
-import { ArrowRight, Loader2, User, Phone, Briefcase } from 'lucide-react'
+import { ArrowRight, Loader2, User, Phone, Briefcase, Mail } from 'lucide-react'
 import { useAuthStore } from '@/features/auth/store/authStore'
 import WizardShell from './components/WizardShell'
 import { useOnboardingStore, type PersonalDetails } from './store/onboardingStore'
@@ -18,10 +18,10 @@ export default function PersonalDetailsStep() {
     formState: { errors, isSubmitting },
   } = useForm<PersonalDetails>({
     mode: 'onTouched',
-    defaultValues: personal ?? {
-      fullName: user?.name ?? '',
-      phone: '',
-      jobTitle: '',
+    values: {
+      fullName: user?.name || personal?.fullName || '',
+      phone: personal?.phone || '',
+      jobTitle: personal?.jobTitle || '',
     },
   })
 
@@ -75,6 +75,23 @@ export default function PersonalDetailsStep() {
             )}
           </div>
 
+          {/* Email (Auto-filled & disabled) */}
+          <div>
+            <div className="flex items-center gap-2 mb-2">
+              <Mail size={12} className="text-gray-400 shrink-0" />
+              <label className="text-[11px] font-bold uppercase tracking-widest text-gray-400">
+                Email address
+              </label>
+            </div>
+            <input
+              type="email"
+              disabled
+              value={user?.email ?? ''}
+              className="w-full bg-transparent border-0 border-b-2 border-gray-100 pb-2.5 pt-1 text-[15px] text-gray-400 cursor-not-allowed outline-none"
+            />
+            <p className="mt-1.5 text-[11.5px] text-gray-400">Your sign-in email cannot be changed here.</p>
+          </div>
+
           {/* Phone */}
           <div>
             <div className="flex items-center gap-2 mb-2">
@@ -86,14 +103,18 @@ export default function PersonalDetailsStep() {
             <input
               type="tel"
               autoComplete="tel"
-              placeholder="+91 98765 43210"
+              placeholder="9876543210"
+              maxLength={10}
               className={inputClass(!!errors.phone)}
               {...register('phone', {
                 required: 'Enter a phone number.',
                 pattern: {
-                  value: /^[+\d][\d\s()-]{6,}$/,
-                  message: 'That does not look like a phone number.',
+                  value: /^[0-9]{10}$/,
+                  message: 'Phone number must be exactly 10 digits.',
                 },
+                onChange: (e) => {
+                  e.target.value = e.target.value.replace(/[^0-9]/g, '')
+                }
               })}
             />
             {errors.phone ? (

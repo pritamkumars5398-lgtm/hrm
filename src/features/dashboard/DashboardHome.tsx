@@ -12,6 +12,7 @@ import {
   Activity,
   Star,
   Info,
+  MoreVertical,
 } from 'lucide-react'
 import Button from '@/shared/components/Button'
 import { useAuthStore } from '@/features/auth/store/authStore'
@@ -72,7 +73,12 @@ const getStatStyle = (id: string, label: string) => {
       Icon: UserPlus,
       iconColor: 'text-teal-600',
       iconBg: 'bg-teal-50/80 border border-teal-100/50',
-      deltaColor: 'text-emerald-700 bg-emerald-50/60 border border-emerald-100/30',
+      deltaColor: 'text-teal-700 bg-teal-50 border border-teal-100/50',
+      gradStart: 'rgba(20, 184, 166, 0.25)',
+      gradEnd: 'rgba(20, 184, 166, 0)',
+      strokeColor: 'text-teal-400',
+      linePath: 'M0,14 C20,6 40,22 60,14 C80,6 90,14 100,10',
+      fillPath: 'M0,14 C20,6 40,22 60,14 C80,6 90,14 100,10 L100,24 L0,24 Z',
     }
   }
   if (normId.includes('present') || normLabel.includes('present')) {
@@ -80,7 +86,12 @@ const getStatStyle = (id: string, label: string) => {
       Icon: Activity,
       iconColor: 'text-emerald-600',
       iconBg: 'bg-emerald-50/80 border border-emerald-100/50',
-      deltaColor: 'text-muted-deep bg-wash/60 border border-hairline/60',
+      deltaColor: 'text-emerald-700 bg-emerald-50 border border-emerald-100/50',
+      gradStart: 'rgba(16, 185, 129, 0.25)',
+      gradEnd: 'rgba(16, 185, 129, 0)',
+      strokeColor: 'text-emerald-400',
+      linePath: 'M0,16 C30,22 50,6 100,10',
+      fillPath: 'M0,16 C30,22 50,6 100,10 L100,24 L0,24 Z',
     }
   }
   if (normId.includes('leave') || normLabel.includes('leave')) {
@@ -88,7 +99,12 @@ const getStatStyle = (id: string, label: string) => {
       Icon: CalendarDays,
       iconColor: 'text-orange-600',
       iconBg: 'bg-orange-50/80 border border-orange-100/50',
-      deltaColor: 'text-orange-700 bg-orange-50/60 border border-orange-100/30',
+      deltaColor: 'text-orange-700 bg-orange-50 border border-orange-100/50',
+      gradStart: 'rgba(249, 115, 22, 0.25)',
+      gradEnd: 'rgba(249, 115, 22, 0)',
+      strokeColor: 'text-orange-400',
+      linePath: 'M0,18 C25,20 40,4 50,4 C60,4 75,20 100,18',
+      fillPath: 'M0,18 C25,20 40,4 50,4 C60,4 75,20 100,18 L100,24 L0,24 Z',
     }
   }
   if (normId.includes('payroll') || normLabel.includes('payroll')) {
@@ -96,7 +112,12 @@ const getStatStyle = (id: string, label: string) => {
       Icon: Banknote,
       iconColor: 'text-indigo-600',
       iconBg: 'bg-indigo-50/80 border border-indigo-100/50',
-      deltaColor: 'text-indigo-700 bg-indigo-50/60 border border-indigo-100/30',
+      deltaColor: 'text-indigo-700 bg-indigo-50 border border-indigo-100/50',
+      gradStart: 'rgba(99, 102, 241, 0.25)',
+      gradEnd: 'rgba(99, 102, 241, 0)',
+      strokeColor: 'text-indigo-400',
+      linePath: 'M0,12 C30,6 70,18 100,12',
+      fillPath: 'M0,12 C30,6 70,18 100,12 L100,24 L0,24 Z',
     }
   }
 
@@ -104,7 +125,12 @@ const getStatStyle = (id: string, label: string) => {
     Icon: Star,
     iconColor: 'text-purple-600',
     iconBg: 'bg-purple-50/80 border border-purple-100/50',
-    deltaColor: 'text-purple-700 bg-purple-50/60 border border-purple-100/30',
+    deltaColor: 'text-purple-700 bg-purple-50 border border-purple-100/50',
+    gradStart: 'rgba(168, 85, 247, 0.25)',
+    gradEnd: 'rgba(168, 85, 247, 0)',
+    strokeColor: 'text-purple-400',
+    linePath: 'M0,8 C30,24 70,24 100,8',
+    fillPath: 'M0,8 C30,24 70,24 100,8 L100,24 L0,24 Z',
   }
 }
 
@@ -282,7 +308,7 @@ export default function DashboardHome() {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.4, delay: index * 0.05 }}
                     whileHover={{ y: -4 }}
-                    className={`group relative rounded-card border border-hairline bg-surface p-4 flex flex-col justify-between transition-all duration-300 overflow-hidden h-[112px] cursor-pointer ${
+                    className={`group relative rounded-card border border-hairline bg-surface p-6 flex flex-col justify-between transition-all duration-300 overflow-hidden h-[156px] cursor-pointer ${
                       normId.includes('employee') ? 'hover:border-teal-300 hover:shadow-[0_8px_30px_rgba(20,184,166,0.05)]' :
                       normId.includes('present') ? 'hover:border-emerald-300 hover:shadow-[0_8px_30px_rgba(16,185,129,0.05)]' :
                       normId.includes('leave') ? 'hover:border-orange-300 hover:shadow-[0_8px_30px_rgba(249,115,22,0.05)]' :
@@ -299,20 +325,35 @@ export default function DashboardHome() {
                       'bg-purple-400'
                     }`} />
 
+                    {/* Wavy Chart Design */}
+                    <div className="absolute inset-x-0 bottom-0 h-[46px] overflow-hidden pointer-events-none rounded-b-[11px]">
+                      <svg viewBox="0 0 100 24" preserveAspectRatio="none" className="w-full h-full opacity-60 group-hover:opacity-100 transition-all duration-500">
+                        <defs>
+                          <linearGradient id={`grad-${stat.id}`} x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stopColor={style.gradStart} />
+                            <stop offset="100%" stopColor={style.gradEnd} />
+                          </linearGradient>
+                        </defs>
+                        <path d={style.fillPath} fill={`url(#grad-${stat.id})`} />
+                        <path d={style.linePath} fill="none" stroke="currentColor" strokeWidth="1.5" className={style.strokeColor} vectorEffect="non-scaling-stroke" />
+                      </svg>
+                    </div>
+
                     <div className="flex items-start justify-between w-full z-10">
                       <div className={`p-2 rounded-full shrink-0 flex items-center justify-center transition-transform duration-300 group-hover:scale-110 ${style.iconBg}`}>
                         <StatIcon className={`size-4 transition-transform duration-300 ${style.iconColor}`} />
                       </div>
+                      <MoreVertical size={15} className="text-muted/60 hover:text-muted cursor-pointer transition-colors" />
                     </div>
 
-                    <div className="min-w-0 flex-1 mt-2 z-10">
-                      <p className="text-[10px] text-muted font-bold uppercase tracking-wider leading-none truncate">{stat.label}</p>
-                      <div className="flex items-baseline justify-between gap-1 mt-1.5">
-                        <p className="tnum font-display text-[21px] leading-none font-bold text-ink truncate">
+                    <div className="min-w-0 flex-1 mt-2 z-10 flex flex-col justify-end pb-0.5">
+                      <p className="text-[10px] text-muted-deep font-bold uppercase tracking-wider leading-none truncate mb-1.5">{stat.label}</p>
+                      <div className="flex items-end justify-between gap-1">
+                        <p className="tnum font-display text-[26px] leading-[0.85] font-extrabold text-ink truncate">
                           {stat.value}
                         </p>
                         {stat.delta && (
-                          <span className={`shrink-0 inline-flex items-center px-1.5 py-0.5 rounded-full text-[9.5px] font-bold border leading-none ${style.deltaColor}`}>
+                          <span className={`shrink-0 inline-flex items-center px-1.5 py-0.5 rounded-full text-[9.5px] font-bold border leading-none mb-0.5 ${style.deltaColor}`}>
                             {stat.delta}
                           </span>
                         )}
@@ -345,75 +386,79 @@ export default function DashboardHome() {
                 </div>
 
                 {data && data.weeklyAttendance.length > 0 ? (
-                  <>
-                    <div className="mt-6 flex h-44 gap-3.5 relative">
-                      {/* Grid background lines */}
-                      <div className="absolute inset-x-0 bottom-[22px] top-[14px] flex flex-col justify-between pointer-events-none">
-                        {[0, 1, 2, 3].map((_, idx) => (
-                          <div key={idx} className="w-full border-b border-wash border-dashed relative" />
-                        ))}
-                      </div>
-
-                      {data.weeklyAttendance.map((day, i) => {
-                        const maxExpected = Math.max(1, ...data.weeklyAttendance.map((d) => d.expected))
-                        const heightPct = (day.present / maxExpected) * 100
-                        const isHovered = hoveredBarIndex === i
-                        const attendancePct = Math.round((day.present / Math.max(1, day.expected)) * 100)
-
-                        return (
-                          <div
-                            key={`${day.label}-${i}`}
-                            className="flex flex-1 flex-col items-center gap-2.5 relative z-10"
-                            onMouseEnter={() => setHoveredBarIndex(i)}
-                            onMouseLeave={() => setHoveredBarIndex(null)}
-                          >
-                            {/* Hover Tooltip */}
-                            <AnimatePresence>
-                              {isHovered && (
-                                <motion.div
-                                  initial={{ opacity: 0, y: 6, scale: 0.9 }}
-                                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                                  exit={{ opacity: 0, y: 6, scale: 0.9 }}
-                                  transition={{ duration: 0.15 }}
-                                  className="absolute -top-12 z-20 px-2.5 py-1.5 bg-ink text-white rounded shadow-xl text-[10.5px] leading-tight font-semibold flex flex-col items-center pointer-events-none whitespace-nowrap"
-                                >
-                                  <span className="font-bold text-emerald-400">{day.present} Present</span>
-                                  <span className="opacity-75 text-[9px] mt-0.5">{day.expected} Expected ({attendancePct}%)</span>
-                                  <div className="size-1.5 bg-ink rotate-45 absolute -bottom-0.5 left-1/2 -translate-x-1/2" />
-                                </motion.div>
-                              )}
-                            </AnimatePresence>
-
-                            {/* Bar Value label */}
-                            <span className={`tnum text-[11px] font-bold transition-colors duration-200 ${isHovered ? 'text-pine' : 'text-ink'}`}>
-                              {day.present}
-                            </span>
-
-                            {/* Bar Container */}
-                            <div className="w-full flex-1 relative bg-wash rounded-ctl overflow-hidden cursor-pointer border border-hairline/30">
-                              <motion.div
-                                className="absolute bottom-0 w-full rounded-t-[3px] bg-gradient-to-t from-emerald-500 to-teal-400 group-hover:from-emerald-400 group-hover:to-teal-300"
-                                initial={{ height: 0 }}
-                                animate={{ height: `${heightPct}%` }}
-                                transition={{ duration: 0.8, ease: 'easeOut', delay: i * 0.05 }}
-                              />
-                            </div>
-                          </div>
-                        )
-                      })}
-                    </div>
-                    {/* Days Labels */}
-                    <div className="flex items-center justify-between text-[11px] text-muted px-1 mt-3 font-semibold uppercase tracking-wider">
-                      {data.weeklyAttendance.map((day, i) => (
-                        <span
-                          key={`${day.label}-lbl-${i}`}
-                          className={`transition-colors duration-200 ${hoveredBarIndex === i ? 'text-pine font-bold' : ''}`}
-                        >
-                          {day.label}
-                        </span>
+                  <div className="mt-6 flex h-[210px] gap-4 relative">
+                    {/* Grid background lines */}
+                    <div className="absolute inset-x-0 bottom-[28px] top-[14px] flex flex-col justify-between pointer-events-none">
+                      {[0, 1, 2, 3].map((_, idx) => (
+                        <div key={idx} className="w-full border-b border-hairline/60 border-dashed relative" />
                       ))}
                     </div>
-                  </>
+
+                    {data.weeklyAttendance.map((day, i) => {
+                      const maxExpected = Math.max(1, ...data.weeklyAttendance.map((d) => d.expected))
+                      const heightPct = (day.present / maxExpected) * 100
+                      const isHovered = hoveredBarIndex === i
+                      const attendancePct = Math.round((day.present / Math.max(1, day.expected)) * 100)
+
+                      return (
+                        <div
+                          key={`${day.label}-${i}`}
+                          className="flex flex-1 flex-col items-center relative z-10 h-full"
+                          onMouseEnter={() => setHoveredBarIndex(i)}
+                          onMouseLeave={() => setHoveredBarIndex(null)}
+                        >
+                          {/* Hover Tooltip */}
+                          <AnimatePresence>
+                            {isHovered && (
+                              <motion.div
+                                initial={{ opacity: 0, y: 6, scale: 0.9 }}
+                                animate={{ opacity: 1, y: 0, scale: 1 }}
+                                exit={{ opacity: 0, y: 6, scale: 0.9 }}
+                                transition={{ duration: 0.15 }}
+                                className="absolute -top-12 z-20 px-2.5 py-1.5 bg-ink/90 backdrop-blur-md text-white rounded shadow-xl text-[10.5px] leading-tight font-semibold flex flex-col items-center pointer-events-none whitespace-nowrap"
+                              >
+                                <span className="font-bold text-emerald-400">{day.present} Present</span>
+                                <span className="opacity-75 text-[9px] mt-0.5">{day.expected} Expected ({attendancePct}%)</span>
+                                <div className="size-1.5 bg-ink/90 rotate-45 absolute -bottom-0.5 left-1/2 -translate-x-1/2" />
+                              </motion.div>
+                            )}
+                          </AnimatePresence>
+
+                          {/* Bar Value label */}
+                          <span className={`tnum text-[11px] font-bold transition-all duration-200 mb-2 ${isHovered ? 'text-teal-600 scale-110' : 'text-ink'}`}>
+                            {day.present}
+                          </span>
+
+                          {/* Bar Container - True Bar Chart */}
+                          <div className="w-full flex-1 relative flex items-end justify-center cursor-pointer group">
+                            {/* The empty track (optional, very subtle) */}
+                            <div className="absolute inset-0 w-full bg-wash/30 rounded-t-[4px]" />
+                            
+                            {/* The actual colored bar */}
+                            <motion.div
+                              className={`w-full max-w-[36px] rounded-t-[4px] relative z-10 ${
+                                day.present === 0 
+                                  ? 'bg-clay/10 shadow-[inset_0_2px_4px_rgba(0,0,0,0.02)] border border-hairline/50' 
+                                  : 'bg-gradient-to-t from-emerald-500 to-teal-400 group-hover:from-emerald-400 group-hover:to-teal-300 shadow-[0_2px_10px_rgba(16,185,129,0.15)]'
+                              }`}
+                              initial={{ height: 0 }}
+                              animate={{ height: `${Math.max(day.present === 0 ? 0 : 4, heightPct)}%` }} // Very small if 0, else percentage
+                              transition={{ duration: 0.8, ease: 'easeOut', delay: i * 0.05 }}
+                            />
+                          </div>
+
+                          {/* Day Label under each bar */}
+                          <span
+                            className={`text-[10px] font-bold uppercase tracking-wider mt-3 transition-colors duration-200 ${
+                              isHovered ? 'text-teal-700' : 'text-muted-deep'
+                            }`}
+                          >
+                            {day.label}
+                          </span>
+                        </div>
+                      )
+                    })}
+                  </div>
                 ) : (
                   <div className="py-14 text-center">
                     <p className="text-[13px] font-medium text-ink">No attendance recorded yet</p>
