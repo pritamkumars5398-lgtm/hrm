@@ -13,6 +13,12 @@ import {
   Trash2,
   TriangleAlert,
   User,
+  Calendar,
+  Clock,
+  Landmark,
+  Award,
+  History,
+  Coins,
 } from 'lucide-react'
 import Drawer from '@/shared/components/Drawer'
 import Modal from '@/shared/components/Modal'
@@ -105,6 +111,15 @@ export default function EmployeeDrawer({
   const [saveError, setSaveError] = useState<string | null>(null)
   const [deleteOpen, setDeleteOpen] = useState(false)
 
+  const [activeTab, setActiveTab] = useState<'profile' | 'employment' | 'attendance' | 'leave' | 'documents' | 'performance' | 'payroll' | 'history'>('profile')
+  const [attendance, setAttendance] = useState<any[] | null>(null)
+  const [leaves, setLeaves] = useState<any[] | null>(null)
+  const [payroll, setPayroll] = useState<any[] | null>(null)
+  const [performance, setPerformance] = useState<{ goals: any[]; reviews: any[] } | null>(null)
+  const [docs, setDocs] = useState<any[] | null>(null)
+  const [historyData, setHistoryData] = useState<{ employmentHistory: any[]; auditLogs: any[] } | null>(null)
+  const [tabLoading, setTabLoading] = useState(false)
+
   const permissions = useAuthStore((s) => s.user?.permissions)
   const canManage = hasPermission(permissions, 'employees.manage')
   const departments = employeeService.getDepartmentOptions()
@@ -125,6 +140,7 @@ export default function EmployeeDrawer({
     setMode('view')
     setSaveError(null)
     setDeleteOpen(false)
+    setActiveTab('profile')
 
     void employeeService
       .getById(employeeId)
@@ -139,6 +155,54 @@ export default function EmployeeDrawer({
       cancelled = true
     }
   }, [employeeId])
+
+  useEffect(() => {
+    if (!employeeId || !employee || mode === 'edit') return
+
+    let cancelled = false
+    setTabLoading(true)
+
+    const loadTab = async () => {
+      try {
+        switch (activeTab) {
+          case 'attendance':
+            const att = await employeeService.getAttendance(employeeId)
+            if (!cancelled) setAttendance(att)
+            break
+          case 'leave':
+            const lvs = await employeeService.getLeave(employeeId)
+            if (!cancelled) setLeaves(lvs)
+            break
+          case 'payroll':
+            const pay = await employeeService.getPayroll(employeeId)
+            if (!cancelled) setPayroll(pay)
+            break
+          case 'performance':
+            const perf = await employeeService.getPerformance(employeeId)
+            if (!cancelled) setPerformance(perf)
+            break
+          case 'documents':
+            const d = await employeeService.getDocuments(employeeId)
+            if (!cancelled) setDocs(d)
+            break
+          case 'history':
+            const hist = await employeeService.getHistory(employeeId)
+            if (!cancelled) setHistoryData(hist)
+            break
+        }
+      } catch (err) {
+        console.error(err)
+      } finally {
+        if (!cancelled) setTabLoading(false)
+      }
+    }
+
+    void loadTab()
+
+    return () => {
+      cancelled = true
+    }
+  }, [activeTab, employeeId, employee, mode])
 
   const startEdit = () => {
     if (!employee) return
@@ -264,70 +328,317 @@ export default function EmployeeDrawer({
               </div>
             )}
 
-            <section>
-              <h3 className="mb-3 text-[11px] font-semibold tracking-[0.12em] text-muted uppercase">Details</h3>
-              <div className="grid gap-4 sm:grid-cols-2">
-                <Field icon={Mail} label="Email" value={employee.email} />
-                <Field icon={Phone} label="Phone" value={employee.phone || '—'} />
-                <Field icon={Building2} label="Department" value={employee.department} />
-                <Field icon={Briefcase} label="Employment" value={EMPLOYMENT_TYPE_LABEL[employee.employmentType]} />
-                <Field icon={MapPin} label="Location" value={employee.location} />
-                <Field icon={User} label="Reports to" value={employee.managerName ?? '—'} />
-              </div>
-              <p className="mt-4 border-t border-hairline pt-3 text-[12px] text-muted">
-                Joined {formatDate(employee.joinedAt)}
-              </p>
-            </section>
+            {/* Premium Navigation Tabs */}
+            <div className="flex border-b border-hairline overflow-x-auto scrollbar-none mb-4 -mx-6 px-6">
+              {[
+                { id: 'profile', label: 'Profile' },
+                { id: 'employment', label: 'Employment' },
+                { id: 'attendance', label: 'Attendance' },
+                { id: 'leave', label: 'Leave' },
+                { id: 'documents', label: 'Documents' },
+                { id: 'performance', label: 'Performance' },
+                { id: 'payroll', label: 'Payroll' },
+                { id: 'history', label: 'History' },
+              ].map((t) => (
+                <button
+                  key={t.id}
+                  type="button"
+                  onClick={() => setActiveTab(t.id as any)}
+                  className={`px-3.5 py-2 text-xs font-bold border-b-2 whitespace-nowrap -mb-px transition cursor-pointer ${
+                    activeTab === t.id
+                      ? 'border-emerald-600 text-emerald-700'
+                      : 'border-transparent text-muted hover:text-ink'
+                  }`}
+                >
+                  {t.label}
+                </button>
+              ))}
+            </div>
 
-            <section>
-              <h3 className="mb-3 text-[11px] font-semibold tracking-[0.12em] text-muted uppercase">
-                Employment history
-              </h3>
-              <ol className="space-y-0">
-                {employee.employmentHistory.map((event, i, all) => (
-                  <li key={event.id} className="flex gap-3">
-                    <div className="flex flex-col items-center">
-                      <span className="mt-1.5 size-1.5 shrink-0 rounded-full bg-pine" />
-                      {i < all.length - 1 && <span className="w-px flex-1 bg-hairline" />}
-                    </div>
-                    <div className="pb-5">
-                      <p className="text-[13.5px] font-medium">{event.title}</p>
-                      <p className="mt-0.5 text-[12.5px] leading-relaxed text-muted">{event.detail}</p>
-                      <p className="tnum mt-1 text-[11px] text-muted">{formatDate(event.date)}</p>
-                    </div>
-                  </li>
-                ))}
-              </ol>
-            </section>
-
-            <section>
-              <h3 className="mb-3 text-[11px] font-semibold tracking-[0.12em] text-muted uppercase">Documents</h3>
-              {employee.documents.length === 0 ? (
-                <p className="text-[13px] text-muted">No documents uploaded.</p>
-              ) : (
-                <ul className="overflow-hidden rounded-card border border-hairline bg-surface">
-                  {employee.documents.map((doc) => (
-                    <li
-                      key={doc.id}
-                      className="flex items-center gap-3 border-b border-hairline px-3.5 py-3 last:border-0"
-                    >
-                      <FileText size={15} className="shrink-0 text-muted" aria-hidden="true" />
-                      <div className="min-w-0 flex-1">
-                        <p className="truncate text-[13px] font-medium">{doc.name}</p>
-                        <p className="tnum mt-0.5 text-[11px] text-muted">
-                          {doc.category} · {doc.sizeKb} KB
-                        </p>
+            {/* Tab content rendering */}
+            <section className="min-h-[220px]">
+              {activeTab === 'profile' && (
+                <div className="space-y-5">
+                  <h3 className="mb-3 text-[11px] font-semibold tracking-[0.12em] text-muted uppercase">Personal Profile</h3>
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <Field icon={Mail} label="Email" value={employee.email} />
+                    <Field icon={Phone} label="Phone" value={employee.phone || '—'} />
+                  </div>
+                  <div className="border-t border-hairline pt-3">
+                    <p className="text-[11px] text-muted font-bold uppercase mb-1">Home Address</p>
+                    <p className="text-[13.5px] font-medium">{employee.homeAddress || '—'}</p>
+                  </div>
+                  {employee.financialDetails && (
+                    <div className="border-t border-hairline pt-3">
+                      <p className="text-[11px] text-muted font-bold uppercase mb-2">Bank / Financial Details</p>
+                      <div className="grid gap-3 sm:grid-cols-2 bg-wash/30 p-3 rounded-ctl border border-hairline">
+                        <div className="text-[13px]"><span className="text-muted">Bank Name:</span> {employee.financialDetails.bankName || '—'}</div>
+                        <div className="text-[13px]"><span className="text-muted">Account Name:</span> {employee.financialDetails.accName || '—'}</div>
+                        <div className="text-[13px]"><span className="text-muted">Account Number:</span> {employee.financialDetails.accNumber || '—'}</div>
+                        <div className="text-[13px]"><span className="text-muted">IFSC Code:</span> {employee.financialDetails.ifscCode || '—'}</div>
                       </div>
-                      <button
-                        type="button"
-                        aria-label={`Download ${doc.name}`}
-                        className="inline-flex size-8 shrink-0 items-center justify-center rounded-ctl border border-hairline-strong bg-surface text-muted transition-colors hover:border-pine hover:text-pine"
-                      >
-                        <Download size={13} />
-                      </button>
-                    </li>
-                  ))}
-                </ul>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {activeTab === 'employment' && (
+                <div className="space-y-5">
+                  <h3 className="mb-3 text-[11px] font-semibold tracking-[0.12em] text-muted uppercase">Employment Details</h3>
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <Field icon={Building2} label="Department" value={employee.department} />
+                    <Field icon={Briefcase} label="Employment Type" value={EMPLOYMENT_TYPE_LABEL[employee.employmentType] || '—'} />
+                    <Field icon={MapPin} label="Work Location" value={employee.location || '—'} />
+                    <Field icon={User} label="Reporting Manager" value={employee.managerName || '—'} />
+                  </div>
+                  <div className="border-t border-hairline pt-3 text-[12px] text-muted">
+                    Joined Alderway Labs on {formatDate(employee.joinedAt)}
+                  </div>
+                </div>
+              )}
+
+              {activeTab === 'attendance' && (
+                <div className="space-y-4">
+                  <h3 className="text-[11px] font-semibold tracking-[0.12em] text-muted uppercase">Recent Logs</h3>
+                  {tabLoading ? (
+                    <div className="flex justify-center py-8"><Loader2 className="animate-spin text-muted" size={20} /></div>
+                  ) : !attendance || attendance.length === 0 ? (
+                    <p className="text-[13px] text-muted text-center py-6">No attendance logs found.</p>
+                  ) : (
+                    <div className="overflow-x-auto rounded-ctl border border-hairline bg-surface">
+                      <table className="w-full text-left text-xs">
+                        <thead className="bg-wash border-b border-hairline text-muted uppercase text-[9px] font-bold">
+                          <tr>
+                            <th className="p-2.5">Date</th>
+                            <th className="p-2.5">Check In</th>
+                            <th className="p-2.5">Check Out</th>
+                            <th className="p-2.5 text-right">Status</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-hairline">
+                          {attendance.map((r: any) => {
+                            const checkInStr = r.checkIn ? new Date(r.checkIn).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '—'
+                            const checkOutStr = r.checkOut ? new Date(r.checkOut).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '—'
+                            return (
+                              <tr key={r.id}>
+                                <td className="p-2.5 font-medium">{r.date}</td>
+                                <td className="p-2.5 text-muted">{checkInStr}</td>
+                                <td className="p-2.5 text-muted">{checkOutStr}</td>
+                                <td className="p-2.5 text-right">
+                                  <span className="px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-green-100 text-green-800">
+                                    PRESENT
+                                  </span>
+                                </td>
+                              </tr>
+                            )
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {activeTab === 'leave' && (
+                <div className="space-y-4">
+                  <h3 className="text-[11px] font-semibold tracking-[0.12em] text-muted uppercase">Leave History</h3>
+                  {tabLoading ? (
+                    <div className="flex justify-center py-8"><Loader2 className="animate-spin text-muted" size={20} /></div>
+                  ) : !leaves || leaves.length === 0 ? (
+                    <p className="text-[13px] text-muted text-center py-6">No leave applications found.</p>
+                  ) : (
+                    <div className="space-y-3">
+                      {leaves.map((l: any) => (
+                        <div key={l.id} className="border border-hairline p-3 rounded-ctl bg-wash/10 space-y-1">
+                          <div className="flex justify-between items-center">
+                            <span className="font-semibold text-[13px]">{l.type} LEAVE</span>
+                            <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold ${
+                              l.status === 'APPROVED' ? 'bg-emerald-100 text-emerald-800' :
+                              l.status === 'REJECTED' ? 'bg-clay/10 text-clay' :
+                              'bg-amber-100 text-amber-800'
+                            }`}>
+                              {l.status}
+                            </span>
+                          </div>
+                          <p className="text-xs text-muted">
+                            {new Date(l.startDate).toLocaleDateString('en-GB')} to {new Date(l.endDate).toLocaleDateString('en-GB')}
+                          </p>
+                          {l.reason && <p className="text-[12.5px] italic text-muted mt-1">"{l.reason}"</p>}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {activeTab === 'documents' && (
+                <div className="space-y-4">
+                  <h3 className="text-[11px] font-semibold tracking-[0.12em] text-muted uppercase">Employee Attachments</h3>
+                  {tabLoading ? (
+                    <div className="flex justify-center py-8"><Loader2 className="animate-spin text-muted" size={20} /></div>
+                  ) : !docs || docs.length === 0 ? (
+                    <p className="text-[13px] text-muted text-center py-6">No documents uploaded.</p>
+                  ) : (
+                    <ul className="overflow-hidden rounded-ctl border border-hairline bg-surface">
+                      {docs.map((doc: any) => (
+                        <li key={doc.id} className="flex items-center gap-3 border-b border-hairline px-3.5 py-3 last:border-0">
+                          <FileText size={15} className="shrink-0 text-muted" />
+                          <div className="min-w-0 flex-1">
+                            <p className="truncate text-[13px] font-medium">{doc.name}</p>
+                            <p className="tnum mt-0.5 text-[11px] text-muted">
+                              {doc.category} · {doc.sizeKb} KB
+                            </p>
+                          </div>
+                          <a
+                            href={doc.cloudinaryUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            aria-label={`Download ${doc.name}`}
+                            className="inline-flex size-8 shrink-0 items-center justify-center rounded-ctl border border-hairline bg-surface text-muted transition-colors hover:border-pine hover:text-pine"
+                          >
+                            <Download size={13} />
+                          </a>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              )}
+
+              {activeTab === 'performance' && (
+                <div className="space-y-5">
+                  <h3 className="text-[11px] font-semibold tracking-[0.12em] text-muted uppercase">Target Appraisals</h3>
+                  {tabLoading ? (
+                    <div className="flex justify-center py-8"><Loader2 className="animate-spin text-muted" size={20} /></div>
+                  ) : !performance ? (
+                    <p className="text-[13px] text-muted text-center py-6">No performance records found.</p>
+                  ) : (
+                    <div className="space-y-5">
+                      <div>
+                        <h4 className="text-[11px] font-bold text-muted uppercase tracking-[0.1em] mb-2">Cycle Goals</h4>
+                        {performance.goals.length === 0 ? (
+                          <p className="text-xs text-muted">No goals set for this cycle.</p>
+                        ) : (
+                          <div className="space-y-3">
+                            {performance.goals.map((g: any) => (
+                              <div key={g.id} className="border border-hairline p-3 rounded-ctl space-y-2">
+                                <div className="flex justify-between items-center text-xs">
+                                  <span className="font-semibold">{g.title}</span>
+                                  <span className="text-muted">Due {g.dueOn}</span>
+                                </div>
+                                <div className="w-full bg-wash h-1.5 rounded-full overflow-hidden">
+                                  <div className="bg-emerald-600 h-full" style={{ width: `${g.progress}%` }} />
+                                </div>
+                                <p className="text-[10px] text-muted text-right">{g.progress}% complete</p>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                      <div className="border-t border-hairline pt-3">
+                        <h4 className="text-[11px] font-bold text-muted uppercase tracking-[0.1em] mb-2">Reviews</h4>
+                        {performance.reviews.length === 0 ? (
+                          <p className="text-xs text-muted">No reviews submitted.</p>
+                        ) : (
+                          <div className="space-y-3">
+                            {performance.reviews.map((r: any) => (
+                              <div key={r.id} className="border border-hairline p-3 bg-wash/30 rounded-ctl space-y-1">
+                                <div className="flex justify-between items-center">
+                                  <span className="text-[12px] font-semibold text-emerald-700">Rating: {r.rating} / 5</span>
+                                  <span className="text-[10px] text-muted">{new Date(r.createdAt).toLocaleDateString()}</span>
+                                </div>
+                                <p className="text-[12.5px] leading-relaxed text-muted">{r.summary}</p>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {activeTab === 'payroll' && (
+                <div className="space-y-4">
+                  <h3 className="text-[11px] font-semibold tracking-[0.12em] text-muted uppercase">Salary Slips</h3>
+                  {tabLoading ? (
+                    <div className="flex justify-center py-8"><Loader2 className="animate-spin text-muted" size={20} /></div>
+                  ) : !payroll || payroll.length === 0 ? (
+                    <p className="text-[13px] text-muted text-center py-6">No payslips found.</p>
+                  ) : (
+                    <div className="space-y-3">
+                      {payroll.map((p: any) => (
+                        <div key={p.id} className="flex items-center justify-between border border-hairline p-3 rounded-ctl bg-wash/10">
+                          <div>
+                            <p className="font-semibold text-[13px]">{p.month}</p>
+                            <p className="text-[10px] text-muted uppercase font-bold">{p.status}</p>
+                          </div>
+                          <div className="text-right">
+                            {p.snapshot && (
+                              <>
+                                <p className="font-medium text-[13.5px]">Net: £{p.snapshot.netSalary.toLocaleString()}</p>
+                                <p className="text-[10px] text-muted">Gross: £{p.snapshot.grossEarnings.toLocaleString()}</p>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {activeTab === 'history' && (
+                <div className="space-y-5">
+                  <h3 className="text-[11px] font-semibold tracking-[0.12em] text-muted uppercase">Activity & Timeline</h3>
+                  {tabLoading ? (
+                    <div className="flex justify-center py-8"><Loader2 className="animate-spin text-muted" size={20} /></div>
+                  ) : !historyData ? (
+                    <p className="text-[13px] text-muted text-center py-6">No history data found.</p>
+                  ) : (
+                    <div className="space-y-6">
+                      <div>
+                        <h4 className="text-[11px] font-bold text-muted uppercase tracking-[0.1em] mb-3">Employment Timeline</h4>
+                        <ol className="space-y-0">
+                          {historyData.employmentHistory.map((event: any, i: number, all: any[]) => (
+                            <li key={event.id} className="flex gap-3">
+                              <div className="flex flex-col items-center">
+                                <span className="mt-1.5 size-1.5 shrink-0 rounded-full bg-pine" />
+                                {i < all.length - 1 && <span className="w-px flex-1 bg-hairline" />}
+                              </div>
+                              <div className="pb-4">
+                                <p className="text-[13.5px] font-medium">{event.title}</p>
+                                <p className="mt-0.5 text-[12.5px] leading-relaxed text-muted">{event.detail}</p>
+                                <p className="tnum mt-1 text-[11px] text-muted">{formatDate(event.date)}</p>
+                              </div>
+                            </li>
+                          ))}
+                        </ol>
+                      </div>
+                      {historyData.auditLogs.length > 0 && (
+                        <div className="border-t border-hairline pt-4">
+                          <h4 className="text-[11px] font-bold text-muted uppercase tracking-[0.1em] mb-3">Audit Logs (System)</h4>
+                          <div className="space-y-2.5 max-h-60 overflow-y-auto pr-1">
+                            {historyData.auditLogs.map((log: any) => (
+                              <div key={log.id} className="text-[12px] border border-hairline p-2.5 rounded-ctl bg-wash/30 space-y-1">
+                                <div className="flex justify-between text-muted text-[10px]">
+                                  <span className="font-semibold text-ink uppercase">{log.action}</span>
+                                  <span>{new Date(log.timestamp).toLocaleString()}</span>
+                                </div>
+                                <p className="text-muted"><span className="text-ink">Actor:</span> {log.userEmail}</p>
+                                {log.details && (
+                                  <p className="font-mono text-[10px] text-muted break-all mt-1 bg-wash p-1 rounded-ctl">
+                                    {log.details}
+                                  </p>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
               )}
             </section>
           </div>

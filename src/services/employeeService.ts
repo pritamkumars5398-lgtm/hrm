@@ -130,10 +130,11 @@ function applyQuery(source: Employee[], query: EmployeeQuery): Paginated<Employe
  * keeps the same interface either way.
  */
 export const employeeService = {
-  async getAll(query: EmployeeQuery = {}): Promise<Paginated<Employee>> {
+  async getAll(query: EmployeeQuery = {}, apiStatus?: 'ACTIVE' | 'INACTIVE' | 'ALL'): Promise<Paginated<Employee>> {
     if (hasBackend) {
       try {
-        const { data } = await apiClient.get<Employee[]>('/employees')
+        const params = apiStatus ? { status: apiStatus } : {}
+        const { data } = await apiClient.get<Employee[]>('/employees', { params })
         return applyQuery(data, query)
       } catch (error) {
         throw new EmployeeError(apiErrorMessage(error, 'We could not load the employee directory.'))
@@ -208,6 +209,62 @@ export const employeeService = {
 
     await delay()
     mockState = mockState.filter((e) => e.id !== id)
+  },
+
+  // ── Sub-resource fetchers (real API only) ──────────────────────────────
+
+  async getAttendance(id: string): Promise<any[]> {
+    try {
+      const { data } = await apiClient.get<any[]>(`/employees/${id}/attendance`)
+      return data
+    } catch {
+      return []
+    }
+  },
+
+  async getLeave(id: string): Promise<any[]> {
+    try {
+      const { data } = await apiClient.get<any[]>(`/employees/${id}/leave`)
+      return data
+    } catch {
+      return []
+    }
+  },
+
+  async getPayroll(id: string): Promise<any[]> {
+    try {
+      const { data } = await apiClient.get<any[]>(`/employees/${id}/payroll`)
+      return data
+    } catch {
+      return []
+    }
+  },
+
+  async getPerformance(id: string): Promise<{ goals: any[]; reviews: any[] }> {
+    try {
+      const { data } = await apiClient.get<{ goals: any[]; reviews: any[] }>(`/employees/${id}/performance`)
+      return data
+    } catch {
+      return { goals: [], reviews: [] }
+    }
+  },
+
+  async getDocuments(id: string): Promise<any[]> {
+    try {
+      const { data } = await apiClient.get<any[]>(`/employees/${id}/documents`)
+      return data
+    } catch {
+      return []
+    }
+  },
+
+  async getHistory(id: string): Promise<{ employmentHistory: any[]; auditLogs: any[] }> {
+    try {
+      const { data } = await apiClient.get<{ employmentHistory: any[]; auditLogs: any[] }>(`/employees/${id}/history`)
+      return data
+    } catch {
+      return { employmentHistory: [], auditLogs: [] }
+    }
   },
 
   getDepartmentOptions() {

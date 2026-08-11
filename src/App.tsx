@@ -42,14 +42,36 @@ import FormBuilder from '@/features/forms/FormBuilder'
 import MyFormsPage from '@/features/forms/MyFormsPage'
 import FillFormPage from '@/features/forms/FillFormPage'
 import ComingSoon from '@/shared/components/ComingSoon'
+import { useEffect } from 'react'
 import { registerWorkspaceGetter } from '@/services/apiClient'
 import { useAuthStore } from '@/features/auth/store/authStore'
+import { authService } from '@/services/authService'
 
 // Wire up the active workspace so every API request includes X-Workspace-Id.
 // This runs once at module-load time before any request is made.
 registerWorkspaceGetter(() => useAuthStore.getState().user?.activeOrganizationId)
 
 export default function App() {
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
+  const setSession = useAuthStore((s) => s.setSession)
+  const clearSession = useAuthStore((s) => s.clearSession)
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      authService.me()
+        .then((user) => {
+          if (user) {
+            setSession(user)
+          } else {
+            clearSession()
+          }
+        })
+        .catch(() => {
+          clearSession()
+        })
+    }
+  }, [isAuthenticated, setSession, clearSession])
+
   return (
     <Routes>
       <Route path="/" element={<LandingPage />} />

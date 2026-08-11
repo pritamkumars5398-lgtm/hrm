@@ -88,10 +88,13 @@ export function deriveRole(permissions: string[]): Role {
 }
 
 /** Maps a raw backend/mock User into SessionUser. */
-function toSessionUser(user: User): SessionUser {
+function toSessionUser(user: User, preferredActiveOrgId?: string | null): SessionUser {
   // Real backend path — user has memberships[].
   if (user.memberships && user.memberships.length > 0) {
-    const activeMem = user.memberships[0]!
+    const hasPreferred = preferredActiveOrgId && user.memberships.some((m) => m.organizationId === preferredActiveOrgId);
+    const activeMem = hasPreferred
+      ? user.memberships.find((m) => m.organizationId === preferredActiveOrgId)!
+      : user.memberships[0]!;
     return {
       id: user.id,
       email: user.email,
@@ -129,14 +132,15 @@ function toSessionUser(user: User): SessionUser {
 
 export const useAuthStore = create<AuthState>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       user: null,
       isAuthenticated: false,
 
       setSession: (user) => {
         // Never let the mock password into the store, let alone into localStorage.
         const { password: _password, ...safe } = user as any
-        set({ user: toSessionUser(safe), isAuthenticated: true })
+        const currentActive = get().user?.activeOrganizationId
+        set({ user: toSessionUser(safe, currentActive), isAuthenticated: true })
       },
 
       setActiveOrg: (organizationId) =>

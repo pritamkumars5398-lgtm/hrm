@@ -2,7 +2,7 @@ import { motion, useReducedMotion } from 'framer-motion'
 import { ArrowRight, Sparkles } from 'lucide-react'
 import Button from '@/shared/components/Button'
 import Container from '@/shared/components/Container'
-import Banner from '../../../../public/banner4.png'
+const Banner = '/banner4.png'
 
 const logoItems = [
   {
