@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { ArrowLeft, Send, CheckCircle2, Star, Upload, AlertTriangle, ShieldCheck } from 'lucide-react'
 import { useAuthStore } from '@/features/auth/store/authStore'
@@ -8,7 +8,11 @@ export default function FillFormPage() {
   const navigate = useNavigate()
   const user = useAuthStore((s) => s.user)
   const { formId } = useParams<{ formId: string }>()
-  const { forms, submitResponse, hasUserSubmitted } = useFormStore()
+  const { forms, submitResponse, hasUserSubmitted, fetchForms } = useFormStore()
+
+  useEffect(() => {
+    fetchForms()
+  }, [fetchForms])
 
   // Find form definition or fallback
   const form = forms.find((f) => f.id === formId) || forms[0]

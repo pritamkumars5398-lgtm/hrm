@@ -1,5 +1,8 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Laptop, Plus, Search, Filter, Wrench, CheckCircle, Clock, ShieldCheck, UserCheck, AlertTriangle } from 'lucide-react'
+import { hasBackend } from '@/config/env'
+import { assetService } from '@/services/assetService'
+import { employeeService } from '@/services/employeeService'
 
 type Asset = {
   id: string
@@ -7,45 +10,110 @@ type Asset = {
   name: string
   category: 'Laptop' | 'Desktop' | 'Mobile' | 'SIM' | 'Accessory' | 'License'
   assignedTo: string
+  assignedToId?: string | null
   status: 'AVAILABLE' | 'ASSIGNED' | 'REPAIR' | 'RETIRED'
-  serialNumber: string
-  purchaseDate: string
+  serialNumber?: string | null
 }
 
 const INITIAL_ASSETS: Asset[] = [
-  { id: 'ast-1', assetTag: 'AST-MAC-01', name: 'MacBook Pro M3 Max 16"', category: 'Laptop', assignedTo: 'Priya Sharma', status: 'ASSIGNED', serialNumber: 'C02GX001XYZ', purchaseDate: '2025-01-10' },
-  { id: 'ast-2', assetTag: 'AST-DEL-04', name: 'Dell XPS 15 9530', category: 'Laptop', assignedTo: 'Rahul Mehta', status: 'ASSIGNED', serialNumber: 'DLXPS88721', purchaseDate: '2024-08-15' },
-  { id: 'ast-3', assetTag: 'AST-MON-09', name: 'Dell UltraSharp 27" 4K', category: 'Accessory', assignedTo: 'Unassigned', status: 'AVAILABLE', serialNumber: 'CN0981273', purchaseDate: '2025-03-01' },
-  { id: 'ast-4', assetTag: 'AST-PHN-02', name: 'iPhone 15 Pro 256GB', category: 'Mobile', assignedTo: 'Amit Kumar', status: 'REPAIR', serialNumber: 'F2LXYZ9812', purchaseDate: '2024-11-20' },
+  { id: 'ast-1', assetTag: 'AST-MAC-01', name: 'MacBook Pro M3 Max 16"', category: 'Laptop', assignedTo: 'Priya Sharma', status: 'ASSIGNED', serialNumber: 'C02GX001XYZ' },
+  { id: 'ast-2', assetTag: 'AST-DEL-04', name: 'Dell XPS 15 9530', category: 'Laptop', assignedTo: 'Rahul Mehta', status: 'ASSIGNED', serialNumber: 'DLXPS88721' },
+  { id: 'ast-3', assetTag: 'AST-MON-09', name: 'Dell UltraSharp 27" 4K', category: 'Accessory', assignedTo: 'Unassigned', status: 'AVAILABLE', serialNumber: 'CN0981273' },
+  { id: 'ast-4', assetTag: 'AST-PHN-02', name: 'iPhone 15 Pro 256GB', category: 'Mobile', assignedTo: 'Amit Kumar', status: 'REPAIR', serialNumber: 'F2LXYZ9812' },
 ]
 
 export default function AssetsPage() {
   const [assets, setAssets] = useState<Asset[]>(INITIAL_ASSETS)
+  const [employees, setEmployees] = useState<any[]>([])
   const [search, setSearch] = useState('')
   const [showAddModal, setShowAddModal] = useState(false)
   const [name, setName] = useState('')
   const [category, setCategory] = useState<Asset['category']>('Laptop')
 
-  const handleAdd = (e: React.FormEvent) => {
+  useEffect(() => {
+    async function loadData() {
+      if (hasBackend) {
+        try {
+          const list = await assetService.listAssets()
+          setAssets(list.length > 0 ? list : INITIAL_ASSETS)
+          const emps = await employeeService.listEmployees()
+          setEmployees(emps)
+        } catch (err) {
+          console.error(err)
+        }
+      }
+    }
+    loadData()
+  }, [])
+
+  const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!name.trim()) return
-    const newA: Asset = {
-      id: `ast-${Date.now()}`,
-      assetTag: `AST-${category.slice(0, 3).toUpperCase()}-${Math.floor(10 + Math.random() * 90)}`,
-      name,
-      category,
-      assignedTo: 'Unassigned',
-      status: 'AVAILABLE',
-      serialNumber: `SN${Math.floor(100000 + Math.random() * 900000)}`,
-      purchaseDate: new Date().toISOString().split('T')[0]
+    try {
+      let newA: any
+      if (hasBackend) {
+        newA = await assetService.createAsset({
+          name,
+          category,
+        })
+      } else {
+        newA = {
+          id: `ast-${Date.now()}`,
+          assetTag: `AST-${category.slice(0, 3).toUpperCase()}-${Math.floor(10 + Math.random() * 90)}`,
+          name,
+          category,
+          assignedTo: 'Unassigned',
+          status: 'AVAILABLE',
+          serialNumber: `SN${Math.floor(100000 + Math.random() * 900000)}`,
+        }
+      }
+      setAssets([newA, ...assets])
+      setName('')
+      setShowAddModal(false)
+    } catch (err) {
+      alert(err instanceof Error ? err.message : String(err))
     }
-    setAssets([newA, ...assets])
-    setName('')
-    setShowAddModal(false)
   }
 
-  const handleStatusChange = (id: string, newStatus: Asset['status']) => {
-    setAssets(prev => prev.map(a => a.id === id ? { ...a, status: newStatus } : a))
+  const handleStatusChange = async (id: string, newStatus: Asset['status']) => {
+    let assignedToId: string | undefined = undefined
+    if (newStatus === 'ASSIGNED') {
+      if (employees.length === 0) {
+        alert('No employees found in the directory to assign the asset to.')
+        return
+      }
+      const optionsStr = employees.map((e, idx) => `${idx + 1}. ${e.firstName} ${e.lastName} (ID: ${e.id})`).join('\n')
+      const selection = prompt(`Select an employee number to assign:\n\n${optionsStr}`)
+      if (!selection) return
+      const idx = parseInt(selection) - 1
+      if (idx >= 0 && idx < employees.length) {
+        assignedToId = employees[idx].id
+      } else {
+        alert('Invalid employee selection.')
+        return
+      }
+    }
+
+    setAssets(prev => prev.map(a => {
+      if (a.id === id) {
+        const emp = employees.find(e => e.id === assignedToId)
+        return {
+          ...a,
+          status: newStatus,
+          assignedTo: emp ? `${emp.firstName} ${emp.lastName}` : 'Unassigned',
+          assignedToId
+        }
+      }
+      return a
+    }))
+
+    if (hasBackend) {
+      try {
+        await assetService.updateAssetStatus(id, newStatus, assignedToId)
+      } catch (err) {
+        alert(err instanceof Error ? err.message : String(err))
+      }
+    }
   }
 
   const filtered = assets.filter(

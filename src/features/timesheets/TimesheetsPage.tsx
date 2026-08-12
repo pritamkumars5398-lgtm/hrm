@@ -1,5 +1,7 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Timer, Calendar, CheckCircle, Clock, Plus, Filter, Save, Send, ShieldAlert } from 'lucide-react'
+import { hasBackend } from '@/config/env'
+import { timesheetService } from '@/services/timesheetService'
 
 type TimeRow = {
   id: string
@@ -17,9 +19,26 @@ const INITIAL_ROWS: TimeRow[] = [
 
 export default function TimesheetsPage() {
   const [rows, setRows] = useState<TimeRow[]>(INITIAL_ROWS)
-  const [status, setStatus] = useState<'DRAFT' | 'SUBMITTED' | 'APPROVED'>('DRAFT')
+  const [status, setStatus] = useState<'DRAFT' | 'SUBMITTED' | 'APPROVED' | 'REJECTED'>('DRAFT')
+  const [timesheetId, setTimesheetId] = useState('')
 
-  const days = ['Mon (Aug 3)', 'Tue (Aug 4)', 'Wed (Aug 5)', 'Thu (Aug 6)', 'Fri (Aug 7)', 'Sat (Aug 8)', 'Sun (Aug 9)']
+  useEffect(() => {
+    async function loadData() {
+      if (hasBackend) {
+        try {
+          const data = await timesheetService.getTimesheet('2026-08-03')
+          if (data.id) {
+            setTimesheetId(data.id)
+            setRows(data.rows.length > 0 ? data.rows : INITIAL_ROWS)
+            setStatus(data.status)
+          }
+        } catch (err) {
+          console.error(err)
+        }
+      }
+    }
+    loadData()
+  }, [])
 
   const handleHourChange = (rowId: string, dayIdx: number, val: number) => {
     setRows(prev => prev.map(r => {
@@ -44,9 +63,55 @@ export default function TimesheetsPage() {
     setRows([...rows, newRow])
   }
 
+  const handleSaveDraft = async () => {
+    try {
+      if (hasBackend) {
+        const saved = await timesheetService.saveTimesheet({
+          weekStartDate: '2026-08-03',
+          rows,
+        })
+        setTimesheetId(saved.id)
+        alert('Draft timesheet saved successfully!')
+      } else {
+        alert('Draft saved locally (mock mode).')
+      }
+    } catch (err) {
+      alert(err instanceof Error ? err.message : String(err))
+    }
+  }
+
+  const handleSubmitApproval = async () => {
+    try {
+      if (hasBackend) {
+        const saved = await timesheetService.saveTimesheet({
+          weekStartDate: '2026-08-03',
+          rows,
+        })
+        await timesheetService.updateStatus(saved.id, 'SUBMITTED')
+        setTimesheetId(saved.id)
+      }
+      setStatus('SUBMITTED')
+    } catch (err) {
+      alert(err instanceof Error ? err.message : String(err))
+    }
+  }
+
+  const handleApprove = async () => {
+    try {
+      if (hasBackend && timesheetId) {
+        await timesheetService.updateStatus(timesheetId, 'APPROVED')
+      }
+      setStatus('APPROVED')
+    } catch (err) {
+      alert(err instanceof Error ? err.message : String(err))
+    }
+  }
+
   const calculateTotal = (row: TimeRow) => row.hours.reduce((a, b) => a + b, 0)
   const grandTotal = rows.reduce((acc, r) => acc + calculateTotal(r), 0)
   const billableTotal = rows.filter(r => r.isBillable).reduce((acc, r) => acc + calculateTotal(r), 0)
+
+  const days = ['Mon (Aug 3)', 'Tue (Aug 4)', 'Wed (Aug 5)', 'Thu (Aug 6)', 'Fri (Aug 7)', 'Sat (Aug 8)', 'Sun (Aug 9)']
 
   return (
     <div className="space-y-6">
@@ -61,16 +126,24 @@ export default function TimesheetsPage() {
         </div>
         <div className="flex items-center gap-2">
           {status === 'DRAFT' && (
-            <button
-              onClick={() => setStatus('SUBMITTED')}
-              className="flex items-center gap-2 bg-indigo-500 hover:bg-indigo-400 text-white font-bold px-4 py-2.5 rounded-xl transition cursor-pointer text-xs shadow-md"
-            >
-              <Send size={15} /> Submit for Approval
-            </button>
+            <>
+              <button
+                onClick={handleSaveDraft}
+                className="flex items-center gap-2 bg-slate-800 hover:bg-slate-700 text-white font-semibold px-4 py-2.5 rounded-xl transition cursor-pointer text-xs border border-indigo-500/30"
+              >
+                <Save size={15} /> Save Draft
+              </button>
+              <button
+                onClick={handleSubmitApproval}
+                className="flex items-center gap-2 bg-indigo-500 hover:bg-indigo-400 text-white font-bold px-4 py-2.5 rounded-xl transition cursor-pointer text-xs shadow-md"
+              >
+                <Send size={15} /> Submit for Approval
+              </button>
+            </>
           )}
           {status === 'SUBMITTED' && (
             <button
-              onClick={() => setStatus('APPROVED')}
+              onClick={handleApprove}
               className="flex items-center gap-2 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold px-4 py-2.5 rounded-xl transition cursor-pointer text-xs shadow-md"
             >
               <CheckCircle size={15} /> Manager Approve

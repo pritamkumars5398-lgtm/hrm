@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import {
   Briefcase,
@@ -15,6 +15,8 @@ import {
   Download,
   Building,
 } from 'lucide-react'
+import { hasBackend } from '@/config/env'
+import { recruitmentService } from '@/services/recruitmentService'
 
 type Job = {
   id: string
@@ -62,26 +64,97 @@ export default function RecruitmentPage() {
   const [newJobTitle, setNewJobTitle] = useState('')
   const [newJobDept, setNewJobDept] = useState('Engineering')
 
-  const handleAddJob = (e: React.FormEvent) => {
+  useEffect(() => {
+    async function loadData() {
+      if (hasBackend) {
+        try {
+          const fetchedJobs = await recruitmentService.listJobs()
+          const fetchedCandidates = await recruitmentService.listCandidates()
+          const uiJobs = fetchedJobs.length > 0 ? fetchedJobs.map(j => ({
+            id: j.id,
+            title: j.title,
+            department: j.department,
+            location: j.location,
+            headcount: j.headcount,
+            applicantsCount: fetchedCandidates.filter(c => c.requisitionId === j.id).length,
+            status: j.status,
+            type: 'Full-time'
+          })) : INITIAL_JOBS;
+
+          const uiCandidates = fetchedCandidates.map(c => {
+            const job = uiJobs.find(j => j.id === c.requisitionId);
+            return {
+              id: c.id,
+              name: c.name,
+              email: c.email,
+              jobTitle: job ? job.title : 'Position',
+              stage: c.stage,
+              aiScore: 85,
+              experience: '3 yrs',
+              appliedDate: '2026-08-12',
+            };
+          });
+          setJobs(uiJobs);
+          setCandidates(uiCandidates.length > 0 ? uiCandidates : INITIAL_CANDIDATES);
+        } catch (err) {
+          console.error(err);
+        }
+      }
+    }
+    loadData()
+  }, [])
+
+  const handleAddJob = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!newJobTitle.trim()) return
-    const newJ: Job = {
-      id: `job-${Date.now()}`,
-      title: newJobTitle,
-      department: newJobDept,
-      location: 'Hybrid',
-      headcount: 1,
-      applicantsCount: 0,
-      status: 'OPEN',
-      type: 'Full-time'
+    try {
+      let newJ: any;
+      if (hasBackend) {
+        const created = await recruitmentService.createJob({
+          title: newJobTitle,
+          department: newJobDept,
+          location: 'Hybrid',
+          headcount: 1,
+        })
+        newJ = {
+          id: created.id,
+          title: created.title,
+          department: created.department,
+          location: created.location,
+          headcount: created.headcount,
+          applicantsCount: 0,
+          status: created.status,
+          type: 'Full-time'
+        }
+      } else {
+        newJ = {
+          id: `job-${Date.now()}`,
+          title: newJobTitle,
+          department: newJobDept,
+          location: 'Hybrid',
+          headcount: 1,
+          applicantsCount: 0,
+          status: 'OPEN',
+          type: 'Full-time'
+        }
+      }
+      setJobs([newJ, ...jobs])
+      setNewJobTitle('')
+      setShowNewJobModal(false)
+    } catch (err) {
+      alert(err instanceof Error ? err.message : String(err))
     }
-    setJobs([newJ, ...jobs])
-    setNewJobTitle('')
-    setShowNewJobModal(false)
   }
 
-  const handleStageChange = (candId: string, newStage: Candidate['stage']) => {
+  const handleStageChange = async (candId: string, newStage: Candidate['stage']) => {
     setCandidates(prev => prev.map(c => c.id === candId ? { ...c, stage: newStage } : c))
+    if (hasBackend) {
+      try {
+        await recruitmentService.updateStage(candId, newStage)
+      } catch (err) {
+        alert(err instanceof Error ? err.message : String(err))
+      }
+    }
   }
 
   const filteredCandidates = candidates.filter(

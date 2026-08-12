@@ -1,4 +1,6 @@
 import { create } from 'zustand'
+import { hasBackend } from '@/config/env'
+import { formsService } from '@/services/formsService'
 
 export type FormFieldType =
   | 'TEXT'
@@ -22,7 +24,7 @@ export type FormResponse = {
   formId: string
   respondentName: string
   submittedAt: string
-  answers: Record<string, string | number>
+  answers: Record<string, string | number | boolean>
 }
 
 export type FormDefinition = {
@@ -37,9 +39,11 @@ export type FormDefinition = {
 
 type FormStore = {
   forms: FormDefinition[]
-  addForm: (form: Omit<FormDefinition, 'id' | 'responses' | 'createdAt'>) => FormDefinition
-  deleteForm: (id: string) => void
-  submitResponse: (formId: string, respondentName: string, answers: Record<string, string | number>) => void
+  loading: boolean
+  fetchForms: () => Promise<void>
+  addForm: (form: Omit<FormDefinition, 'id' | 'responses' | 'createdAt'>) => Promise<FormDefinition>
+  deleteForm: (id: string) => Promise<void>
+  submitResponse: (formId: string, respondentName: string, answers: Record<string, string | number>) => Promise<void>
   hasUserSubmitted: (formId: string, respondentName: string) => FormResponse | undefined
 }
 
@@ -90,8 +94,31 @@ const INITIAL_FORMS: FormDefinition[] = [
 
 export const useFormStore = create<FormStore>((set, get) => ({
   forms: INITIAL_FORMS,
+  loading: false,
 
-  addForm: (data) => {
+  fetchForms: async () => {
+    if (!hasBackend) return
+    set({ loading: true })
+    try {
+      const backendForms = await formsService.listForms()
+      set({ forms: backendForms.length > 0 ? backendForms : INITIAL_FORMS })
+    } catch (err) {
+      console.error('Failed to fetch forms:', err)
+    } finally {
+      set({ loading: false })
+    }
+  },
+
+  addForm: async (data) => {
+    if (hasBackend) {
+      try {
+        const created = await formsService.createForm(data)
+        set({ forms: [created, ...get().forms] })
+        return created
+      } catch (err) {
+        console.error('Failed to create form:', err)
+      }
+    }
     const newForm: FormDefinition = {
       ...data,
       id: `form-${Date.now()}`,
@@ -102,7 +129,14 @@ export const useFormStore = create<FormStore>((set, get) => ({
     return newForm
   },
 
-  deleteForm: (id) => {
+  deleteForm: async (id) => {
+    if (hasBackend) {
+      try {
+        await formsService.deleteForm(id)
+      } catch (err) {
+        console.error('Failed to delete form:', err)
+      }
+    }
     set({ forms: get().forms.filter((f) => f.id !== id) })
   },
 
@@ -114,16 +148,26 @@ export const useFormStore = create<FormStore>((set, get) => ({
     )
   },
 
-  submitResponse: (formId, respondentName, answers) => {
+  submitResponse: async (formId, respondentName, answers) => {
     const existing = get().hasUserSubmitted(formId, respondentName)
     if (existing) return
 
-    const newResp: FormResponse = {
-      id: `resp-${Date.now()}`,
-      formId,
-      respondentName: respondentName.trim(),
-      submittedAt: new Date().toLocaleString(),
-      answers,
+    let newResp: FormResponse
+    if (hasBackend) {
+      try {
+        newResp = await formsService.submitResponse(formId, respondentName, answers)
+      } catch (err) {
+        console.error('Failed to submit response:', err)
+        return
+      }
+    } else {
+      newResp = {
+        id: `resp-${Date.now()}`,
+        formId,
+        respondentName: respondentName.trim(),
+        submittedAt: new Date().toLocaleString(),
+        answers,
+      }
     }
 
     set({

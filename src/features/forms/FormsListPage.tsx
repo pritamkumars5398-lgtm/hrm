@@ -1,11 +1,15 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { FormInput, Plus, Share2, Copy, Check, Send, QrCode, X, Eye, Download, Users, FileText, CheckCircle2 } from 'lucide-react'
 import { useFormStore, type FormDefinition } from './store/formStore'
 
 export default function FormsListPage() {
-  const { forms } = useFormStore()
+  const { forms, fetchForms } = useFormStore()
   const [search, setSearch] = useState('')
+
+  useEffect(() => {
+    fetchForms()
+  }, [fetchForms])
   
   const [sharingForm, setSharingForm] = useState<FormDefinition | null>(null)
   const [inspectingResponses, setInspectingResponses] = useState<FormDefinition | null>(null)
