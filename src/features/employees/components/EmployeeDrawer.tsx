@@ -50,6 +50,8 @@ type EditForm = {
   employmentType: string
   workLocation: string
   startDate: string
+  dob: string
+  gender: string
 }
 
 function deriveForm(e: Employee): EditForm {
@@ -63,6 +65,8 @@ function deriveForm(e: Employee): EditForm {
     employmentType: TYPE_TO_LABEL[e.employmentType] ?? 'Full-time',
     workLocation: e.location,
     startDate: e.joinedAt ? e.joinedAt.slice(0, 10) : '',
+    dob: (e as any).dob || '',
+    gender: (e as any).gender || '',
   }
 }
 
@@ -229,6 +233,8 @@ export default function EmployeeDrawer({
       employmentType: values.employmentType,
       workLocation: values.workLocation,
       startDate: values.startDate,
+      dob: values.dob || undefined,
+      gender: values.gender || undefined,
     }
     try {
       const updated = await employeeService.update(employee.id, patch)
@@ -276,7 +282,21 @@ export default function EmployeeDrawer({
               />
               <Input label="Location" {...register('workLocation')} />
             </div>
-            <Input label="Start Date" type="date" {...register('startDate')} />
+             <div className="grid gap-4 sm:grid-cols-2">
+              <Input label="Start Date" type="date" {...register('startDate')} />
+              <Input label="Date of Birth" type="date" {...register('dob')} />
+            </div>
+            <Select
+              label="Gender"
+              options={[
+                { value: '', label: 'Select gender' },
+                { value: 'Male', label: 'Male' },
+                { value: 'Female', label: 'Female' },
+                { value: 'Other', label: 'Other' },
+              ]}
+              error={errors.gender?.message}
+              {...register('gender')}
+            />
 
             <div className="flex items-center justify-end gap-2 border-t border-hairline pt-4">
               <Button type="button" variant="secondary" onClick={() => setMode('view')}>
@@ -363,19 +383,21 @@ export default function EmployeeDrawer({
                   <div className="grid gap-4 sm:grid-cols-2">
                     <Field icon={Mail} label="Email" value={employee.email} />
                     <Field icon={Phone} label="Phone" value={employee.phone || '—'} />
+                    <Field icon={Calendar} label="Date of Birth" value={(employee as any).dob ? formatDate((employee as any).dob) : '—'} />
+                    <Field icon={User} label="Gender" value={(employee as any).gender || '—'} />
                   </div>
                   <div className="border-t border-hairline pt-3">
                     <p className="text-[11px] text-muted font-bold uppercase mb-1">Home Address</p>
                     <p className="text-[13.5px] font-medium">{employee.homeAddress || '—'}</p>
                   </div>
-                  {employee.financialDetails && (
+                  {(employee as any).financialDetails && (
                     <div className="border-t border-hairline pt-3">
                       <p className="text-[11px] text-muted font-bold uppercase mb-2">Bank / Financial Details</p>
                       <div className="grid gap-3 sm:grid-cols-2 bg-wash/30 p-3 rounded-ctl border border-hairline">
-                        <div className="text-[13px]"><span className="text-muted">Bank Name:</span> {employee.financialDetails.bankName || '—'}</div>
-                        <div className="text-[13px]"><span className="text-muted">Account Name:</span> {employee.financialDetails.accName || '—'}</div>
-                        <div className="text-[13px]"><span className="text-muted">Account Number:</span> {employee.financialDetails.accNumber || '—'}</div>
-                        <div className="text-[13px]"><span className="text-muted">IFSC Code:</span> {employee.financialDetails.ifscCode || '—'}</div>
+                        <div className="text-[13px]"><span className="text-muted">Bank Name:</span> {(employee as any).financialDetails.bankName || '—'}</div>
+                        <div className="text-[13px]"><span className="text-muted">Account Name:</span> {(employee as any).financialDetails.accName || '—'}</div>
+                        <div className="text-[13px]"><span className="text-muted">Account Number:</span> {(employee as any).financialDetails.accNumber || '—'}</div>
+                        <div className="text-[13px]"><span className="text-muted">IFSC Code:</span> {(employee as any).financialDetails.ifscCode || '—'}</div>
                       </div>
                     </div>
                   )}

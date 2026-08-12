@@ -29,8 +29,8 @@ export default function FormerEmployeesPage() {
   return (
     <div className="space-y-6">
       <div className="bg-gradient-to-r from-slate-900 to-slate-800 text-white p-6 rounded-2xl border border-hairline shadow-xl">
-        <h1 className="text-2xl font-bold font-display">Former Employees & Exit Archives</h1>
-        <p className="text-slate-300 text-sm mt-1">Full & Final (F&F) settlement records, exit dates, and relieving letters.</p>
+        <h1 className="text-2xl font-bold font-display">Former Employees &amp; Exit Archives</h1>
+        <p className="text-slate-300 text-sm mt-1">Full &amp; Final (F&amp;F) settlement records, exit dates, and relieving letters.</p>
       </div>
 
       {error && (
@@ -57,13 +57,14 @@ export default function FormerEmployeesPage() {
                 <th className="p-3">Designation</th>
                 <th className="p-3">Department</th>
                 <th className="p-3">Exit Date</th>
-                <th className="p-3">F&F Settlement</th>
+                <th className="p-3">F&amp;F Settlement</th>
                 <th className="p-3 text-right">Relieving Letter</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-hairline">
               {former.map(emp => {
                 const exitDate = emp.joinedAt ? new Date(emp.joinedAt).toLocaleDateString('en-GB') : '—'
+                const photoUrl = (emp as any).photoUrl as string | undefined
                 return (
                   <tr
                     key={emp.id}
@@ -71,8 +72,8 @@ export default function FormerEmployeesPage() {
                     className="hover:bg-wash/30 transition cursor-pointer"
                   >
                     <td className="p-3 font-semibold text-ink flex items-center gap-2">
-                      {emp.photoUrl ? (
-                        <img src={emp.photoUrl} className="size-6 rounded-full object-cover" alt="" />
+                      {photoUrl ? (
+                        <img src={photoUrl} className="size-6 rounded-full object-cover" alt="" />
                       ) : (
                         <span className="inline-flex size-6 items-center justify-center rounded-full bg-pine-tint text-[10px] font-semibold text-pine-deep">
                           {emp.avatarInitials}

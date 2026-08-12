@@ -1,8 +1,12 @@
 
-import { useEffect } from 'react'
-import { AlertCircle, CalendarClock, ChevronLeft, ChevronRight, Clock, UserCheck, UserX, Users } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { useForm } from 'react-hook-form'
+import { AlertCircle, CalendarClock, ChevronLeft, ChevronRight, Clock, UserCheck, UserX, Users, Check } from 'lucide-react'
 import { motion } from 'framer-motion'
 import Card from '@/shared/components/Card'
+import Button from '@/shared/components/Button'
+import Input from '@/shared/components/Input'
+import Modal from '@/shared/components/Modal'
 import { useAuthStore } from '@/features/auth/store/authStore'
 import { hasPermission } from '@/shared/config/navigation'
 import { useAttendanceStore } from './store/attendanceStore'
@@ -135,7 +139,42 @@ export default function AttendancePage() {
     selectDate,
     checkIn,
     checkOut,
+    requestCorrection,
   } = useAttendanceStore()
+
+  const [correctionOpen, setCorrectionOpen] = useState(false)
+  const [correctionError, setCorrectionError] = useState<string | null>(null)
+  const [correctionSuccess, setCorrectionSuccess] = useState(false)
+
+  type CorrectionForm = {
+    date: string
+    checkIn: string
+    checkOut: string
+    reason: string
+  }
+
+  const {
+    register: registerCorrection,
+    handleSubmit: handleSubmitCorrection,
+    reset: resetCorrection,
+    formState: { errors: correctionErrors, isSubmitting: correctionSubmitting },
+  } = useForm<CorrectionForm>()
+
+  const onCorrectionSubmit = handleSubmitCorrection(async (values) => {
+    setCorrectionError(null)
+    setCorrectionSuccess(false)
+    const result = await requestCorrection(viewer, values)
+    if (result.ok) {
+      setCorrectionSuccess(true)
+      resetCorrection()
+      setTimeout(() => {
+        setCorrectionOpen(false)
+        setCorrectionSuccess(false)
+      }, 2000)
+    } else {
+      setCorrectionError(result.error ?? 'Could not submit correction request.')
+    }
+  })
 
   const viewer = { permissions: user.permissions, name: user.name }
   const canManage = hasPermission(user.permissions, 'attendance.manage')
@@ -229,6 +268,7 @@ export default function AttendancePage() {
               name={user.name}
               onCheckIn={() => checkIn(viewer)}
               onCheckOut={() => checkOut(viewer)}
+              onRequestCorrection={() => setCorrectionOpen(true)}
             />
           )}
 
@@ -410,6 +450,86 @@ export default function AttendancePage() {
           </div>
         </>
       )}
+      {/* Attendance Correction Modal */}
+      <Modal
+        open={correctionOpen}
+        onClose={() => {
+          if (!correctionSubmitting) setCorrectionOpen(false)
+        }}
+        title="Request Attendance Correction"
+        description="If you forgot to check in or out, or if your punch times are incorrect, submit a request. This will go to approvals."
+      >
+        <form onSubmit={onCorrectionSubmit} noValidate className="space-y-4">
+          {correctionError && (
+            <div className="flex gap-2 rounded-ctl border border-clay/35 bg-clay/5 p-3 text-[12.5px] text-clay-deep">
+              <AlertCircle size={15} className="mt-px shrink-0 text-clay" />
+              <p>{correctionError}</p>
+            </div>
+          )}
+
+          {correctionSuccess && (
+            <div className="flex gap-2 rounded-ctl border border-emerald-200 bg-emerald-50 p-3 text-[12.5px] text-emerald-800">
+              <Check size={15} className="mt-px shrink-0 text-emerald-600" />
+              <p>Correction request submitted successfully!</p>
+            </div>
+          )}
+
+          <Input
+            label="Date"
+            type="date"
+            error={correctionErrors.date?.message}
+            {...registerCorrection('date', { required: 'Please select a date.' })}
+          />
+
+          <div className="grid grid-cols-2 gap-4">
+            <Input
+              label="Check-in Time (HH:MM)"
+              type="text"
+              placeholder="09:00"
+              error={correctionErrors.checkIn?.message}
+              {...registerCorrection('checkIn', {
+                required: 'Check-in time is required.',
+                pattern: { value: /^\d{2}:\d{2}$/, message: 'Must be in HH:MM format.' },
+              })}
+            />
+            <Input
+              label="Check-out Time (HH:MM)"
+              type="text"
+              placeholder="17:00"
+              error={correctionErrors.checkOut?.message}
+              {...registerCorrection('checkOut', {
+                required: 'Check-out time is required.',
+                pattern: { value: /^\d{2}:\d{2}$/, message: 'Must be in HH:MM format.' },
+              })}
+            />
+          </div>
+
+          <Input
+            label="Reason for Correction"
+            type="text"
+            placeholder="Forgot to punch in at the lobby"
+            error={correctionErrors.reason?.message}
+            {...registerCorrection('reason', {
+              required: 'Reason is required.',
+              minLength: { value: 5, message: 'Reason must be at least 5 characters.' },
+            })}
+          />
+
+          <div className="flex justify-end gap-2 border-t border-hairline pt-4">
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => setCorrectionOpen(false)}
+              disabled={correctionSubmitting}
+            >
+              Cancel
+            </Button>
+            <Button type="submit" disabled={correctionSubmitting}>
+              {correctionSubmitting ? 'Submitting...' : 'Submit Request'}
+            </Button>
+          </div>
+        </form>
+      </Modal>
     </div>
   )
 }

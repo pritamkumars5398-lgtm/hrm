@@ -1,7 +1,7 @@
 import { mockEmployees } from './mockEmployees'
 import { MOCK_ORGANIZATION_ID } from './mockUsers'
 
-export type AttendanceStatus = 'PRESENT' | 'LATE' | 'HALF_DAY' | 'ABSENT' | 'LEAVE' | 'WEEKEND'
+export type AttendanceStatus = 'PRESENT' | 'LATE' | 'HALF_DAY' | 'ABSENT' | 'LEAVE' | 'WEEKEND' | 'HOLIDAY'
 
 export type AttendanceRecord = {
   id: string

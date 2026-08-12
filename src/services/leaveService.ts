@@ -56,6 +56,8 @@ export type ApplyLeavePayload = {
   startDate: string
   endDate: string
   reason: string
+  isHalfDay?: boolean
+  halfDayPeriod?: 'FIRST_HALF' | 'SECOND_HALF'
 }
 
 const employeeFor = (name: string) => mockEmployees.find((e) => e.name === name) ?? null
@@ -236,5 +238,33 @@ export const leaveService = {
 
     requests = requests.map((r) => (r.id === id ? decided : r))
     return decided
+  },
+
+  async cancel(viewer: Viewer, id: string): Promise<LeaveRequest> {
+    if (hasBackend) {
+      try {
+        const { data } = await apiClient.post<LeaveRequest>(`/leave/${id}/cancel`)
+        return data
+      } catch (error) {
+        throw new LeaveError(apiErrorMessage(error, 'We could not cancel that request.'))
+      }
+    }
+
+    await delay()
+
+    const request = requests.find((r) => r.id === id)
+    if (!request) throw new LeaveError('That request no longer exists.')
+
+    if (request.status === 'REJECTED' || request.status === 'CANCELLED') {
+      throw new LeaveError('This request is already decided or cancelled.')
+    }
+
+    const cancelled: LeaveRequest = {
+      ...request,
+      status: 'CANCELLED',
+    }
+
+    requests = requests.map((r) => (r.id === id ? cancelled : r))
+    return cancelled
   },
 }

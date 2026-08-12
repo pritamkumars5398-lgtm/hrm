@@ -124,6 +124,13 @@ export default function EmployeesPage() {
         </div>
         <div>
           <div className="flex items-center gap-2">
+            <button
+              onClick={() => void fetch()}
+              disabled={isBusy}
+              className="inline-flex h-10 items-center justify-center rounded-ctl border border-hairline-strong bg-surface hover:bg-wash px-3.5 text-[13px] font-semibold text-ink transition-colors cursor-pointer shadow-sm disabled:opacity-50"
+            >
+              Refresh
+            </button>
             <Button onClick={() => navigate('/dashboard/employees/new')}>
               Add Employee
             </Button>
@@ -131,8 +138,29 @@ export default function EmployeesPage() {
         </div>
       </div>
 
+      {/* Metrics */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-6">
+        <div className="bg-white p-4 rounded-xl border border-hairline shadow-sm">
+          <span className="text-muted text-xs font-medium">Total Directory Size</span>
+          <p className="text-2xl font-bold text-ink mt-1">
+            {((result as any)?.activeCount || 0) + ((result as any)?.inactiveCount || 0)}
+          </p>
+          <span className="text-[11px] text-muted font-semibold mt-1 inline-block">Registered profiles</span>
+        </div>
+        <div className="bg-white p-4 rounded-xl border border-hairline shadow-sm">
+          <span className="text-muted text-xs font-medium">Active Employees</span>
+          <p className="text-2xl font-bold text-emerald-600 mt-1">{(result as any)?.activeCount || 0}</p>
+          <span className="text-[11px] text-emerald-600 font-semibold mt-1 inline-block">Currently in company</span>
+        </div>
+        <div className="bg-white p-4 rounded-xl border border-hairline shadow-sm">
+          <span className="text-muted text-xs font-medium">Inactive / Former</span>
+          <p className="text-2xl font-bold text-slate-500 mt-1">{(result as any)?.inactiveCount || 0}</p>
+          <span className="text-[11px] text-slate-500 font-semibold mt-1 inline-block">Exit archives</span>
+        </div>
+      </div>
+
       {/* Mode Switcher Tabs */}
-      <div className="mt-4 flex items-center gap-2 bg-wash/60 p-1.5 rounded-xl border border-hairline w-fit">
+      <div className="mt-6 flex items-center gap-2 bg-wash/60 p-1.5 rounded-xl border border-hairline w-fit">
         <button
           onClick={() => setQuery({ page: 1 })}
           className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer bg-white text-ink shadow-xs`}

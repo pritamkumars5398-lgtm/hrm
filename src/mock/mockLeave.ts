@@ -2,12 +2,13 @@ import { mockEmployees } from './mockEmployees'
 import { MOCK_ORGANIZATION_ID } from './mockUsers'
 
 export type LeaveType = 'ANNUAL' | 'SICK' | 'PERSONAL' | 'UNPAID'
-export type LeaveStatus = 'PENDING' | 'APPROVED' | 'REJECTED'
+export type LeaveStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'CANCELLED'
 
 export type LeaveBalance = {
   type: LeaveType
   total: number
   used: number
+  pending: number
 }
 
 export type LeaveRequest = {
@@ -23,8 +24,10 @@ export type LeaveRequest = {
   startDate: string
   endDate: string
   days: number
+  isHalfDay: boolean
+  halfDayPeriod: string | null
   reason: string
-  status: LeaveStatus
+  status: LeaveStatus | 'CANCELLED'
   requestedAt: string
   decidedBy: string | null
   decidedAt: string | null
@@ -100,6 +103,8 @@ export const mockLeaveRequests: LeaveRequest[] = SEEDS.map(
       startDate,
       endDate,
       days: daysBetween(startDate, endDate),
+      isHalfDay: false,
+      halfDayPeriod: null,
       reason,
       status,
       requestedAt: new Date(
@@ -123,6 +128,10 @@ export function balancesFor(employeeId: string): LeaveBalance[] {
       .filter((r) => r.employeeId === employeeId && r.type === type && r.status === 'APPROVED')
       .reduce((sum, r) => sum + r.days, 0)
 
-    return { type, total: mockLeavePolicy[type], used }
+    const pending = mockLeaveRequests
+      .filter((r) => r.employeeId === employeeId && r.type === type && r.status === 'PENDING')
+      .reduce((sum, r) => sum + r.days, 0)
+
+    return { type, total: mockLeavePolicy[type], used, pending }
   })
 }

@@ -26,6 +26,8 @@ import {
   Sparkles,
   ShieldAlert,
   Building2,
+  CheckSquare,
+  ClipboardList,
   type LucideIcon,
 } from 'lucide-react'
 
@@ -45,6 +47,7 @@ export type ModuleKey =
   | 'expenses'
   | 'travel'
   | 'helpdesk'
+  | 'approvals'
   | 'engagement'
   | 'communication'
   | 'documents'
@@ -57,6 +60,7 @@ export type ModuleKey =
   | 'billing'
   | 'team'
   | 'settings'
+  | 'audit-logs'
 
 export type NavItem = {
   key: ModuleKey
@@ -86,6 +90,7 @@ export const NAV_ITEMS: NavItem[] = [
   { key: 'expenses', label: 'Expense Claims', path: '/dashboard/expenses', icon: CreditCard, group: 'operations' },
   { key: 'travel', label: 'Travel Desk', path: '/dashboard/travel', icon: Plane, group: 'operations' },
   { key: 'helpdesk', label: 'Helpdesk Tickets', path: '/dashboard/helpdesk', icon: LifeBuoy, group: 'operations' },
+  { key: 'approvals', label: 'Approvals', path: '/dashboard/approvals', icon: CheckSquare, group: 'operations' },
 
   // Engagement & Docs
   { key: 'engagement', label: 'Engagement & Kudos', path: '/dashboard/engagement', icon: HeartHandshake, group: 'engagement' },
@@ -104,6 +109,7 @@ export const NAV_ITEMS: NavItem[] = [
   // Admin
   { key: 'team', label: 'Team Members', path: '/dashboard/team', icon: UserPlus, group: 'admin' },
   { key: 'settings', label: 'Settings', path: '/dashboard/settings', icon: Settings, group: 'admin' },
+  { key: 'audit-logs', label: 'Audit Logs', path: '/dashboard/audit-logs', icon: ClipboardList, group: 'admin' },
 ]
 
 export type PermissionMatrix = Record<ModuleKey, string[]>
@@ -124,6 +130,7 @@ export const PERMISSION_MODULES: PermissionMatrix = {
   expenses: [],
   travel: [],
   helpdesk: [],
+  approvals: [],
   engagement: [],
   communication: [],
   documents: ['documents.view', 'documents.manage'],
@@ -136,6 +143,7 @@ export const PERMISSION_MODULES: PermissionMatrix = {
   billing: ['settings.manage'],
   team: ['team.view', 'team.invite', 'team.managePermissions'],
   settings: ['settings.manage'],
+  'audit-logs': ['settings.manage'],
 }
 
 

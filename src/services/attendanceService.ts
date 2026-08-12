@@ -223,4 +223,16 @@ export const attendanceService = {
     }
     await delay()
   },
+
+  async requestCorrection(payload: { date: string; checkIn: string; checkOut: string; reason: string }): Promise<void> {
+    if (hasBackend) {
+      try {
+        await apiClient.post('/attendance/correction', payload)
+        return
+      } catch (error) {
+        throw new AttendanceError(apiErrorMessage(error, 'We could not submit your correction request.'))
+      }
+    }
+    await delay()
+  },
 }

@@ -12,6 +12,7 @@ type Props = {
   name: string
   onCheckIn: () => Promise<{ ok: boolean; error?: string }>
   onCheckOut: () => Promise<{ ok: boolean; error?: string }>
+  onRequestCorrection?: () => void
 }
 
 const LEAVE_MESSAGE: Record<LeaveType, (name: string) => string> = {
@@ -21,7 +22,7 @@ const LEAVE_MESSAGE: Record<LeaveType, (name: string) => string> = {
   UNPAID: (name) => `It's your leave today. Have a nice day, ${name}.`,
 }
 
-export default function CheckInOutCard({ status, loading, name, onCheckIn, onCheckOut }: Props) {
+export default function CheckInOutCard({ status, loading, name, onCheckIn, onCheckOut, onRequestCorrection }: Props) {
   const [error, setError] = useState<string | null>(null)
 
   if (!status) {
@@ -92,15 +93,22 @@ export default function CheckInOutCard({ status, loading, name, onCheckIn, onChe
           </div>
         </div>
 
-        {!status.checkedOut && (
-          <Button
-            onClick={() => void act(status.checkedIn ? onCheckOut : onCheckIn)}
-            disabled={loading}
-          >
-            {status.checkedIn ? <LogOut size={15} /> : <LogIn size={15} />}
-            {status.checkedIn ? 'Check Out' : 'Check In'}
-          </Button>
-        )}
+        <div className="flex gap-2">
+          {!status.checkedOut && (
+            <Button
+              onClick={() => void act(status.checkedIn ? onCheckOut : onCheckIn)}
+              disabled={loading}
+            >
+              {status.checkedIn ? <LogOut size={15} /> : <LogIn size={15} />}
+              {status.checkedIn ? 'Check Out' : 'Check In'}
+            </Button>
+          )}
+          {onRequestCorrection && (
+            <Button type="button" variant="secondary" onClick={onRequestCorrection}>
+              Request Correction
+            </Button>
+          )}
+        </div>
       </div>
 
       {error && <p className="mt-3 text-[12.5px] text-clay">{error}</p>}

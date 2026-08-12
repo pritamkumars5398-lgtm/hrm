@@ -28,7 +28,10 @@ import RecruitmentPage from '@/features/recruitment/RecruitmentPage'
 import TimesheetsPage from '@/features/timesheets/TimesheetsPage'
 import AssetsPage from '@/features/assets/AssetsPage'
 import ExpensesPage from '@/features/expenses/ExpensesPage'
+import TravelPage from '@/features/travel/TravelPage'
 import HelpdeskPage from '@/features/helpdesk/HelpdeskPage'
+import ApprovalsPage from '@/features/approvals/ApprovalsPage'
+import AuditLogsPage from '@/features/auditlogs/AuditLogsPage'
 import LMSPage from '@/features/lms/LMSPage'
 import EngagementPage from '@/features/engagement/EngagementPage'
 import CommunicationPage from '@/features/communication/CommunicationPage'
@@ -130,8 +133,10 @@ export default function App() {
         <Route path="timesheets" element={<TimesheetsPage />} />
         <Route path="assets" element={<AssetsPage />} />
         <Route path="expenses" element={<ExpensesPage />} />
-        <Route path="travel" element={<ExpensesPage />} />
+        <Route path="travel" element={<TravelPage />} />
         <Route path="helpdesk" element={<HelpdeskPage />} />
+        <Route path="approvals" element={<ApprovalsPage />} />
+        <Route path="audit-logs" element={<AuditLogsPage />} />
         <Route path="lms" element={<LMSPage />} />
         <Route path="engagement" element={<EngagementPage />} />
         <Route path="communication" element={<CommunicationPage />} />

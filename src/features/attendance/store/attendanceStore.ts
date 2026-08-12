@@ -20,6 +20,7 @@ type AttendanceState = {
   selectDate: (viewer: Viewer, date: string) => Promise<void>
   checkIn: (viewer: Viewer) => Promise<{ ok: boolean; error?: string }>
   checkOut: (viewer: Viewer) => Promise<{ ok: boolean; error?: string }>
+  requestCorrection: (viewer: Viewer, payload: { date: string; checkIn: string; checkOut: string; reason: string }) => Promise<{ ok: boolean; error?: string }>
 }
 
 const now = new Date()
@@ -97,6 +98,16 @@ export const useAttendanceStore = create<AttendanceState>()((set, get) => ({
       return { ok: false, error: err instanceof Error ? err.message : 'Could not check out.' }
     } finally {
       set({ checkingInOut: false })
+    }
+  },
+
+  requestCorrection: async (viewer, payload) => {
+    try {
+      await attendanceService.requestCorrection(payload)
+      await get().load(viewer, { force: true })
+      return { ok: true }
+    } catch (err) {
+      return { ok: false, error: err instanceof Error ? err.message : 'Could not submit correction request.' }
     }
   },
 }))

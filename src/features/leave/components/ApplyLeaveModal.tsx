@@ -38,17 +38,19 @@ export default function ApplyLeaveModal({
     reset,
     formState: { errors, isSubmitting },
   } = useForm<Form>({
-    defaultValues: { type: 'ANNUAL', startDate: '', endDate: '', reason: '' },
+    defaultValues: { type: 'ANNUAL', startDate: '', endDate: '', reason: '', isHalfDay: false, halfDayPeriod: 'FIRST_HALF' },
   })
 
   const type = watch('type')
   const startDate = watch('startDate')
   const endDate = watch('endDate')
+  const isHalfDay = watch('isHalfDay')
 
   const balance = balances.find((b) => b.type === type)
   const remaining = balance ? balance.total - balance.used : 0
-  const requested =
-    startDate && endDate && endDate >= startDate ? daysBetween(startDate, endDate) : 0
+  const requested = isHalfDay
+    ? (startDate ? 0.5 : 0)
+    : (startDate && endDate && endDate >= startDate ? daysBetween(startDate, endDate) : 0)
 
   const close = () => {
     reset()
@@ -58,6 +60,9 @@ export default function ApplyLeaveModal({
 
   const onSubmit = handleSubmit(async (values) => {
     setFormError(null)
+    if (values.isHalfDay) {
+      values.endDate = values.startDate
+    }
 
     try {
       await onApply(values)
@@ -100,24 +105,56 @@ export default function ApplyLeaveModal({
             {...register('type', { required: 'Pick a leave type.' })}
           />
 
-          <div className="grid gap-4 sm:grid-cols-2">
-            <Input
-              label="First day"
-              type="date"
-              error={errors.startDate?.message}
-              {...register('startDate', { required: 'Pick a start date.' })}
+          <div className="flex items-center gap-2 py-1">
+            <input
+              type="checkbox"
+              id="isHalfDay"
+              className="size-4 rounded border-hairline accent-emerald-600 cursor-pointer"
+              {...register('isHalfDay')}
             />
-            <Input
-              label="Last day"
-              type="date"
-              error={errors.endDate?.message}
-              {...register('endDate', {
-                required: 'Pick an end date.',
-                validate: (value) =>
-                  !startDate || value >= startDate || 'The last day cannot be before the first.',
-              })}
-            />
+            <label htmlFor="isHalfDay" className="text-[13px] font-semibold text-ink cursor-pointer select-none">
+              Request Half Day
+            </label>
           </div>
+
+          {!isHalfDay ? (
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Input
+                label="First day"
+                type="date"
+                error={errors.startDate?.message}
+                {...register('startDate', { required: 'Pick a start date.' })}
+              />
+              <Input
+                label="Last day"
+                type="date"
+                error={errors.endDate?.message}
+                {...register('endDate', {
+                  required: 'Pick an end date.',
+                  validate: (value) =>
+                    !startDate || value >= startDate || 'The last day cannot be before the first.',
+                })}
+              />
+            </div>
+          ) : (
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Input
+                label="Date"
+                type="date"
+                error={errors.startDate?.message}
+                {...register('startDate', { required: 'Pick a date.' })}
+              />
+              <Select
+                label="Half day period"
+                options={[
+                  { value: 'FIRST_HALF', label: 'First Half (Morning)' },
+                  { value: 'SECOND_HALF', label: 'Second Half (Afternoon)' },
+                ]}
+                error={errors.halfDayPeriod?.message}
+                {...register('halfDayPeriod', { required: 'Pick a half day period.' })}
+              />
+            </div>
+          )}
 
           {requested > 0 && (
             <div className="tnum rounded-ctl border border-emerald-500/15 bg-emerald-500/[0.03] px-3.5 py-2.5 text-[13px] text-emerald-800 flex items-center justify-between font-semibold shadow-sm transition-all duration-300">

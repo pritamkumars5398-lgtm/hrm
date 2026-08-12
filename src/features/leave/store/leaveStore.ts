@@ -20,6 +20,7 @@ type LeaveState = {
   load: (viewer: Viewer, options?: { force?: boolean }) => Promise<void>
   apply: (viewer: Viewer, payload: ApplyLeavePayload) => Promise<LeaveRequest>
   decide: (viewer: Viewer, id: string, decision: 'APPROVED' | 'REJECTED') => Promise<void>
+  cancel: (viewer: Viewer, id: string) => Promise<void>
   updatePolicy: (viewer: Viewer, patch: LeavePolicyPatch) => Promise<void>
 }
 
@@ -69,6 +70,11 @@ export const useLeaveStore = create<LeaveState>()((set, get) => ({
 
   decide: async (viewer, id, decision) => {
     await leaveService.decide(viewer, id, decision)
+    await get().load(viewer, { force: true })
+  },
+
+  cancel: async (viewer, id) => {
+    await leaveService.cancel(viewer, id)
     await get().load(viewer, { force: true })
   },
 

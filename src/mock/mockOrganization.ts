@@ -12,6 +12,10 @@ export type Organization = {
   employeeCount?: number
   /** Where a "someone applied for leave" notification email goes. */
   leaveNotificationEmail?: string | null
+  attendanceLateThreshold?: string | null
+  attendanceHalfDayThreshold?: number | null
+  attendanceWorkingHours?: number | null
+  attendanceHolidays?: string[] | null
 }
 
 export const INDUSTRIES = [
@@ -39,4 +43,8 @@ export const mockOrganization: Organization = {
   createdAt: '2024-02-11T09:00:00.000Z',
   employeeCount: 248,
   leaveNotificationEmail: null,
+  attendanceLateThreshold: '09:30',
+  attendanceHalfDayThreshold: 5.0,
+  attendanceWorkingHours: 8.0,
+  attendanceHolidays: [],
 }

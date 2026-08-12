@@ -20,10 +20,12 @@ export const LEAVE_STATUS_LABEL: Record<LeaveStatus, string> = {
   PENDING: 'Pending',
   APPROVED: 'Approved',
   REJECTED: 'Rejected',
+  CANCELLED: 'Cancelled',
 }
 
 export const LEAVE_STATUS_TONE: Record<LeaveStatus, BadgeTone> = {
   PENDING: 'warning',
   APPROVED: 'success',
   REJECTED: 'danger',
+  CANCELLED: 'neutral',
 }

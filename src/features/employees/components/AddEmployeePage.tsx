@@ -43,6 +43,8 @@ type AddEmployeeForm = {
   accName: string
   accNumber: string
   ifscCode: string
+  dob?: string
+  gender?: string
 }
 
 const SECTIONS = [
@@ -190,6 +192,8 @@ export default function AddEmployeePage() {
       accName: '',
       accNumber: '',
       ifscCode: '',
+      dob: '',
+      gender: '',
     },
   })
 
@@ -236,6 +240,8 @@ export default function AddEmployeePage() {
         startDate: values.startDate,
         employmentType: values.employmentType,
         workLocation: values.workLocation,
+        dob: values.dob || undefined,
+        gender: values.gender || undefined,
         educationDetails: values.education.length ? values.education : undefined,
         familyDetails: values.family.length
           ? values.family.map((f) => ({
@@ -437,6 +443,18 @@ export default function AddEmployeePage() {
                 <Input label="Email" type="email" error={errors.email?.message} {...register('email', { required: 'Required', pattern: { value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/, message: 'Enter a valid email.' } })} />
                 <Input label="Phone" type="tel" error={errors.contactNumber?.message} {...register('contactNumber')} />
                 <Input label="Home Address" {...register('homeAddress')} />
+                <Input label="Date of Birth" type="date" error={errors.dob?.message} {...register('dob')} />
+                <Select
+                  label="Gender"
+                  options={[
+                    { value: '', label: 'Select gender' },
+                    { value: 'Male', label: 'Male' },
+                    { value: 'Female', label: 'Female' },
+                    { value: 'Other', label: 'Other' },
+                  ]}
+                  error={errors.gender?.message}
+                  {...register('gender')}
+                />
               </div>
 
               <div className="mt-6 flex justify-end gap-2 border-t border-hairline pt-5">

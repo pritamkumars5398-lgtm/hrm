@@ -31,10 +31,11 @@ import {
   LEAVE_TYPE_SHORT,
 } from './labels'
 
-const TABS: Array<{ key: LeaveStatus; label: string }> = [
+const TABS: Array<{ key: LeaveStatus | 'CANCELLED'; label: string }> = [
   { key: 'PENDING', label: 'Pending' },
   { key: 'APPROVED', label: 'Approved' },
   { key: 'REJECTED', label: 'Rejected' },
+  { key: 'CANCELLED', label: 'Cancelled' },
 ]
 
 const formatRange = (start: string, end: string) => {
@@ -81,15 +82,17 @@ function BalanceCard({
   label,
   total,
   used,
+  pending,
   type,
 }: {
   label: string
   total: number
   used: number
+  pending: number
   type: LeaveType
 }) {
-  const remaining = Math.max(0, total - used)
-  const pct = total === 0 ? 0 : Math.min(100, (used / total) * 100)
+  const remaining = Math.max(0, total - used - pending)
+  const pct = total === 0 ? 0 : Math.min(100, ((used + pending) / total) * 100)
 
   const config = {
     ANNUAL: {
@@ -144,7 +147,7 @@ function BalanceCard({
               <Icon size={16} />
             </span>
             <span className={`tnum text-[11px] font-bold px-2.5 py-0.5 rounded-full border ${config.badgeColor}`}>
-              {used} / {total === 0 ? '∞' : `${total}d`}
+              {used}d used {pending > 0 ? `(+${pending}d pending)` : ''} / {total === 0 ? '∞' : `${total}d`}
             </span>
           </div>
 
@@ -178,9 +181,9 @@ function BalanceCard({
 
 export default function LeavePage() {
   const user = useAuthStore((s) => s.user)!
-  const { status, data, error, load, apply, decide, updatePolicy } = useLeaveStore()
+  const { status, data, error, load, apply, decide, updatePolicy, cancel } = useLeaveStore()
 
-  const [tab, setTab] = useState<LeaveStatus>('PENDING')
+  const [tab, setTab] = useState<LeaveStatus | 'CANCELLED'>('PENDING')
   const [applyOpen, setApplyOpen] = useState(false)
   const [busyId, setBusyId] = useState<string | null>(null)
   const [actionError, setActionError] = useState<string | null>(null)
@@ -206,6 +209,21 @@ export default function LeavePage() {
     } catch (err) {
       setActionError(
         err instanceof LeaveError ? err.message : 'We could not record that decision.',
+      )
+    } finally {
+      setBusyId(null)
+    }
+  }
+
+  const onCancel = async (id: string) => {
+    setBusyId(id)
+    setActionError(null)
+
+    try {
+      await cancel(viewer, id)
+    } catch (err) {
+      setActionError(
+        err instanceof LeaveError ? err.message : 'We could not cancel that request.',
       )
     } finally {
       setBusyId(null)
@@ -412,6 +430,27 @@ export default function LeavePage() {
                     </Button>
                   </div>
                 )}
+
+                {/* Employee Self-Service Cancellation */}
+                {isMine && (request.status === 'PENDING' || request.status === 'APPROVED') && (
+                  <div className="flex items-center gap-2 border-t border-hairline/60 pt-3.5 mt-2 justify-end">
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        if (confirm('Are you sure you want to cancel this leave request?')) {
+                          void onCancel(request.id)
+                        }
+                      }}
+                      disabled={busy}
+                      className="h-8.5 text-clay-deep hover:bg-clay-tint/10 animate-fade-in"
+                    >
+                      {busy ? <Loader2 size={13} className="animate-spin" /> : <X size={13} />}
+                      Cancel request
+                    </Button>
+                  </div>
+                )}
               </div>
             </motion.div>
           )}
@@ -542,6 +581,7 @@ export default function LeavePage() {
                       label={LEAVE_TYPE_SHORT[b.type]}
                       total={b.total}
                       used={b.used}
+                      pending={b.pending}
                     />
                   ))}
             </div>

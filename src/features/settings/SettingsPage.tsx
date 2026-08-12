@@ -11,6 +11,7 @@ import {
   ShieldCheck,
   Users,
   Sparkles,
+  Clock,
 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import Card from '@/shared/components/Card'
@@ -28,10 +29,11 @@ import {
 import { AuthError, authService } from '@/services/authService'
 import RolesPermissions from './components/RolesPermissions'
 
-type Tab = 'company' | 'roles' | 'notifications' | 'appearance' | 'security'
+type Tab = 'company' | 'roles' | 'notifications' | 'appearance' | 'security' | 'attendance'
 
 const TABS: Array<{ key: Tab; label: string; icon: typeof Building2; color: string }> = [
   { key: 'company', label: 'Company profile', icon: Building2, color: 'text-indigo-500' },
+  { key: 'attendance', label: 'Attendance Rules', icon: Clock, color: 'text-emerald-600' },
   { key: 'roles', label: 'Roles & Permissions', icon: Users, color: 'text-violet-500' },
   { key: 'notifications', label: 'Notifications', icon: Bell, color: 'text-amber-500' },
   { key: 'appearance', label: 'Appearance', icon: Palette, color: 'text-emerald-600' },
@@ -675,10 +677,219 @@ export default function SettingsPage() {
               {tab === 'notifications' && <Notifications />}
               {tab === 'appearance' && <Appearance />}
               {tab === 'security' && <Security />}
+              {tab === 'attendance' && <AttendanceSettings />}
             </motion.div>
           </AnimatePresence>
         </div>
       </div>
     </motion.div>
+  )
+}
+
+type AttendanceSettingsForm = {
+  attendanceLateThreshold: string
+  attendanceHalfDayThreshold: number
+  attendanceWorkingHours: number
+  newHoliday: string
+}
+
+function AttendanceSettings() {
+  const [org, setOrg] = useState<Organization | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [saved, setSaved] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [holidays, setHolidays] = useState<string[]>([])
+
+  const {
+    register,
+    handleSubmit,
+    setValue,
+    watch,
+    reset,
+    formState: { errors, isSubmitting },
+  } = useForm<AttendanceSettingsForm>()
+
+  useEffect(() => {
+    let cancelled = false
+
+    void organizationService
+      .getMine()
+      .then((result) => {
+        if (cancelled || !result) return
+        setOrg(result)
+        setHolidays(result.attendanceHolidays || [])
+        reset({
+          attendanceLateThreshold: result.attendanceLateThreshold || '09:30',
+          attendanceHalfDayThreshold: result.attendanceHalfDayThreshold ?? 5.0,
+          attendanceWorkingHours: result.attendanceWorkingHours ?? 8.0,
+          newHoliday: '',
+        })
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false)
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [reset])
+
+  const onSubmit = handleSubmit(async (values) => {
+    setError(null)
+    setSaved(false)
+
+    try {
+      const updated = await organizationService.update({
+        attendanceLateThreshold: values.attendanceLateThreshold,
+        attendanceHalfDayThreshold: Number(values.attendanceHalfDayThreshold),
+        attendanceWorkingHours: Number(values.attendanceWorkingHours),
+        attendanceHolidays: holidays,
+      })
+      setOrg(updated)
+      setSaved(true)
+      setTimeout(() => setSaved(false), 2500)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'We could not save your changes.')
+    }
+  })
+
+  const addHoliday = () => {
+    const val = watch('newHoliday')
+    if (!val || holidays.includes(val)) return
+    setHolidays((prev) => [...prev, val].sort())
+    setValue('newHoliday', '')
+  }
+
+  const removeHoliday = (date: string) => {
+    setHolidays((prev) => prev.filter((d) => d !== date))
+  }
+
+  if (loading) {
+    return (
+      <Card className="p-5">
+        <div className="h-4 w-32 animate-pulse rounded bg-wash" />
+        <div className="mt-5 space-y-4">
+          {[0, 1, 2].map((i) => (
+            <div key={i} className="h-10 animate-pulse rounded-ctl bg-wash" />
+          ))}
+        </div>
+      </Card>
+    )
+  }
+
+  return (
+    <div className="space-y-5">
+      <div>
+        <h2 className="text-[15px] font-semibold text-ink">Attendance Rules</h2>
+        <p className="mt-1 text-[13px] text-muted font-medium">
+          Configure work schedules, thresholds for late arrivals, half-days, and organization-scoped holidays.
+        </p>
+      </div>
+
+      <Card className="p-5">
+        <form onSubmit={onSubmit} noValidate>
+          {error && (
+            <div className="mb-5">
+              <ErrorNote message={error} />
+            </div>
+          )}
+
+          <div className="space-y-4">
+            <div className="grid gap-4 sm:grid-cols-3">
+              <Input
+                label="Late Threshold (HH:MM)"
+                type="text"
+                placeholder="09:30"
+                error={errors.attendanceLateThreshold?.message}
+                {...register('attendanceLateThreshold', {
+                  required: 'Late threshold is required.',
+                  pattern: { value: /^\d{2}:\d{2}$/, message: 'Must be in HH:MM format.' },
+                })}
+              />
+              <Input
+                label="Half-Day Hours"
+                type="number"
+                step="0.5"
+                error={errors.attendanceHalfDayThreshold?.message}
+                {...register('attendanceHalfDayThreshold', {
+                  required: 'Half-day hours are required.',
+                  min: { value: 1, message: 'Minimum 1 hour.' },
+                })}
+              />
+              <Input
+                label="Working Hours"
+                type="number"
+                step="0.5"
+                error={errors.attendanceWorkingHours?.message}
+                {...register('attendanceWorkingHours', {
+                  required: 'Working hours are required.',
+                  min: { value: 1, message: 'Minimum 1 hour.' },
+                })}
+              />
+            </div>
+
+            <div className="mt-6 border-t border-hairline pt-5">
+              <h3 className="text-[13.5px] font-semibold text-ink">Organization Holidays</h3>
+              <p className="mt-1 text-[12.5px] text-muted mb-3">
+                List the official holidays for your organization.
+              </p>
+
+              <div className="flex gap-2 items-end max-w-md mb-4">
+                <div className="flex-1">
+                  <Input
+                    label="Add Holiday Date"
+                    type="date"
+                    {...register('newHoliday')}
+                  />
+                </div>
+                <Button type="button" variant="secondary" onClick={addHoliday}>
+                  Add
+                </Button>
+              </div>
+
+              {holidays.length === 0 ? (
+                <p className="text-[12.5px] text-muted italic">No holidays configured yet.</p>
+              ) : (
+                <div className="flex flex-wrap gap-2">
+                  {holidays.map((h) => (
+                    <span
+                      key={h}
+                      className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[12px] font-semibold bg-wash border border-hairline text-ink"
+                    >
+                      {new Date(h + 'T00:00:00').toLocaleDateString('en-GB', {
+                        day: 'numeric',
+                        month: 'short',
+                        year: 'numeric',
+                      })}
+                      <button
+                        type="button"
+                        onClick={() => removeHoliday(h)}
+                        className="text-muted hover:text-clay-deep focus:outline-none"
+                      >
+                        &times;
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="mt-6 flex items-center justify-end gap-3 border-t border-hairline pt-5">
+            {saved && <Saved />}
+            <Button type="submit" disabled={isSubmitting}>
+              {isSubmitting ? (
+                <>
+                  <Loader2 size={15} className="animate-spin" />
+                  Saving…
+                </>
+              ) : (
+                'Save changes'
+              )}
+            </Button>
+          </div>
+        </form>
+      </Card>
+    </div>
   )
 }

@@ -36,8 +36,8 @@ export default function AssetsPage() {
         try {
           const list = await assetService.listAssets()
           setAssets(list.length > 0 ? list : INITIAL_ASSETS)
-          const emps = await employeeService.listEmployees()
-          setEmployees(emps)
+          const emps = await employeeService.getAll({ pageSize: 1000 }, 'ACTIVE')
+          setEmployees(emps.rows)
         } catch (err) {
           console.error(err)
         }

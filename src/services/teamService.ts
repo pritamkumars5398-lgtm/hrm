@@ -61,6 +61,8 @@ export type InvitePayload = {
   financialDetails?: FinancialDetails
   educationDetails?: EducationDetail[]
   familyDetails?: FamilyDetail[]
+  dob?: string
+  gender?: string
 }
 
 export class TeamError extends Error {}

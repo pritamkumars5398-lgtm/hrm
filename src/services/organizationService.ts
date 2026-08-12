@@ -72,6 +72,10 @@ export const organizationService = {
     industry?: string
     /** '' clears it. */
     leaveNotificationEmail?: string
+    attendanceLateThreshold?: string
+    attendanceHalfDayThreshold?: number
+    attendanceWorkingHours?: number
+    attendanceHolidays?: string[]
   }): Promise<Organization> {
     if (hasBackend) {
       try {

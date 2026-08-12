@@ -30,6 +30,8 @@ export type Paginated<T> = {
   page: number
   pageSize: number
   totalPages: number
+  activeCount?: number
+  inactiveCount?: number
 }
 
 export class EmployeeError extends Error {}
@@ -47,6 +49,8 @@ export type EmployeeUpdate = {
   employmentType?: string
   workLocation?: string
   managerId?: string
+  dob?: string
+  gender?: string
 }
 
 const LATENCY_MS = 550
@@ -55,12 +59,6 @@ const delay = () => new Promise((r) => setTimeout(r, LATENCY_MS))
 /** Mutable copy for the offline path, so edit/delete persist within a session. */
 let mockState: Employee[] = [...mockEmployees]
 
-/**
- * Search, filter, sort and paginate a full employee list into one page of
- * results. Kept as a pure function so both paths — the real API (which returns
- * the whole org's directory) and the offline mock — present the component the
- * exact same `Paginated<Employee>` contract.
- */
 function applyQuery(source: Employee[], query: EmployeeQuery): Paginated<Employee> {
   const {
     search = '',
@@ -74,10 +72,15 @@ function applyQuery(source: Employee[], query: EmployeeQuery): Paginated<Employe
 
   const term = search.trim().toLowerCase()
 
+  // Calculate counts across the entire source list (before pagination or filters)
+  const activeCount = source.filter((e) => e.status !== 'INACTIVE').length
+  const inactiveCount = source.filter((e) => e.status === 'INACTIVE').length
+
   let rows = source.filter((e) => {
     const matchesTerm =
       !term ||
       e.name.toLowerCase().includes(term) ||
+      (e.employeeId ?? '').toLowerCase().includes(term) ||
       e.email.toLowerCase().includes(term) ||
       e.designation.toLowerCase().includes(term)
 
@@ -94,7 +97,6 @@ function applyQuery(source: Employee[], query: EmployeeQuery): Paginated<Employe
       case 'joinedAt':
         return a.joinedAt.localeCompare(b.joinedAt) * factor
       case 'department':
-        // Ties fall back to name, so the order is stable rather than arbitrary.
         return (a.department.localeCompare(b.department) || a.name.localeCompare(b.name)) * factor
       case 'status':
         return (a.status.localeCompare(b.status) || a.name.localeCompare(b.name)) * factor
@@ -105,8 +107,6 @@ function applyQuery(source: Employee[], query: EmployeeQuery): Paginated<Employe
 
   const total = rows.length
   const totalPages = Math.max(1, Math.ceil(total / pageSize))
-  // A filter change can strand you past the last page — clamp instead of
-  // returning an empty list that looks like "no results".
   const safePage = Math.min(Math.max(1, page), totalPages)
   const start = (safePage - 1) * pageSize
 
@@ -116,25 +116,16 @@ function applyQuery(source: Employee[], query: EmployeeQuery): Paginated<Employe
     page: safePage,
     pageSize,
     totalPages,
+    activeCount,
+    inactiveCount,
   }
 }
 
-/**
- * The directory reads REAL employee identity records from the backend
- * (`GET /employees`, scoped to the active company) once a backend is configured
- * — people added through the invite flow show up here (§11.4). The mock list is
- * only the offline fallback for the no-backend Vercel demo.
- *
- * Filtering, sorting and pagination stay client-side in `applyQuery` for now:
- * the endpoint returns the whole (small) company directory and the component
- * keeps the same interface either way.
- */
 export const employeeService = {
   async getAll(query: EmployeeQuery = {}, apiStatus?: 'ACTIVE' | 'INACTIVE' | 'ALL'): Promise<Paginated<Employee>> {
     if (hasBackend) {
       try {
-        const params = apiStatus ? { status: apiStatus } : {}
-        const { data } = await apiClient.get<Employee[]>('/employees', { params })
+        const { data } = await apiClient.get<Employee[]>('/employees', { params: { status: apiStatus || 'ALL' } })
         return applyQuery(data, query)
       } catch (error) {
         throw new EmployeeError(apiErrorMessage(error, 'We could not load the employee directory.'))
