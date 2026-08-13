@@ -169,6 +169,7 @@ export default function PayslipDocument({ payslip, companyName }: Props) {
           <View>
             <Text style={styles.period}>{formatMonthLabel(payslip.month)}</Text>
             {payslip.status === 'DRAFT' && <Text style={styles.statusBadge}>DRAFT — NOT FINAL</Text>}
+            {payslip.status === 'PENDING_APPROVAL' && <Text style={styles.statusBadge}>PENDING APPROVAL — NOT FINAL</Text>}
           </View>
         </View>
 
@@ -284,7 +285,9 @@ export default function PayslipDocument({ payslip, companyName }: Props) {
         <Text style={styles.footer}>
           {payslip.status === 'FINALIZED' && payslip.finalizedAt
             ? `Finalized on ${payslip.finalizedAt}${payslip.finalizedBy ? ` by ${payslip.finalizedBy}` : ''} — structure gross ${formatMoney(structureGross)}, ${payslip.daysInMonth} days in period.`
-            : `This is a draft preview — figures may still change before payroll is finalized.`}
+            : payslip.status === 'PENDING_APPROVAL'
+              ? `Pending owner approval review — structure gross ${formatMoney(structureGross)}, ${payslip.daysInMonth} days in period.`
+              : `This is a draft preview — figures may still change before payroll is finalized.`}
         </Text>
       </Page>
     </Document>

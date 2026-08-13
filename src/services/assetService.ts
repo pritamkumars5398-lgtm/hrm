@@ -5,7 +5,19 @@ export type Asset = {
   id: string;
   assetTag: string;
   name: string;
-  category: 'Laptop' | 'Desktop' | 'Mobile' | 'SIM' | 'Accessory' | 'License';
+  category:
+    | 'Laptop'
+    | 'Desktop'
+    | 'Monitor'
+    | 'Mobile'
+    | 'Tablet'
+    | 'ID Card'
+    | 'Access Card'
+    | 'Furniture'
+    | 'Vehicle'
+    | 'SIM'
+    | 'Accessory'
+    | 'License';
   assignedTo: string;
   assignedToId?: string | null;
   status: 'AVAILABLE' | 'ASSIGNED' | 'REPAIR' | 'RETIRED';
@@ -27,7 +39,24 @@ export const assetService = {
     return [];
   },
 
-  async createAsset(payload: { name: string; category: Asset['category']; serialNumber?: string; assetTag?: string }): Promise<Asset> {
+  async listMyAssets(): Promise<Asset[]> {
+    if (hasBackend) {
+      try {
+        const { data } = await apiClient.get<Asset[]>('/assets/my-assets');
+        return data;
+      } catch (error) {
+        throw new AssetError(apiErrorMessage(error, 'Could not load your assigned assets.'));
+      }
+    }
+    return [];
+  },
+
+  async createAsset(payload: {
+    name: string;
+    category: Asset['category'];
+    serialNumber?: string;
+    assetTag?: string;
+  }): Promise<Asset> {
     if (hasBackend) {
       try {
         const { data } = await apiClient.post<Asset>('/assets', payload);
@@ -38,7 +67,9 @@ export const assetService = {
     }
     return {
       id: `ast-${Date.now()}`,
-      assetTag: payload.assetTag || `AST-${payload.category.slice(0, 3).toUpperCase()}-${Math.floor(1000 + Math.random() * 9000)}`,
+      assetTag:
+        payload.assetTag ||
+        `AST-${payload.category.slice(0, 3).toUpperCase()}-${Math.floor(1000 + Math.random() * 9000)}`,
       name: payload.name,
       category: payload.category,
       assignedTo: 'Unassigned',
@@ -47,10 +78,17 @@ export const assetService = {
     };
   },
 
-  async updateAssetStatus(id: string, status: Asset['status'], assignedToId?: string): Promise<Asset> {
+  async updateAssetStatus(
+    id: string,
+    status: Asset['status'],
+    assignedToId?: string,
+  ): Promise<Asset> {
     if (hasBackend) {
       try {
-        const { data } = await apiClient.patch<Asset>(`/assets/${id}/status`, { status, assignedToId });
+        const { data } = await apiClient.patch<Asset>(`/assets/${id}/status`, {
+          status,
+          assignedToId,
+        });
         return data;
       } catch (error) {
         throw new AssetError(apiErrorMessage(error, 'Could not update asset status.'));

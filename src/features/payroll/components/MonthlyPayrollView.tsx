@@ -174,8 +174,20 @@ export default function MonthlyPayrollView({ canManage }: Props) {
                         </div>
                       </td>
                       <td className="hidden px-4 py-3.5 sm:table-cell">
-                        <Badge tone={row.status === 'FINALIZED' ? 'success' : 'neutral'}>
-                          {row.status === 'FINALIZED' ? 'Finalized' : 'Draft'}
+                        <Badge
+                          tone={
+                            row.status === 'FINALIZED'
+                              ? 'success'
+                              : row.status === 'PENDING_APPROVAL'
+                                ? 'warning'
+                                : 'neutral'
+                          }
+                        >
+                          {row.status === 'FINALIZED'
+                            ? 'Finalized'
+                            : row.status === 'PENDING_APPROVAL'
+                              ? 'Pending Approval'
+                              : 'Draft'}
                         </Badge>
                       </td>
                       <td className="tnum px-4 py-3.5 text-right text-[13.5px] font-semibold text-ink">

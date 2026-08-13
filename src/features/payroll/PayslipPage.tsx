@@ -71,8 +71,8 @@ export default function PayslipPage() {
     return saved
   }
 
-  const finalize = async (id: string) => {
-    const saved = await payslipService.finalize(id, month)
+  const submitApproval = async (id: string) => {
+    const saved = await payslipService.submitApproval(id, month)
     setPayslip(saved)
     setChanged(true)
     return saved
@@ -122,7 +122,7 @@ export default function PayslipPage() {
       )}
 
       {status === 'ready' && payslip && (
-        <PayslipDetail payslip={payslip} canManage={canManage} onSaveDraft={saveDraft} onFinalize={finalize} />
+        <PayslipDetail payslip={payslip} canManage={canManage} onSaveDraft={saveDraft} onSubmitApproval={submitApproval} />
       )}
     </div>
   )

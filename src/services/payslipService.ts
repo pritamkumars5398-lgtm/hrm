@@ -2,7 +2,7 @@ import { apiClient, apiErrorMessage } from './apiClient'
 
 export class PayslipError extends Error {}
 
-export type PayslipStatus = 'DRAFT' | 'FINALIZED'
+export type PayslipStatus = 'DRAFT' | 'PENDING_APPROVAL' | 'FINALIZED'
 
 export type Payslip = {
   id: string | null
@@ -69,15 +69,15 @@ export const payslipService = {
     }
   },
 
-  async finalize(employeeId: string, month: string): Promise<Payslip> {
+  async submitApproval(employeeId: string, month: string): Promise<Payslip> {
     try {
       // No body: NestJS's body-parser runs in strict mode and rejects any
       // top-level JSON value that isn't an object/array — including a literal
       // `null` — before the request even reaches the controller.
-      const { data } = await apiClient.post<Payslip>(`/payroll/payslips/${employeeId}/finalize`, undefined, { params: { month } })
+      const { data } = await apiClient.post<Payslip>(`/payroll/payslips/${employeeId}/submit-approval`, undefined, { params: { month } })
       return data
     } catch (error) {
-      throw new PayslipError(apiErrorMessage(error, 'We could not finalize that payslip.'))
+      throw new PayslipError(apiErrorMessage(error, 'We could not submit that payslip for approval.'))
     }
   },
 }

@@ -15,7 +15,7 @@ type Props = {
   payslip: Payslip
   canManage: boolean
   onSaveDraft: (employeeId: string, payload: PayslipDraftPayload) => Promise<Payslip>
-  onFinalize: (employeeId: string) => Promise<Payslip>
+  onSubmitApproval: (employeeId: string) => Promise<Payslip>
 }
 
 type Form = {
@@ -31,15 +31,15 @@ type Form = {
 /** Strips anything that isn't safe in a filename across OSes. */
 const slugify = (value: string) => value.trim().replace(/[^a-z0-9]+/gi, '-').replace(/^-+|-+$/g, '').toLowerCase()
 
-export default function PayslipDetail({ payslip, canManage, onSaveDraft, onFinalize }: Props) {
+export default function PayslipDetail({ payslip, canManage, onSaveDraft, onSubmitApproval }: Props) {
   const user = useAuthStore((s) => s.user)
   const companyName =
     user?.memberships.find((m) => m.organizationId === user.activeOrganizationId)?.organizationName || 'Company'
 
   const [formError, setFormError] = useState<string | null>(null)
-  const [finalizeError, setFinalizeError] = useState<string | null>(null)
-  const [confirmingFinalize, setConfirmingFinalize] = useState(false)
-  const [finalizing, setFinalizing] = useState(false)
+  const [submitError, setSubmitError] = useState<string | null>(null)
+  const [confirmingSubmit, setConfirmingSubmit] = useState(false)
+  const [submitting, setSubmitting] = useState(false)
   const [downloadError, setDownloadError] = useState<string | null>(null)
   const [downloading, setDownloading] = useState(false)
 
@@ -65,8 +65,8 @@ export default function PayslipDetail({ payslip, canManage, onSaveDraft, onFinal
       notes: payslip.notes ?? '',
     })
     setFormError(null)
-    setFinalizeError(null)
-    setConfirmingFinalize(false)
+    setSubmitError(null)
+    setConfirmingSubmit(false)
     setDownloadError(null)
     // Only when the record itself changes (a different employee/month, or after
     // a save swaps in the server's copy) — not on every keystroke.
@@ -105,7 +105,8 @@ export default function PayslipDetail({ payslip, canManage, onSaveDraft, onFinal
   }
 
   const isFinalized = payslip.status === 'FINALIZED'
-  const isEditable = canManage && !isFinalized
+  const isPendingApproval = payslip.status === 'PENDING_APPROVAL'
+  const isEditable = canManage && !isFinalized && !isPendingApproval
 
   /** Throws on failure — callers decide how to surface that, unlike the wrapped form handler below. */
   const persistDraft = async (values: Form): Promise<void> => {
@@ -129,21 +130,21 @@ export default function PayslipDetail({ payslip, canManage, onSaveDraft, onFinal
     }
   })
 
-  const handleFinalize = async () => {
-    setFinalizeError(null)
-    setFinalizing(true)
+  const handleSubmitApproval = async () => {
+    setSubmitError(null)
+    setSubmitting(true)
 
     try {
-      // Save whatever's currently in the form first, so Finalize locks in what's on
+      // Save whatever's currently in the form first, so submit locks in what's on
       // screen — propagates on failure (unlike the form's own onSubmit), so a failed
       // save never silently proceeds to lock in stale numbers.
       await persistDraft(getValues())
-      await onFinalize(payslip.employeeId)
-      setConfirmingFinalize(false)
+      await onSubmitApproval(payslip.employeeId)
+      setConfirmingSubmit(false)
     } catch (err) {
-      setFinalizeError(err instanceof PayslipError ? err.message : 'We could not finalize that payslip.')
+      setSubmitError(err instanceof PayslipError ? err.message : 'We could not submit that payslip for approval.')
     } finally {
-      setFinalizing(false)
+      setSubmitting(false)
     }
   }
 
@@ -173,12 +174,20 @@ export default function PayslipDetail({ payslip, canManage, onSaveDraft, onFinal
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <Badge tone={isFinalized ? 'success' : 'neutral'}>{isFinalized ? 'Finalized' : 'Draft'}</Badge>
+        <Badge tone={isFinalized ? 'success' : isPendingApproval ? 'warning' : 'neutral'}>
+          {isFinalized ? 'Finalized' : isPendingApproval ? 'Pending Approval' : 'Draft'}
+        </Badge>
         {isFinalized && payslip.finalizedAt && (
           <span className="flex items-center gap-1.5 text-[12px] text-muted">
             <Lock size={12} />
             Locked {new Date(`${payslip.finalizedAt}T00:00:00`).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
             {payslip.finalizedBy && ` by ${payslip.finalizedBy}`}
+          </span>
+        )}
+        {isPendingApproval && (
+          <span className="flex items-center gap-1.5 text-[12px] text-amber-600 font-medium">
+            <Lock size={12} />
+            Submitted for approval (review pending)
           </span>
         )}
       </div>
@@ -312,26 +321,26 @@ export default function PayslipDetail({ payslip, canManage, onSaveDraft, onFinal
                   )}
                 </Button>
 
-                {!confirmingFinalize ? (
-                  <Button type="button" disabled={!payslip.hasSalaryStructure} onClick={() => setConfirmingFinalize(true)}>
-                    Finalize
+                {!confirmingSubmit ? (
+                  <Button type="button" disabled={!payslip.hasSalaryStructure} onClick={() => setConfirmingSubmit(true)}>
+                    Submit for approval
                   </Button>
                 ) : (
                   <span className="flex items-center gap-2">
-                    <span className="text-[12.5px] text-muted">Locks this payslip — it can't be edited after.</span>
-                    <Button type="button" variant="secondary" onClick={() => setConfirmingFinalize(false)} disabled={finalizing}>
+                    <span className="text-[12.5px] text-muted">Locks inputs and requests owner review.</span>
+                    <Button type="button" variant="secondary" onClick={() => setConfirmingSubmit(false)} disabled={submitting}>
                       Cancel
                     </Button>
-                    <Button type="button" onClick={() => void handleFinalize()} disabled={finalizing}>
-                      {finalizing ? (
+                    <Button type="button" onClick={() => void handleSubmitApproval()} disabled={submitting}>
+                      {submitting ? (
                         <>
                           <Loader2 size={15} className="animate-spin" />
-                          Finalizing…
+                          Submitting…
                         </>
                       ) : (
                         <>
                           <CheckCircle2 size={15} />
-                          Confirm finalize
+                          Confirm submit
                         </>
                       )}
                     </Button>
@@ -348,10 +357,10 @@ export default function PayslipDetail({ payslip, canManage, onSaveDraft, onFinal
             </div>
           )}
 
-          {finalizeError && (
+          {submitError && (
             <div role="alert" className="flex gap-2.5 rounded-ctl border border-clay/30 bg-clay/5 p-3">
               <AlertCircle size={15} className="mt-px shrink-0 text-clay" />
-              <p className="text-[13px] leading-relaxed text-clay">{finalizeError}</p>
+              <p className="text-[13px] leading-relaxed text-clay">{submitError}</p>
             </div>
           )}
         </Card>

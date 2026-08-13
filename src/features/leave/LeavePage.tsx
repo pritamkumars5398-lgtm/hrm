@@ -727,6 +727,7 @@ export default function LeavePage() {
         open={applyOpen}
         onClose={() => setApplyOpen(false)}
         balances={data?.balances ?? []}
+        holidays={data?.holidays ?? []}
         onApply={(payload) => apply(viewer, payload)}
       />
     </motion.div>

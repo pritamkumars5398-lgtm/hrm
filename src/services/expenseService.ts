@@ -1,4 +1,3 @@
-import { hasBackend } from '@/config/env';
 import { apiClient, apiErrorMessage } from './apiClient';
 
 export type ExpenseClaim = {
@@ -6,27 +5,35 @@ export type ExpenseClaim = {
   title: string;
   category: string;
   amount: number;
+  approvedAmount?: number | null;
+  reimbursedAmount?: number | null;
   claimDate: string;
   receiptUrl?: string | null;
   status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'REIMBURSED';
   rejectionReason?: string | null;
   employeeName?: string;
-  history?: { status: string; changedAt: string }[];
+  history?: { action: string; userId: string; timestamp: string }[];
 };
 
 export class ExpenseError extends Error {}
 
 export const expenseService = {
   async list(): Promise<ExpenseClaim[]> {
-    if (hasBackend) {
-      try {
-        const { data } = await apiClient.get<ExpenseClaim[]>('/expenses');
-        return data;
-      } catch (error) {
-        throw new ExpenseError(apiErrorMessage(error, 'Could not load expense claims.'));
-      }
+    try {
+      const { data } = await apiClient.get<ExpenseClaim[]>('/expenses');
+      return data;
+    } catch (error) {
+      throw new ExpenseError(apiErrorMessage(error, 'Could not load expense claims.'));
     }
-    return [];
+  },
+
+  async listAll(): Promise<ExpenseClaim[]> {
+    try {
+      const { data } = await apiClient.get<ExpenseClaim[]>('/expenses/all');
+      return data;
+    } catch (error) {
+      throw new ExpenseError(apiErrorMessage(error, 'Could not load all expense claims.'));
+    }
   },
 
   async create(payload: {
@@ -36,19 +43,20 @@ export const expenseService = {
     claimDate: string;
     receiptUrl?: string;
   }): Promise<ExpenseClaim> {
-    if (hasBackend) {
-      try {
-        const { data } = await apiClient.post<ExpenseClaim>('/expenses', payload);
-        return data;
-      } catch (error) {
-        throw new ExpenseError(apiErrorMessage(error, 'Could not submit expense claim.'));
-      }
+    try {
+      const { data } = await apiClient.post<ExpenseClaim>('/expenses', payload);
+      return data;
+    } catch (error) {
+      throw new ExpenseError(apiErrorMessage(error, 'Could not submit expense claim.'));
     }
-    return {
-      id: `exp-${Date.now()}`,
-      ...payload,
-      status: 'PENDING',
-      claimDate: payload.claimDate,
-    };
+  },
+
+  async reimburse(id: string): Promise<ExpenseClaim> {
+    try {
+      const { data } = await apiClient.patch<ExpenseClaim>(`/expenses/${id}/reimburse`, {});
+      return data;
+    } catch (error) {
+      throw new ExpenseError(apiErrorMessage(error, 'Could not reimburse expense claim.'));
+    }
   },
 };

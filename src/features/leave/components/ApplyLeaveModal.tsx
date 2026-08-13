@@ -18,15 +18,41 @@ type ApplyLeaveModalProps = {
   open: boolean
   onClose: () => void
   balances: LeaveBalance[]
+  holidays: string[]
   onApply: (payload: ApplyLeavePayload) => Promise<unknown>
 }
 
 type Form = ApplyLeavePayload
 
+function calculateWorkingDaysFrontend(
+  startDateStr: string,
+  endDateStr: string,
+  holidays: string[] = [],
+): number {
+  let count = 0
+  const start = new Date(`${startDateStr}T00:00:00`)
+  const end = new Date(`${endDateStr}T00:00:00`)
+  
+  for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+    const dayOfWeek = d.getDay()
+    const isWeekend = dayOfWeek === 0 || dayOfWeek === 6
+    
+    const pad = (n: number) => String(n).padStart(2, '0')
+    const isoDateStr = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
+    const isHoliday = holidays.includes(isoDateStr)
+    
+    if (!isWeekend && !isHoliday) {
+      count++
+    }
+  }
+  return count
+}
+
 export default function ApplyLeaveModal({
   open,
   onClose,
   balances,
+  holidays,
   onApply,
 }: ApplyLeaveModalProps) {
   const [formError, setFormError] = useState<string | null>(null)
@@ -50,7 +76,7 @@ export default function ApplyLeaveModal({
   const remaining = balance ? balance.total - balance.used : 0
   const requested = isHalfDay
     ? (startDate ? 0.5 : 0)
-    : (startDate && endDate && endDate >= startDate ? daysBetween(startDate, endDate) : 0)
+    : (startDate && endDate && endDate >= startDate ? calculateWorkingDaysFrontend(startDate, endDate, holidays) : 0)
 
   const close = () => {
     reset()
@@ -62,6 +88,18 @@ export default function ApplyLeaveModal({
     setFormError(null)
     if (values.isHalfDay) {
       values.endDate = values.startDate
+      const d = new Date(`${values.startDate}T00:00:00`)
+      const dayOfWeek = d.getDay()
+      if (dayOfWeek === 0 || dayOfWeek === 6 || holidays.includes(values.startDate)) {
+        setFormError('You cannot request half-day leave on a weekend or holiday.')
+        return
+      }
+    } else {
+      const days = calculateWorkingDaysFrontend(values.startDate, values.endDate, holidays)
+      if (days === 0) {
+        setFormError('The requested date range contains only non-working days (weekends/holidays).')
+        return
+      }
     }
 
     try {

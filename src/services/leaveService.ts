@@ -47,6 +47,7 @@ export type LeaveData = {
   hasEmployeeRecord: boolean
   /** The company's current entitlement — editable via updatePolicy() by whoever holds leave.approve. */
   policy: { annual: number; sick: number; personal: number }
+  holidays?: string[]
 }
 
 export type LeavePolicyPatch = { annual?: number; sick?: number; personal?: number }
@@ -115,6 +116,7 @@ export const leaveService = {
         .sort((a, b) => a.startDate.localeCompare(b.startDate)),
       hasEmployeeRecord: me !== null,
       policy: { annual: mockLeavePolicy.ANNUAL, sick: mockLeavePolicy.SICK, personal: mockLeavePolicy.PERSONAL },
+      holidays: [],
     }
   },
 

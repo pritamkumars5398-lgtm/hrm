@@ -25,18 +25,16 @@ export type ReportsData = {
   leaveDaysTaken: number
   /** Null unless the caller holds payroll.view/payroll.manage/* — never just reports.view (§10). */
   payrollCost: number | null
+  expenseTotal?: number
+  travelCount?: number
+  openTicketsCount?: number
+  totalAssetsCount?: number
   departments: DepartmentRow[]
   headcountByMonth: Array<{ label: string; value: number }>
 }
 
 export class ReportsError extends Error {}
 
-/**
- * Real backend once configured — every figure is aggregated server-side from
- * the other real modules (Employees, Attendance, Leave, Payroll), scoped by
- * organizationId. The mock path exists for the offline/no-backend demo and
- * derives from the mock data the same way this used to work end-to-end.
- */
 export const reportsService = {
   async get(permissions: string[]): Promise<ReportsData> {
     if (hasBackend) {
@@ -113,12 +111,15 @@ export const reportsService = {
       payrollCost: hasPermission(permissions, 'payroll.view')
         ? Math.round((mockPayrollRuns[0]?.gross ?? 0) / 100)
         : null,
+      expenseTotal: 15400,
+      travelCount: 3,
+      openTicketsCount: 2,
+      totalAssetsCount: 12,
       departments,
       headcountByMonth,
     }
   },
 
-  /** Downloads the real CSV export. No mock equivalent — there is no file to export offline. */
   async exportCsv(): Promise<void> {
     if (!hasBackend) {
       throw new ReportsError('Export requires a connected backend.')

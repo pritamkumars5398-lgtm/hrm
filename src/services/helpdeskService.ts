@@ -36,6 +36,18 @@ export const helpdeskService = {
     return [];
   },
 
+  async listAll(): Promise<HelpdeskTicket[]> {
+    if (hasBackend) {
+      try {
+        const { data } = await apiClient.get<HelpdeskTicket[]>('/helpdesk/all');
+        return data;
+      } catch (error) {
+        throw new HelpdeskError(apiErrorMessage(error, 'Could not load all helpdesk tickets.'));
+      }
+    }
+    return [];
+  },
+
   async create(payload: {
     subject: string;
     description?: string;

@@ -119,7 +119,7 @@ export default function MyPayslipPage() {
       )}
 
       {status === 'ready' && payslip && (
-        <PayslipDetail payslip={payslip} canManage={false} onSaveDraft={neverCalled} onFinalize={neverCalled} />
+        <PayslipDetail payslip={payslip} canManage={false} onSaveDraft={neverCalled} onSubmitApproval={neverCalled} />
       )}
 
       {status === 'ready' && !payslip && (
