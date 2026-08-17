@@ -10,6 +10,7 @@ export type HelpdeskTicket = {
   priority: 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT';
   status: 'OPEN' | 'IN_PROGRESS' | 'RESOLVED' | 'CLOSED';
   assignedToId?: string | null;
+  assignedToName?: string | null;
   resolution?: string | null;
   requesterName?: string;
   comments?: { author: string; comment: string; createdAt: string }[];
