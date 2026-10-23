@@ -1,83 +1,47 @@
-import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { formsApi, type FormAssignment } from '@/services/forms';
-import { Calendar, Clock, ArrowRight, CheckCircle2 } from 'lucide-react';
+import { useState } from 'react'
+import { Link } from 'react-router-dom'
+import { FormInput, CheckCircle, Clock, FileText } from 'lucide-react'
 
-export const MyFormsPage: React.FC = () => {
-  const navigate = useNavigate();
-  const [assignments, setAssignments] = useState<FormAssignment[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    formsApi.getMyAssignments().then((data) => {
-      setAssignments(data);
-      setIsLoading(false);
-    });
-  }, []);
+export default function MyFormsPage() {
+  const [assignedForms] = useState([
+    { id: 'form-1', title: 'Q3 2026 360-Degree Performance Appraisal', dueBy: '15th Aug 2026', status: 'PENDING' },
+    { id: 'form-2', title: 'Employee Workplace Engagement & Pulse Survey', dueBy: '10th Aug 2026', status: 'SUBMITTED' },
+  ])
 
   return (
-    <div className="p-6 space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-foreground">My Assigned Forms</h1>
-        <p className="text-sm text-muted-foreground">View, fill, and submit assigned surveys and HR requests.</p>
+    <div className="space-y-6">
+      <div className="bg-gradient-to-r from-slate-900 to-indigo-950 text-white p-6 rounded-2xl border border-indigo-500/20 shadow-xl">
+        <h1 className="text-2xl font-bold font-display">My Assigned Forms & Appraisals</h1>
+        <p className="text-slate-300 text-sm mt-1">Complete your pending performance reviews and workplace surveys.</p>
       </div>
 
-      {isLoading ? (
-        <div className="p-12 text-center text-muted-foreground">Loading assigned forms...</div>
-      ) : assignments.length === 0 ? (
-        <div className="p-12 border border-dashed rounded-2xl text-center bg-card">
-          <CheckCircle2 className="w-12 h-12 text-emerald-500 mx-auto mb-3" />
-          <h3 className="text-lg font-semibold">You're all caught up!</h3>
-          <p className="text-sm text-muted-foreground mt-1">There are no pending forms assigned to you at this time.</p>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-          {assignments.map((asgn) => {
-            const isSubmitted = asgn.status === 'SUBMITTED';
-            return (
-              <div
-                key={asgn.id}
-                className="p-5 rounded-2xl border border-border bg-card hover:border-slate-300 dark:hover:border-slate-700 transition-all shadow-sm flex flex-col justify-between"
-              >
-                <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <span
-                      className={`text-[10px] uppercase font-bold px-2.5 py-0.5 rounded-full ${
-                        isSubmitted
-                          ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300'
-                          : 'bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300'
-                      }`}
-                    >
-                      {asgn.status}
-                    </span>
-                    {asgn.dueDate && (
-                      <span className="text-xs text-muted-foreground flex items-center gap-1">
-                        <Calendar className="w-3 h-3 text-red-500" /> Due: {new Date(asgn.dueDate).toLocaleDateString()}
-                      </span>
-                    )}
-                  </div>
+      <div className="space-y-4">
+        {assignedForms.map(f => (
+          <div key={f.id} className="bg-white p-5 rounded-2xl border border-hairline shadow-sm flex items-center justify-between">
+            <div>
+              <h3 className="font-bold text-sm text-ink">{f.title}</h3>
+              <p className="text-xs text-muted mt-1">Due by {f.dueBy}</p>
+            </div>
 
-                  <h3 className="font-semibold text-foreground text-lg">{asgn.form?.title}</h3>
-                  <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{asgn.form?.description || 'No description provided.'}</p>
-                </div>
+            <div className="flex items-center gap-3">
+              <span className={`px-3 py-1 rounded-full text-xs font-bold ${
+                f.status === 'SUBMITTED' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
+              }`}>
+                {f.status}
+              </span>
 
-                <div className="mt-6 pt-3 border-t border-border flex items-center justify-between">
-                  <span className="text-xs text-muted-foreground flex items-center gap-1">
-                    <Clock className="w-3.5 h-3.5" /> Assigned: {new Date(asgn.assignedAt).toLocaleDateString()}
-                  </span>
-
-                  <button
-                    onClick={() => navigate(`/dashboard/my-forms/${asgn.formId}`)}
-                    className="flex items-center gap-1.5 px-4 py-2 bg-primary text-primary-foreground text-xs font-semibold rounded-xl hover:bg-primary/90 transition-colors shadow-sm"
-                  >
-                    {isSubmitted ? 'View Submission' : 'Fill Form'} <ArrowRight className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
+              {f.status === 'PENDING' && (
+                <Link
+                  to={`/dashboard/forms/fill/${f.id}`}
+                  className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-4 py-2 rounded-xl text-xs shadow-xs"
+                >
+                  Fill Form
+                </Link>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
     </div>
-  );
-};
+  )
+}

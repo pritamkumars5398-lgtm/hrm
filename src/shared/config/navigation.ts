@@ -1,7 +1,6 @@
 import {
   BarChart3,
   Banknote,
-  Briefcase,
   CalendarDays,
   Clock,
   FileText,
@@ -11,22 +10,51 @@ import {
   Target,
   Users,
   UserPlus,
+  Briefcase,
+  UserCheck,
+  Timer,
+  GraduationCap,
+  Laptop,
+  CreditCard,
+  Plane,
+  LifeBuoy,
+  HeartHandshake,
+  MessageSquare,
+  FormInput,
+  GitBranch,
+  ShieldCheck,
+  Sparkles,
+  ShieldAlert,
+  Building2,
   type LucideIcon,
 } from 'lucide-react'
 
 export type ModuleKey =
   | 'dashboard'
-  | 'forms'
-  | 'myforms'
   | 'employees'
+  | 'recruitment'
+  | 'onboarding'
   | 'attendance'
   | 'leave'
   | 'payroll'
   | 'payslip'
+  | 'timesheets'
   | 'performance'
+  | 'lms'
+  | 'assets'
+  | 'expenses'
+  | 'travel'
+  | 'helpdesk'
+  | 'engagement'
+  | 'communication'
   | 'documents'
+  | 'forms'
+  | 'workflows'
   | 'reports'
-  | 'recruitment'
+  | 'compliance'
+  | 'ai-copilot'
+  | 'superadmin'
+  | 'billing'
   | 'team'
   | 'settings'
 
@@ -35,49 +63,81 @@ export type NavItem = {
   label: string
   path: string
   icon: LucideIcon
-  /** Sidebar grouping — modules vs. the administrative tail. */
-  group: 'main' | 'admin'
+  /** Sidebar grouping — modules vs. administrative/AI tools. */
+  group: 'main' | 'operations' | 'engagement' | 'ai_saas' | 'admin'
 }
 
 export const NAV_ITEMS: NavItem[] = [
+  // Main Core HR
   { key: 'dashboard', label: 'Dashboard', path: '/dashboard', icon: LayoutDashboard, group: 'main' },
-  { key: 'forms', label: 'Form Builder', path: '/dashboard/forms', icon: FileText, group: 'main' },
-  { key: 'myforms', label: 'My Forms', path: '/dashboard/my-forms', icon: FileText, group: 'main' },
   { key: 'employees', label: 'Employees', path: '/dashboard/employees', icon: Users, group: 'main' },
   { key: 'attendance', label: 'Attendance', path: '/dashboard/attendance', icon: Clock, group: 'main' },
-  { key: 'leave', label: 'Leave', path: '/dashboard/leave', icon: CalendarDays, group: 'main' },
+  { key: 'leave', label: 'Leave Planner', path: '/dashboard/leave', icon: CalendarDays, group: 'main' },
   { key: 'payroll', label: 'Payroll', path: '/dashboard/payroll', icon: Banknote, group: 'main' },
-  { key: 'payslip', label: 'Payslip', path: '/dashboard/payslip', icon: Receipt, group: 'main' },
+  { key: 'payslip', label: 'My Payslip', path: '/dashboard/payslip', icon: Receipt, group: 'main' },
   { key: 'performance', label: 'Performance', path: '/dashboard/performance', icon: Target, group: 'main' },
-  { key: 'documents', label: 'Documents', path: '/dashboard/documents', icon: FileText, group: 'main' },
-  { key: 'reports', label: 'Reports', path: '/dashboard/reports', icon: BarChart3, group: 'main' },
-  { key: 'recruitment', label: 'Recruitment (ATS)', path: '/dashboard/recruitment', icon: Briefcase, group: 'main' },
+
+  // Operations & Talent
+  { key: 'recruitment', label: 'Recruitment (ATS)', path: '/dashboard/recruitment', icon: Briefcase, group: 'operations' },
+  { key: 'onboarding', label: 'Digital Onboarding', path: '/dashboard/onboarding-tracker', icon: UserCheck, group: 'operations' },
+  { key: 'timesheets', label: 'Time Tracking', path: '/dashboard/timesheets', icon: Timer, group: 'operations' },
+  { key: 'lms', label: 'LMS Academy', path: '/dashboard/lms', icon: GraduationCap, group: 'operations' },
+  { key: 'assets', label: 'Asset Management', path: '/dashboard/assets', icon: Laptop, group: 'operations' },
+  { key: 'expenses', label: 'Expense Claims', path: '/dashboard/expenses', icon: CreditCard, group: 'operations' },
+  { key: 'travel', label: 'Travel Desk', path: '/dashboard/travel', icon: Plane, group: 'operations' },
+  { key: 'helpdesk', label: 'Helpdesk Tickets', path: '/dashboard/helpdesk', icon: LifeBuoy, group: 'operations' },
+
+  // Engagement & Docs
+  { key: 'engagement', label: 'Engagement & Kudos', path: '/dashboard/engagement', icon: HeartHandshake, group: 'engagement' },
+  { key: 'communication', label: 'Chat & WhatsApp', path: '/dashboard/communication', icon: MessageSquare, group: 'engagement' },
+  { key: 'documents', label: 'Document Center', path: '/dashboard/documents', icon: FileText, group: 'engagement' },
+  { key: 'forms', label: 'Form Builder', path: '/dashboard/forms', icon: FormInput, group: 'engagement' },
+
+  // Workflows & AI
+  { key: 'workflows', label: 'Workflow Engine', path: '/dashboard/workflows', icon: GitBranch, group: 'ai_saas' },
+  { key: 'reports', label: 'Reports & Analytics', path: '/dashboard/reports', icon: BarChart3, group: 'ai_saas' },
+  { key: 'compliance', label: 'Statutory Compliance', path: '/dashboard/compliance', icon: ShieldCheck, group: 'ai_saas' },
+  { key: 'ai-copilot', label: 'AI HR Copilot', path: '/dashboard/ai-copilot', icon: Sparkles, group: 'ai_saas' },
+  { key: 'billing', label: 'Subscriptions', path: '/dashboard/billing', icon: Building2, group: 'ai_saas' },
+  { key: 'superadmin', label: 'Super Admin SaaS', path: '/dashboard/superadmin', icon: ShieldAlert, group: 'ai_saas' },
+
+  // Admin
   { key: 'team', label: 'Team Members', path: '/dashboard/team', icon: UserPlus, group: 'admin' },
   { key: 'settings', label: 'Settings', path: '/dashboard/settings', icon: Settings, group: 'admin' },
 ]
 
 export type PermissionMatrix = Record<ModuleKey, string[]>
 
-/**
- * Maps each module to the granular permissions that grant access to it.
- * If a user holds ANY of the listed permissions, they can access the module.
- */
 export const PERMISSION_MODULES: PermissionMatrix = {
-  dashboard: [], // Handled by ALWAYS_GRANTED
-  forms: ['forms.manage', 'forms.view'],
-  myforms: [], // Handled by ALWAYS_GRANTED - employee form filling is a baseline
+  dashboard: [],
   employees: ['employees.view', 'employees.manage'],
-  attendance: [], // Handled by ALWAYS_GRANTED — self-service check-in is a baseline
-  leave: [], // Handled by ALWAYS_GRANTED — applying for leave is a baseline
-  payroll: ['payroll.view', 'payroll.manage'],
-  payslip: [], // Handled by ALWAYS_GRANTED — seeing your own finalized payslip is a baseline
-  performance: ['performance.view', 'performance.manage'],
-  documents: ['documents.view', 'documents.manage'],
-  reports: ['reports.view'],
   recruitment: ['recruitment.view', 'recruitment.manage'],
+  onboarding: ['onboarding.view', 'onboarding.manage'],
+  attendance: [],
+  leave: [],
+  payroll: ['payroll.view', 'payroll.manage'],
+  payslip: [],
+  timesheets: [],
+  performance: ['performance.view', 'performance.manage'],
+  lms: [],
+  assets: [],
+  expenses: [],
+  travel: [],
+  helpdesk: [],
+  engagement: [],
+  communication: [],
+  documents: ['documents.view', 'documents.manage'],
+  forms: [],
+  workflows: ['settings.manage'],
+  reports: ['reports.view'],
+  compliance: ['payroll.view', 'payroll.manage'],
+  'ai-copilot': [],
+  superadmin: ['settings.manage'],
+  billing: ['settings.manage'],
   team: ['team.view', 'team.invite', 'team.managePermissions'],
   settings: ['settings.manage'],
 }
+
 
 /**
  * Modules nobody can be locked out of.
@@ -91,7 +151,7 @@ export const PERMISSION_MODULES: PermissionMatrix = {
  * (company-wide vs. just you), decided server-side (§4.1). `payslip` is NOT
  * unconditional like the others — see the carve-out in `canAccess` below.
  */
-export const ALWAYS_GRANTED: ModuleKey[] = ['dashboard', 'attendance', 'leave', 'myforms']
+export const ALWAYS_GRANTED: ModuleKey[] = ['dashboard', 'attendance', 'leave']
 
 /**
  * Payslip is the "my own payslip" ESS view, distinct from the Payroll
@@ -116,8 +176,9 @@ export function canAccess(permissions: string[] | undefined, moduleKey: ModuleKe
   return requiredPerms.some((p) => perms.includes(p))
 }
 
-export function navItemsFor(permissions: string[] | undefined): NavItem[] {
-  return NAV_ITEMS.filter((item) => canAccess(permissions, item.key))
+export function navItemsFor(_permissions?: string[]): NavItem[] {
+  // Always return all navigation items so every enterprise feature is visible in the sidebar.
+  return NAV_ITEMS
 }
 
 /**
@@ -147,13 +208,6 @@ export const PERMISSION_KEY_GROUPS: Array<{ label: string; keys: Array<{ key: st
     keys: [
       { key: 'employees.view', label: 'View employee directory' },
       { key: 'employees.manage', label: 'Manage employee records' },
-    ],
-  },
-  {
-    label: 'Forms',
-    keys: [
-      { key: 'forms.view', label: 'View form list and responses' },
-      { key: 'forms.manage', label: 'Create, edit, and publish forms' },
     ],
   },
   {

@@ -375,8 +375,8 @@ export default function DashboardLayout() {
           className="flex min-h-dvh"
         >
           {/* Desktop rail */}
-          <aside className={`hidden shrink-0 lg:block transition-all duration-200 ${sidebarCollapsed ? 'w-16' : 'w-60'}`}>
-            <div className={`fixed inset-y-0 z-20 transition-all duration-200 ${sidebarCollapsed ? 'w-16' : 'w-60'}`}>
+          <aside className={`hidden shrink-0 lg:block transition-all duration-200 ${sidebarCollapsed ? 'w-16' : 'w-[210px]'}`}>
+            <div className={`fixed inset-y-0 z-20 transition-all duration-200 ${sidebarCollapsed ? 'w-16' : 'w-[210px]'}`}>
               <Sidebar permissions={user.permissions} role={user.role} organizationName={organizationName} collapsed={sidebarCollapsed} />
             </div>
           </aside>

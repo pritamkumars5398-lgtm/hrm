@@ -1,227 +1,268 @@
-import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { formsApi, type Form, type FormQuestion } from '@/services/forms';
-import { QuestionCard } from './QuestionCard';
-import { DynamicFormRenderer } from './DynamicFormRenderer';
-import { Plus, Eye, Send, ArrowLeft, Save } from 'lucide-react';
+import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { FormInput, Plus, Trash2, Save, ArrowLeft, Eye, Star, CheckCircle } from 'lucide-react'
+import { useFormStore, type FormField, type FormFieldType } from './store/formStore'
 
-export const FormBuilder: React.FC = () => {
-  const { id } = useParams<{ id?: string }>();
-  const navigate = useNavigate();
+export default function FormBuilder() {
+  const navigate = useNavigate()
+  const addForm = useFormStore((s) => s.addForm)
 
-  const [title, setTitle] = useState('Untitled Form');
-  const [description, setDescription] = useState('');
-  const [questions, setQuestions] = useState<FormQuestion[]>([
-    {
-      id: `fq-${Date.now()}-1`,
-      label: 'Full Name',
-      fieldType: 'TEXT',
+  const [title, setTitle] = useState('')
+  const [description, setDescription] = useState('')
+  const [category, setCategory] = useState<'Appraisal' | 'Survey' | 'Feedback' | 'Onboarding'>('Appraisal')
+
+  const [fields, setFields] = useState<FormField[]>([
+    { id: 'f-1', label: 'Overall Quarterly Performance Rating (1-5)', type: 'RATING', required: true },
+    { id: 'f-2', label: 'Key Achievements & Delivered Deliverables', type: 'TEXTAREA', required: true },
+    { id: 'f-3', label: 'Upload Proof / Portfolio Document (PDF/ZIP)', type: 'FILE', required: false },
+  ])
+
+  const [showPreview, setShowPreview] = useState(false)
+
+  const addField = (type: FormFieldType = 'TEXT') => {
+    const newF: FormField = {
+      id: `f-${Date.now()}`,
+      label: 'New Question / Survey Question',
+      type,
       required: true,
-      order: 0,
-    },
-    {
-      id: `fq-${Date.now()}-2`,
-      label: 'Department',
-      fieldType: 'DROPDOWN',
-      required: true,
-      order: 1,
-      options: [
-        { id: 'opt-1', label: 'Engineering', value: 'engineering', order: 0 },
-        { id: 'opt-2', label: 'HR', value: 'hr', order: 1 },
-        { id: 'opt-3', label: 'Marketing', value: 'marketing', order: 2 },
-      ],
-    },
-  ]);
-  const [selectedQuestionId, setSelectedQuestionId] = useState<string | null>(null);
-  const [isPreview, setIsPreview] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
-  const [isPublishing, setIsPublishing] = useState(false);
-  const [status, setStatus] = useState<'DRAFT' | 'PUBLISHED' | 'CLOSED' | 'ARCHIVED'>('DRAFT');
-
-  useEffect(() => {
-    if (id) {
-      formsApi.getFormById(id).then((form) => {
-        setTitle(form.title);
-        setDescription(form.description || '');
-        setStatus(form.status);
-        if (form.questions && form.questions.length > 0) {
-          setQuestions(form.questions);
-        }
-      });
     }
-  }, [id]);
+    setFields([...fields, newF])
+  }
 
-  const handleAddQuestion = () => {
-    const newQ: FormQuestion = {
-      id: `fq-${Date.now()}-${questions.length + 1}`,
-      label: 'Untitled Question',
-      fieldType: 'TEXT',
-      required: false,
-      order: questions.length,
-    };
-    setQuestions((prev) => [...prev, newQ]);
-    setSelectedQuestionId(newQ.id);
-  };
+  const removeField = (id: string) => {
+    setFields(fields.filter((f) => f.id !== id))
+  }
 
-  const handleUpdateQuestion = (updated: FormQuestion) => {
-    setQuestions((prev) => prev.map((q) => (q.id === updated.id ? updated : q)));
-  };
+  const handleSave = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!title.trim()) return
 
-  const handleDuplicateQuestion = (qId: string) => {
-    const target = questions.find((q) => q.id === qId);
-    if (!target) return;
-    const duplicated: FormQuestion = {
-      ...target,
-      id: `fq-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
-      label: `${target.label} (Copy)`,
-      order: questions.length,
-    };
-    setQuestions((prev) => [...prev, duplicated]);
-  };
+    addForm({
+      title,
+      description: description || 'Custom feedback & performance review form.',
+      category,
+      status: 'PUBLISHED',
+      fields,
+    })
 
-  const handleDeleteQuestion = (qId: string) => {
-    setQuestions((prev) => prev.filter((q) => q.id !== qId));
-  };
-
-  const handleSave = async (publish = false) => {
-    setIsSaving(true);
-    try {
-      let savedForm: Form;
-      const payload = {
-        title,
-        description,
-        questions: questions.map((q, idx) => ({ ...q, order: idx })),
-      };
-
-      if (id) {
-        savedForm = await formsApi.updateForm(id, payload);
-      } else {
-        savedForm = await formsApi.createForm(payload);
-      }
-
-      if (publish) {
-        setIsPublishing(true);
-        await formsApi.updateStatus(savedForm.id, 'PUBLISHED');
-        setStatus('PUBLISHED');
-      }
-
-      navigate(`/dashboard/forms`);
-    } catch (err) {
-      console.error('Save failed', err);
-    } finally {
-      setIsSaving(false);
-      setIsPublishing(false);
-    }
-  };
+    navigate('/dashboard/forms')
+  }
 
   return (
-    <div className="min-h-screen bg-slate-50/50 dark:bg-slate-950 pb-20">
-      {/* Top Sticky Header */}
-      <header className="sticky top-0 z-30 bg-background/80 backdrop-blur-md border-b border-border px-6 py-3 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <button
-            onClick={() => navigate('/dashboard/forms')}
-            className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent"
-          >
-            <ArrowLeft className="w-5 h-5" />
-          </button>
-          <div>
-            <div className="flex items-center gap-2">
-              <h1 className="font-semibold text-base text-foreground">{title || 'Untitled Form'}</h1>
-              <span
-                className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded-full ${
-                  status === 'PUBLISHED'
-                    ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300'
-                    : 'bg-slate-200 text-slate-700 dark:bg-slate-800 dark:text-slate-300'
-                }`}
-              >
-                {status}
-              </span>
-            </div>
-            <p className="text-xs text-muted-foreground">Google Forms-like Dynamic Engine</p>
-          </div>
-        </div>
+    <div className="space-y-6 max-w-5xl mx-auto">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <button
+          onClick={() => navigate('/dashboard/forms')}
+          className="flex items-center gap-1.5 text-xs font-bold text-muted hover:text-ink cursor-pointer"
+        >
+          <ArrowLeft size={16} /> Back to Forms
+        </button>
 
-        <div className="flex items-center gap-3">
-          <button
-            onClick={() => setIsPreview(!isPreview)}
-            className="flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-medium rounded-lg border border-input hover:bg-accent transition-colors"
-          >
-            <Eye className="w-4 h-4" /> {isPreview ? 'Back to Editor' : 'Preview'}
-          </button>
+        <h1 className="text-xl font-bold font-display text-ink">Custom Drag & Drop Form Builder</h1>
 
-          <button
-            onClick={() => handleSave(false)}
-            disabled={isSaving}
-            className="flex items-center gap-1.5 px-4 py-1.5 text-xs font-medium rounded-lg border border-input bg-card hover:bg-accent transition-colors"
-          >
-            <Save className="w-4 h-4" /> {isSaving ? 'Saving...' : 'Save Draft'}
-          </button>
+        <button
+          type="button"
+          onClick={() => setShowPreview(!showPreview)}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-hairline bg-surface text-xs font-bold text-indigo-600 hover:bg-indigo-50 transition cursor-pointer"
+        >
+          <Eye size={15} /> {showPreview ? 'Hide Preview' : 'Live Preview'}
+        </button>
+      </div>
 
-          <button
-            onClick={() => handleSave(true)}
-            disabled={isPublishing}
-            className="flex items-center gap-1.5 px-4 py-1.5 text-xs font-medium rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors shadow-sm"
-          >
-            <Send className="w-4 h-4" /> {isPublishing ? 'Publishing...' : 'Publish Form'}
-          </button>
-        </div>
-      </header>
-
-      {/* Main Canvas / Content */}
-      <main className="max-w-3xl mx-auto mt-8 px-4">
-        {isPreview ? (
-          <div className="bg-card p-8 rounded-2xl border border-border shadow-sm space-y-6">
-            <div className="border-b border-border pb-4">
-              <h2 className="text-2xl font-bold text-foreground">{title}</h2>
-              {description && <p className="text-sm text-muted-foreground mt-1">{description}</p>}
-            </div>
-            <DynamicFormRenderer questions={questions} readOnly />
-          </div>
-        ) : (
-          <div className="space-y-4">
-            {/* Form Title & Description Card */}
-            <div className="p-6 rounded-2xl border border-border bg-card shadow-sm border-t-4 border-t-primary">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        {/* Form Creator Left/Main */}
+        <form onSubmit={handleSave} className={`space-y-6 bg-white p-6 rounded-2xl border border-hairline shadow-sm ${showPreview ? 'lg:col-span-7' : 'lg:col-span-12'}`}>
+          <div className="space-y-4 text-xs">
+            <div>
+              <label className="block text-ink font-bold mb-1">Form Title *</label>
               <input
                 type="text"
+                required
+                placeholder="e.g. Q3 Leadership & Manager 360 Review"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                placeholder="Form Title"
-                className="w-full text-2xl font-bold border-b border-transparent hover:border-border focus:border-primary focus:outline-none bg-transparent py-1 transition-colors"
-              />
-              <input
-                type="text"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                placeholder="Form Description (optional)"
-                className="w-full text-sm text-muted-foreground border-b border-transparent hover:border-border focus:border-primary focus:outline-none bg-transparent py-1 mt-2 transition-colors"
+                className="w-full px-3 py-2 text-sm font-semibold rounded-xl border border-hairline focus:border-indigo-500 focus:outline-none"
               />
             </div>
 
-            {/* Questions List */}
-            {questions.map((q, idx) => (
-              <QuestionCard
-                key={q.id}
-                question={q}
-                index={idx}
-                isSelected={selectedQuestionId === q.id}
-                onSelect={() => setSelectedQuestionId(q.id)}
-                onChange={handleUpdateQuestion}
-                onDuplicate={() => handleDuplicateQuestion(q.id)}
-                onDelete={() => handleDeleteQuestion(q.id)}
+            <div>
+              <label className="block text-muted font-semibold mb-1">Description / Instructions</label>
+              <input
+                type="text"
+                placeholder="e.g. Please fill out your achievements before the end of the performance cycle."
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                className="w-full px-3 py-1.5 text-xs rounded-xl border border-hairline focus:border-indigo-500 focus:outline-none"
               />
-            ))}
+            </div>
 
-            {/* Add Question Button */}
+            <div>
+              <label className="block text-muted font-semibold mb-1">Category</label>
+              <select
+                value={category}
+                onChange={(e) => setCategory(e.target.value as typeof category)}
+                className="w-full px-3 py-2 rounded-xl border border-hairline focus:border-indigo-500 focus:outline-none font-semibold text-ink"
+              >
+                <option value="Appraisal">Performance Appraisal</option>
+                <option value="Survey">Pulse Survey</option>
+                <option value="Feedback">360 Feedback</option>
+                <option value="Onboarding">Onboarding Checklist</option>
+              </select>
+            </div>
+          </div>
+
+          {/* Question List */}
+          <div className="space-y-4 pt-4 border-t border-hairline">
+            <div className="flex items-center justify-between">
+              <h3 className="font-bold text-sm text-ink">Form Fields ({fields.length})</h3>
+
+              {/* Add Field Types Dropdown buttons */}
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <button
+                  type="button"
+                  onClick={() => addField('TEXT')}
+                  className="px-2.5 py-1 rounded-lg bg-indigo-50 text-indigo-700 font-bold text-[11px] hover:bg-indigo-100 transition"
+                >
+                  + Text
+                </button>
+                <button
+                  type="button"
+                  onClick={() => addField('RATING')}
+                  className="px-2.5 py-1 rounded-lg bg-amber-50 text-amber-700 font-bold text-[11px] hover:bg-amber-100 transition"
+                >
+                  + Rating
+                </button>
+                <button
+                  type="button"
+                  onClick={() => addField('FILE')}
+                  className="px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-700 font-bold text-[11px] hover:bg-emerald-100 transition"
+                >
+                  + File
+                </button>
+              </div>
+            </div>
+
+            {fields.map((field, idx) => (
+              <div key={field.id} className="p-4 rounded-xl border border-hairline bg-wash/30 space-y-3">
+                <div className="flex items-center justify-between gap-3">
+                  <span className="font-bold text-xs text-indigo-600">Question #{idx + 1}</span>
+                  <button
+                    type="button"
+                    onClick={() => removeField(field.id)}
+                    className="text-rose-600 hover:text-rose-700"
+                  >
+                    <Trash2 size={15} />
+                  </button>
+                </div>
+
+                <input
+                  type="text"
+                  value={field.label}
+                  onChange={(e) => {
+                    const val = e.target.value
+                    setFields((prev) => prev.map((f) => (f.id === field.id ? { ...f, label: val } : f)))
+                  }}
+                  className="w-full px-3 py-1.5 text-xs rounded-lg border border-hairline focus:border-indigo-500 focus:outline-none bg-white font-semibold text-ink"
+                />
+
+                <div className="flex items-center justify-between text-xs pt-1">
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] text-muted font-bold uppercase">Type:</span>
+                    <select
+                      value={field.type}
+                      onChange={(e) => {
+                        const val = e.target.value as FormFieldType
+                        setFields((prev) => prev.map((f) => (f.id === field.id ? { ...f, type: val } : f)))
+                      }}
+                      className="px-2 py-1 rounded border border-hairline font-semibold text-ink bg-white text-xs"
+                    >
+                      <option value="TEXT">Short Text</option>
+                      <option value="TEXTAREA">Paragraph Text</option>
+                      <option value="RATING">Rating Scale (1-5)</option>
+                      <option value="SELECT">Multiple Choice</option>
+                      <option value="FILE">File Upload</option>
+                      <option value="DATE">Date Picker</option>
+                      <option value="TOGGLE">Yes/No Toggle</option>
+                    </select>
+                  </div>
+
+                  <label className="flex items-center gap-1.5 text-muted font-bold cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={field.required}
+                      onChange={(e) => {
+                        const checked = e.target.checked
+                        setFields((prev) => prev.map((f) => (f.id === field.id ? { ...f, required: checked } : f)))
+                      }}
+                    />
+                    Required
+                  </label>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="pt-4 border-t border-hairline flex justify-end">
             <button
-              onClick={handleAddQuestion}
-              className="w-full py-4 border-2 border-dashed border-slate-300 dark:border-slate-800 hover:border-primary rounded-2xl flex items-center justify-center gap-2 text-sm font-semibold text-muted-foreground hover:text-primary transition-all bg-card/50 hover:bg-card"
+              type="submit"
+              className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-6 py-2.5 rounded-xl text-xs shadow-md transition cursor-pointer"
             >
-              <Plus className="w-5 h-5" /> Add Question
+              <Save size={16} /> Save & Publish Form
             </button>
           </div>
+        </form>
+
+        {/* Live Preview Side Panel */}
+        {showPreview && (
+          <div className="lg:col-span-5 bg-slate-900 text-white p-6 rounded-2xl border border-slate-800 space-y-6 sticky top-4 self-start">
+            <div className="border-b border-slate-800 pb-3">
+              <span className="text-[10px] font-bold text-indigo-400 uppercase tracking-wider">Live Candidate / ESS Preview</span>
+              <h2 className="text-lg font-bold mt-1">{title || 'Untitled Form'}</h2>
+              <p className="text-xs text-slate-400 mt-0.5">{description || 'No description provided.'}</p>
+            </div>
+
+            <div className="space-y-4 text-xs">
+              {fields.map((f, i) => (
+                <div key={f.id} className="bg-slate-800/80 p-3.5 rounded-xl border border-slate-700 space-y-2">
+                  <label className="block font-bold text-slate-200">
+                    {i + 1}. {f.label} {f.required && <span className="text-rose-400">*</span>}
+                  </label>
+
+                  {f.type === 'RATING' && (
+                    <div className="flex items-center gap-1.5">
+                      {[1, 2, 3, 4, 5].map((s) => (
+                        <Star key={s} size={18} className="text-amber-400 fill-amber-400" />
+                      ))}
+                    </div>
+                  )}
+
+                  {f.type === 'TEXT' && (
+                    <input type="text" disabled placeholder="Short text answer..." className="w-full p-2 bg-slate-900 rounded-lg text-xs text-slate-400 border border-slate-700" />
+                  )}
+
+                  {f.type === 'TEXTAREA' && (
+                    <textarea rows={2} disabled placeholder="Detailed answer..." className="w-full p-2 bg-slate-900 rounded-lg text-xs text-slate-400 border border-slate-700" />
+                  )}
+
+                  {f.type === 'FILE' && (
+                    <div className="p-3 bg-slate-900 border border-dashed border-slate-700 rounded-lg text-center text-slate-400 text-xs font-semibold">
+                      Drag & Drop PDF or File Upload
+                    </div>
+                  )}
+
+                  {f.type === 'TOGGLE' && (
+                    <div className="flex items-center gap-3 text-xs font-semibold">
+                      <span className="px-3 py-1 bg-emerald-600 rounded-md">Yes</span>
+                      <span className="px-3 py-1 bg-slate-700 rounded-md">No</span>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
         )}
-      </main>
+      </div>
     </div>
-  );
-};
+  )
+}

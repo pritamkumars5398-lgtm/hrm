@@ -123,10 +123,28 @@ export default function EmployeesPage() {
           </p>
         </div>
         <div>
-          <Button onClick={() => navigate('/dashboard/employees/new')}>
-            Add Employee
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button onClick={() => navigate('/dashboard/employees/new')}>
+              Add Employee
+            </Button>
+          </div>
         </div>
+      </div>
+
+      {/* Mode Switcher Tabs */}
+      <div className="mt-4 flex items-center gap-2 bg-wash/60 p-1.5 rounded-xl border border-hairline w-fit">
+        <button
+          onClick={() => setQuery({ page: 1 })}
+          className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer bg-white text-ink shadow-xs`}
+        >
+          Directory Table
+        </button>
+        <button
+          onClick={() => setSelectedId(rows[0]?.id || 'emp-1')}
+          className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer text-muted hover:text-ink`}
+        >
+          Visual Org Hierarchy
+        </button>
       </div>
 
       {/* Toolbar */}

@@ -13,6 +13,7 @@ type NotificationsState = {
   /** Called by the WebSocket subscription the instant a new one arrives —
    *  this is the actual real-time path, not a refetch. */
   receiveRealtime: (notification: NotificationItem) => void
+  addNotification: (title: string, body: string, link?: string) => void
 }
 
 export const useNotificationsStore = create<NotificationsState>()((set, get) => ({
@@ -75,6 +76,22 @@ export const useNotificationsStore = create<NotificationsState>()((set, get) => 
       if (state.notifications.some((n) => n.id === notification.id)) return state
       return {
         notifications: [notification, ...state.notifications],
+        unreadCount: state.unreadCount + 1,
+      }
+    }),
+
+  addNotification: (title, body, link) =>
+    set((state) => {
+      const newNotif: NotificationItem = {
+        id: `notif-${Date.now()}`,
+        title,
+        body,
+        read: false,
+        createdAt: new Date().toISOString(),
+        link,
+      }
+      return {
+        notifications: [newNotif, ...state.notifications],
         unreadCount: state.unreadCount + 1,
       }
     }),
