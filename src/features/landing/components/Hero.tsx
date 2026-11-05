@@ -2,7 +2,6 @@ import { motion, useReducedMotion } from 'framer-motion'
 import { ArrowRight, Sparkles } from 'lucide-react'
 import Button from '@/shared/components/Button'
 import Container from '@/shared/components/Container'
-const Banner = '/banner4.png'
 
 const logoItems = [
   {
@@ -128,7 +127,7 @@ export default function Hero() {
             className="lg:col-span-7 flex items-center justify-center"
           >
             <img
-              src={Banner}
+              src="/banner4.png"
               alt="Keystone Workspace graphic"
               className="w-full h-120 object-contain select-none"
             />

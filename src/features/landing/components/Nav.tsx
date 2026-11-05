@@ -661,12 +661,7 @@ export default function Nav() {
               {['Standard Employee Offer Letter Template', 'Non-Disclosure Agreement (NDA)', 'POSH Policy & Committee Guidelines', 'Relieving & Experience Certificate'].map((t) => (
                 <div key={t} className="p-3 bg-wash rounded-xl border border-hairline flex items-center justify-between font-semibold text-ink">
                   <span>{t}</span>
-                  <button
-                    onClick={() => alert(`Downloaded ${t}`)}
-                    className="flex items-center gap-1 text-xs font-bold text-emerald-700 bg-white px-2.5 py-1 rounded-lg border border-emerald-200 hover:bg-emerald-50 transition cursor-pointer"
-                  >
-                    <Download size={13} /> Download
-                  </button>
+                  <span className="text-[11px] font-semibold text-muted">In Document Center after sign-in</span>
                 </div>
               ))}
             </div>

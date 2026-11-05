@@ -135,7 +135,7 @@ export default function MonthlyPayrollView({ canManage }: Props) {
               <tbody>
                 {isLoading ? (
                   [0, 1, 2, 3].map((i) => <RowSkeleton key={i} />)
-                ) : rows.length === 0 ? (
+                ) : !Array.isArray(rows) || rows.length === 0 ? (
                   <tr>
                     <td colSpan={3} className="px-4 py-16 text-center">
                       <Receipt size={22} className="mx-auto text-muted/50" aria-hidden="true" />

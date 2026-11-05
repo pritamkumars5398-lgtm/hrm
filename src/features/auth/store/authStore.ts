@@ -122,7 +122,7 @@ function toSessionUser(user: User, preferredActiveOrgId?: string | null): Sessio
     permissions: (user as any).role === 'HR' 
       ? ['employees.*', 'attendance.*', 'leave.*', 'documents.*', 'reports.view', 'team.invite', 'team.view']
       : (user as any).role === 'MANAGER'
-      ? ['attendance.view', 'leave.approve', 'performance.view', 'documents.view']
+      ? ['employees.view', 'attendance.view', 'leave.approve', 'performance.view', 'documents.view', 'reports.view', 'timesheets.view', 'communication.view']
       : ['*'],
     requiresPasswordReset: (user as any).requiresPasswordReset ?? false,
     role: (user as any).role ?? 'OWNER',

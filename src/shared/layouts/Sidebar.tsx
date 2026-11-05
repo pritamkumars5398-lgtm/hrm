@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { ChevronDown, ChevronRight, Layers, FormInput, Sparkles, Building2 } from 'lucide-react'
 import Logo from '@/shared/components/Logo'
 import { navItemsFor, type NavItem } from '@/shared/config/navigation'
+import { useCopilotDrawer } from '@/features/ai/copilotStore'
 import type { Role } from '@/services/authService'
 
 type SidebarProps = {
@@ -114,7 +115,25 @@ export default function Sidebar({
               <div key={group.key} className="space-y-1 border-b border-hairline/60 pb-1.5 mb-1.5 last:border-0">
                 {group.items.map((item) => {
                   const Icon = item.icon
-                  const isActive = item.key === 'dashboard' ? pathname === '/dashboard' : pathname.startsWith(item.path)
+                                          if (item.key === 'ai-copilot') {
+                          return (
+                            <li key={item.key}>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  useCopilotDrawer.getState().openCopilot()
+                                  onNavigate?.()
+                                }}
+                                className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-[12px] text-pine font-semibold hover:bg-pine-tint/40 transition text-left cursor-pointer"
+                              >
+                                <Icon size={14} className="text-pine" />
+                                <span className="flex-1 truncate">{item.label}</span>
+                                <span className="text-[9px] px-1.5 py-0.2 rounded-full bg-pine text-white font-bold">Side</span>
+                              </button>
+                            </li>
+                          )
+                        }
+                        const isActive = item.key === 'dashboard' ? pathname === '/dashboard' : pathname.startsWith(item.path)
                   return (
                     <NavLink
                       key={item.key}
@@ -164,6 +183,24 @@ export default function Sidebar({
                     <ul className="p-1 space-y-0.5 border-t border-hairline/40">
                       {group.items.map((item) => {
                         const Icon = item.icon
+                                                if (item.key === 'ai-copilot') {
+                          return (
+                            <li key={item.key}>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  useCopilotDrawer.getState().openCopilot()
+                                  onNavigate?.()
+                                }}
+                                className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-[12px] text-pine font-semibold hover:bg-pine-tint/40 transition text-left cursor-pointer"
+                              >
+                                <Icon size={14} className="text-pine" />
+                                <span className="flex-1 truncate">{item.label}</span>
+                                <span className="text-[9px] px-1.5 py-0.2 rounded-full bg-pine text-white font-bold">Side</span>
+                              </button>
+                            </li>
+                          )
+                        }
                         const isActive =
                           item.key === 'dashboard' ? pathname === '/dashboard' : pathname.startsWith(item.path)
 

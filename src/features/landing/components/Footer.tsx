@@ -116,12 +116,21 @@ export default function Footer() {
               <ul className="mt-4.5 space-y-3">
                 {col.links.map((l) => (
                   <li key={l}>
-                    <a
-                      href="#top"
-                      className="text-[13.5px] text-muted font-medium hover:text-pine hover:translate-x-0.5 transform transition-all duration-200 inline-block"
-                    >
-                      {l}
-                    </a>
+                    {l === 'Careers' ? (
+                      <a
+                        href="/careers"
+                        className="text-[13.5px] text-muted font-medium hover:text-pine hover:translate-x-0.5 transform transition-all duration-200 inline-block"
+                      >
+                        {l}
+                      </a>
+                    ) : (
+                      <a
+                        href="#top"
+                        className="text-[13.5px] text-muted font-medium hover:text-pine hover:translate-x-0.5 transform transition-all duration-200 inline-block"
+                      >
+                        {l}
+                      </a>
+                    )}
                   </li>
                 ))}
               </ul>

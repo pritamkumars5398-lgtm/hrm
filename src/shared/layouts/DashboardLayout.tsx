@@ -7,6 +7,7 @@ import { useAuthStore } from '@/features/auth/store/authStore'
 import { organizationService, type Organization } from '@/services/organizationService'
 import Sidebar from './Sidebar'
 import Topbar from './Topbar'
+import CopilotSidebarDrawer from '@/features/ai/CopilotSidebarDrawer'
 
 type RoleContent = {
   title: string
@@ -439,6 +440,7 @@ export default function DashboardLayout() {
               </div>
             </main>
           </div>
+          <CopilotSidebarDrawer />
         </motion.div>
       )}
     </AnimatePresence>

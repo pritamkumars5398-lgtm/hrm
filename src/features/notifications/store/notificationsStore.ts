@@ -88,8 +88,8 @@ export const useNotificationsStore = create<NotificationsState>()((set, get) => 
         body,
         read: false,
         createdAt: new Date().toISOString(),
+        kind: 'info',
         link: link ?? null,
-        kind: 'system',
       }
       return {
         notifications: [newNotif, ...state.notifications],

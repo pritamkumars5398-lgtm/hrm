@@ -33,18 +33,25 @@ export default function FormBuilder() {
     setFields(fields.filter((f) => f.id !== id))
   }
 
-  const handleSave = (e: React.FormEvent) => {
+  const [saving, setSaving] = useState(false)
+
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!title.trim()) return
+    if (!title.trim() || saving) return
 
-    addForm({
-      title,
-      description: description || 'Custom feedback & performance review form.',
-      category,
-      fields,
-    })
-
-    navigate('/dashboard/forms')
+    setSaving(true)
+    try {
+      await addForm({
+        title,
+        description: description || 'Custom feedback & performance review form.',
+        category,
+        fields,
+      })
+      navigate('/dashboard/forms')
+    } catch (err) {
+      console.error(err)
+      setSaving(false)
+    }
   }
 
   return (
@@ -205,9 +212,10 @@ export default function FormBuilder() {
           <div className="pt-4 border-t border-hairline flex justify-end">
             <button
               type="submit"
-              className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-6 py-2.5 rounded-xl text-xs shadow-md transition cursor-pointer"
+              disabled={saving}
+              className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white font-bold px-6 py-2.5 rounded-xl text-xs shadow-md transition cursor-pointer"
             >
-              <Save size={16} /> Save & Publish Form
+              <Save size={16} /> {saving ? 'Saving...' : 'Save & Publish Form'}
             </button>
           </div>
         </form>

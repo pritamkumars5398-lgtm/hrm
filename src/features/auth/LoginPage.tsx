@@ -21,7 +21,6 @@ export default function LoginPage() {
   const [formError, setFormError] = useState<string | null>(null)
   const [showPass, setShowPass] = useState(false)
   const [googleOpen, setGoogleOpen] = useState(false)
-  const [isDemoLoggingIn, setIsDemoLoggingIn] = useState(false)
 
   const { signIn } = useGoogleSignIn({
     onSuccess: (user) => enter(user),
@@ -52,20 +51,10 @@ export default function LoginPage() {
     }
   })
 
-  const applyDemoAccount = async (email: string) => {
+  const applyDemoAccount = (email: string) => {
     setValue('email', email, { shouldValidate: true })
     setValue('password', demo.password, { shouldValidate: true })
     setFormError(null)
-    setIsDemoLoggingIn(true)
-    try {
-      enter(await authService.login({ email, password: demo.password }))
-    } catch (err) {
-      setFormError(
-        err instanceof AuthError ? err.message : 'Something went wrong. Please try again.',
-      )
-    } finally {
-      setIsDemoLoggingIn(false)
-    }
   }
 
   // Shared input style — underline style, clean and open
@@ -97,7 +86,7 @@ export default function LoginPage() {
         {/* Google SSO */}
         <GoogleButton
           label="Continue with Google"
-          disabled={isSubmitting || isDemoLoggingIn}
+          disabled={isSubmitting}
           onClick={() => {
             if (hasGoogleOAuth) signIn()
             else setGoogleOpen(true)
@@ -193,13 +182,13 @@ export default function LoginPage() {
           {/* Submit button */}
           <button
             type="submit"
-            disabled={isSubmitting || isDemoLoggingIn}
+            disabled={isSubmitting}
             className="w-full flex items-center justify-center gap-2.5 rounded-2xl py-3 text-[14.5px] font-bold text-white transition-all duration-200 disabled:opacity-60 hover:scale-[1.02] active:scale-[0.98] shadow-md hover:shadow-lg cursor-pointer"
             style={{
               background: 'linear-gradient(135deg, #10b981 0%, #15803d 100%)',
             }}
           >
-            {isSubmitting || isDemoLoggingIn ? (
+            {isSubmitting ? (
               <>
                 <Loader2 size={16} className="animate-spin" />
                 Signing in…
@@ -228,7 +217,7 @@ export default function LoginPage() {
               <button
                 key={a.email}
                 type="button"
-                disabled={isSubmitting || isDemoLoggingIn}
+                disabled={isSubmitting}
                 onClick={() => applyDemoAccount(a.email)}
                 className="rounded-xl border border-gray-200 bg-white px-3 py-1.5 text-[12px] font-semibold text-gray-600 transition-all hover:border-teal-400 hover:bg-teal-50 hover:text-teal-700 shadow-sm disabled:opacity-50 disabled:pointer-events-none"
               >

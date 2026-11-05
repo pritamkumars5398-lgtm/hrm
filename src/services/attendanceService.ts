@@ -201,8 +201,9 @@ export const attendanceService = {
 
   async checkIn(): Promise<void> {
     if (hasBackend) {
+      const location = await locationForPunch()
       try {
-        await apiClient.post('/attendance/check-in')
+        await apiClient.post('/attendance/check-in', location)
         return
       } catch (error) {
         throw new AttendanceError(apiErrorMessage(error, 'We could not check you in.'))
@@ -214,14 +215,37 @@ export const attendanceService = {
 
   async checkOut(): Promise<void> {
     if (hasBackend) {
+      const location = await locationForPunch()
       try {
-        await apiClient.post('/attendance/check-out')
+        await apiClient.post('/attendance/check-out', location)
         return
       } catch (error) {
         throw new AttendanceError(apiErrorMessage(error, 'We could not check you out.'))
       }
     }
     await delay()
+  },
+
+  async getSettings(): Promise<AttendanceSettings> {
+    if (!hasBackend) return { ...DEFAULT_SETTINGS }
+    try {
+      const { data } = await apiClient.get<AttendanceSettings>('/attendance/settings')
+      return data
+    } catch (error) {
+      throw new AttendanceError(apiErrorMessage(error, 'We could not load attendance settings.'))
+    }
+  },
+
+  async updateSettings(payload: AttendanceSettingsPayload): Promise<AttendanceSettings> {
+    if (!hasBackend) {
+      throw new AttendanceError('Attendance settings need the backend to be connected.')
+    }
+    try {
+      const { data } = await apiClient.patch<AttendanceSettings>('/attendance/settings', payload)
+      return data
+    } catch (error) {
+      throw new AttendanceError(apiErrorMessage(error, 'We could not save attendance settings.'))
+    }
   },
 
   async requestCorrection(payload: { date: string; checkIn: string; checkOut: string; reason: string }): Promise<void> {
@@ -235,4 +259,63 @@ export const attendanceService = {
     }
     await delay()
   },
+}
+
+/* ---------------------------------------------------------------- geofence */
+
+export type AttendanceSettings = {
+  geofenceEnabled: boolean
+  officeLatitude: number | null
+  officeLongitude: number | null
+  geofenceRadiusMeters: number | null
+}
+
+export type AttendanceSettingsPayload = {
+  geofenceEnabled: boolean
+  officeLatitude?: number
+  officeLongitude?: number
+  geofenceRadiusMeters?: number
+}
+
+const DEFAULT_SETTINGS: AttendanceSettings = {
+  geofenceEnabled: false,
+  officeLatitude: null,
+  officeLongitude: null,
+  geofenceRadiusMeters: null,
+}
+
+export type GeoFix = { latitude: number; longitude: number; accuracy: number }
+
+/** One high-accuracy GPS fix from the browser, as a readable error when it can't. */
+export function getCurrentLocation(): Promise<GeoFix> {
+  return new Promise((resolve, reject) => {
+    if (!('geolocation' in navigator)) {
+      reject(new AttendanceError('This browser cannot share your location.'))
+      return
+    }
+    navigator.geolocation.getCurrentPosition(
+      (pos) =>
+        resolve({
+          latitude: pos.coords.latitude,
+          longitude: pos.coords.longitude,
+          accuracy: Math.round(pos.coords.accuracy),
+        }),
+      (err) =>
+        reject(
+          new AttendanceError(
+            err.code === err.PERMISSION_DENIED
+              ? 'Location access is blocked. Allow it for this site in your browser and try again.'
+              : 'We could not get your location. Check your GPS/network and try again.',
+          ),
+        ),
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 },
+    )
+  })
+}
+
+/** Only asks the browser for location when the company has a geofence switched on. */
+async function locationForPunch(): Promise<GeoFix | Record<string, never>> {
+  const settings = await attendanceService.getSettings()
+  if (!settings.geofenceEnabled) return {}
+  return getCurrentLocation()
 }

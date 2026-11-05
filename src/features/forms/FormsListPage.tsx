@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import { FormInput, Plus, Share2, Copy, Check, Send, QrCode, X, Eye, Download, Users, FileText, CheckCircle2 } from 'lucide-react'
+import { FormInput, Plus, Share2, Copy, Check, Send, QrCode, X, Eye, Download, Users, FileText, CheckCircle2, Trash2 } from 'lucide-react'
 import { useFormStore, type FormDefinition } from './store/formStore'
 
 export default function FormsListPage() {
-  const { forms, fetchForms } = useFormStore()
+  const { forms, fetchForms, deleteForm } = useFormStore()
   const [search, setSearch] = useState('')
 
   useEffect(() => {
@@ -96,9 +96,20 @@ export default function FormsListPage() {
                   {f.category}
                 </span>
 
-                <span className="text-[10px] font-bold text-muted bg-slate-100 px-2 py-0.5 rounded-md">
-                  Single Submission
-                </span>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[10px] font-bold text-muted bg-slate-100 px-2 py-0.5 rounded-md">
+                    Single Submission
+                  </span>
+                  <button
+                    onClick={() => {
+                      if (window.confirm(`Delete form "${f.title}"?`)) deleteForm(f.id).catch(() => alert("Could not delete the form."))
+                    }}
+                    title="Delete Form"
+                    className="p-1 text-slate-400 hover:text-rose-600 transition cursor-pointer"
+                  >
+                    <Trash2 size={13} />
+                  </button>
+                </div>
               </div>
 
               <h3 className="font-bold text-sm text-ink mt-3 leading-snug">{f.title}</h3>

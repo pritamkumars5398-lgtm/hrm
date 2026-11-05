@@ -1,77 +1,50 @@
-import { hasBackend } from '@/config/env';
-import { apiClient, apiErrorMessage } from './apiClient';
+import { apiClient } from './apiClient'
 
 export type TravelRequest = {
-  id: string;
-  destination: string;
-  startDate: string;
-  endDate: string;
-  purpose: string;
-  estimatedCost?: number | null;
-  status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'BOOKED' | 'CANCELLED';
-  bookingDetails?: string | null;
-  cancellationReason?: string | null;
-  employeeName?: string;
-};
+  id: string
+  employee: string
+  destination: string
+  startDate: string
+  endDate: string
+  purpose: string
+  estimatedCost: number
+  status: 'PENDING' | 'APPROVED' | 'BOOKED' | 'REJECTED'
+  hotelDetails?: string | null
+  createdAt?: string
+  updatedAt?: string
+}
 
-export class TravelError extends Error {}
+export type CreateTravelPayload = {
+  destination: string
+  startDate: string
+  endDate: string
+  purpose: string
+  estimatedCost: number
+  hotelDetails?: string
+}
 
 export const travelService = {
-  async list(): Promise<TravelRequest[]> {
-    if (hasBackend) {
-      try {
-        const { data } = await apiClient.get<TravelRequest[]>('/travel');
-        return data;
-      } catch (error) {
-        throw new TravelError(apiErrorMessage(error, 'Could not load travel requests.'));
-      }
-    }
-    return [];
+  getAll: async (status?: string): Promise<TravelRequest[]> => {
+    const res = await apiClient.get<TravelRequest[]>('/travel', {
+      params: { status: status && status !== 'ALL' ? status : undefined },
+    })
+    return res.data
   },
 
-  async create(payload: {
-    destination: string;
-    startDate: string;
-    endDate: string;
-    purpose: string;
-    estimatedCost?: number;
-  }): Promise<TravelRequest> {
-    if (hasBackend) {
-      try {
-        const { data } = await apiClient.post<TravelRequest>('/travel', payload);
-        return data;
-      } catch (error) {
-        throw new TravelError(apiErrorMessage(error, 'Could not submit travel request.'));
-      }
-    }
-    return {
-      id: `trv-${Date.now()}`,
-      ...payload,
-      status: 'PENDING',
-    };
+  create: async (payload: CreateTravelPayload): Promise<TravelRequest> => {
+    const res = await apiClient.post<TravelRequest>('/travel', payload)
+    return res.data
   },
 
-  async addBookingDetails(id: string, bookingDetails: string): Promise<TravelRequest> {
-    if (hasBackend) {
-      try {
-        const { data } = await apiClient.patch<TravelRequest>(`/travel/${id}/booking`, { bookingDetails });
-        return data;
-      } catch (error) {
-        throw new TravelError(apiErrorMessage(error, 'Could not save booking details.'));
-      }
-    }
-    return { id, destination: '', startDate: '', endDate: '', purpose: '', status: 'BOOKED', bookingDetails };
+  updateStatus: async (
+    id: string,
+    status: 'PENDING' | 'APPROVED' | 'BOOKED' | 'REJECTED',
+  ): Promise<TravelRequest> => {
+    const res = await apiClient.patch<TravelRequest>(`/travel/${id}/status`, { status })
+    return res.data
   },
 
-  async cancel(id: string, cancellationReason: string): Promise<TravelRequest> {
-    if (hasBackend) {
-      try {
-        const { data } = await apiClient.patch<TravelRequest>(`/travel/${id}/cancel`, { cancellationReason });
-        return data;
-      } catch (error) {
-        throw new TravelError(apiErrorMessage(error, 'Could not cancel travel request.'));
-      }
-    }
-    return { id, destination: '', startDate: '', endDate: '', purpose: '', status: 'CANCELLED', cancellationReason };
+  delete: async (id: string): Promise<void> => {
+    await apiClient.delete(`/travel/${id}`)
   },
-};
+}

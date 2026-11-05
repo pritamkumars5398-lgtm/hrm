@@ -1,100 +1,52 @@
-import { hasBackend } from '@/config/env';
-import { apiClient, apiErrorMessage } from './apiClient';
+import { apiClient } from './apiClient'
 
-export type HelpdeskTicket = {
-  id: string;
-  ticketNo?: string;
-  subject: string;
-  description?: string;
-  category: string;
-  priority: 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT';
-  status: 'OPEN' | 'IN_PROGRESS' | 'RESOLVED' | 'CLOSED';
-  assignedToId?: string | null;
-  assignedToName?: string | null;
-  resolution?: string | null;
-  requesterName?: string;
-  comments?: { author: string; comment: string; createdAt: string }[];
-};
+export type Ticket = {
+  id: string
+  ticketNo: string
+  subject: string
+  category: 'HR' | 'IT' | 'Finance' | 'Admin'
+  priority: 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT'
+  status: 'OPEN' | 'IN_PROGRESS' | 'RESOLVED' | 'CLOSED'
+  requestedBy: string
+  assignedTo: string
+  slaHoursLeft: number
+  notes?: string | null
+  createdAt: string
+  updatedAt?: string
+}
 
-export type HelpdeskComment = {
-  author: string;
-  comment: string;
-  createdAt: string;
-};
-
-export class HelpdeskError extends Error {}
+export type CreateTicketPayload = {
+  subject: string
+  category: 'HR' | 'IT' | 'Finance' | 'Admin'
+  priority?: 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT'
+  notes?: string
+}
 
 export const helpdeskService = {
-  async list(): Promise<HelpdeskTicket[]> {
-    if (hasBackend) {
-      try {
-        const { data } = await apiClient.get<HelpdeskTicket[]>('/helpdesk');
-        return data;
-      } catch (error) {
-        throw new HelpdeskError(apiErrorMessage(error, 'Could not load helpdesk tickets.'));
-      }
-    }
-    return [];
+  getAll: async (search?: string, status?: string): Promise<Ticket[]> => {
+    const res = await apiClient.get<Ticket[]>('/helpdesk', {
+      params: {
+        search: search?.trim() || undefined,
+        status: status && status !== 'ALL' ? status : undefined,
+      },
+    })
+    return res.data
   },
 
-  async listAll(): Promise<HelpdeskTicket[]> {
-    if (hasBackend) {
-      try {
-        const { data } = await apiClient.get<HelpdeskTicket[]>('/helpdesk/all');
-        return data;
-      } catch (error) {
-        throw new HelpdeskError(apiErrorMessage(error, 'Could not load all helpdesk tickets.'));
-      }
-    }
-    return [];
+  create: async (payload: CreateTicketPayload): Promise<Ticket> => {
+    const res = await apiClient.post<Ticket>('/helpdesk', payload)
+    return res.data
   },
 
-  async create(payload: {
-    subject: string;
-    description?: string;
-    category: string;
-    priority: HelpdeskTicket['priority'];
-  }): Promise<HelpdeskTicket> {
-    if (hasBackend) {
-      try {
-        const { data } = await apiClient.post<HelpdeskTicket>('/helpdesk', payload);
-        return data;
-      } catch (error) {
-        throw new HelpdeskError(apiErrorMessage(error, 'Could not create helpdesk ticket.'));
-      }
-    }
-    return {
-      id: `hd-${Date.now()}`,
-      ...payload,
-      status: 'OPEN',
-      ticketNo: `HD-${Math.floor(1000 + Math.random() * 9000)}`,
-    };
-  },
-
-  async updateStatus(
+  updateStatus: async (
     id: string,
-    payload: { status: HelpdeskTicket['status']; assignedToId?: string; resolution?: string },
-  ): Promise<HelpdeskTicket> {
-    if (hasBackend) {
-      try {
-        const { data } = await apiClient.patch<HelpdeskTicket>(`/helpdesk/${id}/status`, payload);
-        return data;
-      } catch (error) {
-        throw new HelpdeskError(apiErrorMessage(error, 'Could not update ticket status.'));
-      }
-    }
-    return { id, subject: '', category: '', priority: 'MEDIUM', status: payload.status };
+    status: 'OPEN' | 'IN_PROGRESS' | 'RESOLVED' | 'CLOSED',
+  ): Promise<Ticket> => {
+    const res = await apiClient.patch<Ticket>(`/helpdesk/${id}/status`, { status })
+    return res.data
   },
 
-  async addComment(id: string, comment: string): Promise<HelpdeskComment[]> {
-    if (hasBackend) {
-      try {
-        const { data } = await apiClient.post<HelpdeskComment[]>(`/helpdesk/${id}/comment`, { comment });
-        return data;
-      } catch (error) {
-        throw new HelpdeskError(apiErrorMessage(error, 'Could not post comment.'));
-      }
-    }
-    return [];
+  delete: async (id: string): Promise<void> => {
+    await apiClient.delete(`/helpdesk/${id}`)
   },
-};
+}

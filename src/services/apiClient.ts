@@ -38,8 +38,8 @@ apiClient.interceptors.request.use((config) => {
 
 apiClient.interceptors.response.use(
   (response) => {
-    if (typeof response.data === "string" && response.data.trim().toLowerCase().startsWith("<!doctype html")) {
-      return Promise.reject(new Error("API endpoint returned HTML instead of JSON. Backend service may not be running."))
+    if (typeof response.data === 'string' && response.data.trim().toLowerCase().startsWith('<!doctype html')) {
+      return Promise.reject(new Error('API endpoint returned HTML instead of JSON. Backend service may not be running.'))
     }
     return response
   },
@@ -71,17 +71,8 @@ type ApiErrorBody = {
  */
 export function apiErrorMessage(error: unknown, fallback: string): string {
   if (error instanceof AxiosError) {
-    const status = error.response?.status
     const body = error.response?.data as ApiErrorBody | undefined
     const message = body?.message
-
-    // 503 = database / backend temporarily unavailable
-    if (status === 503) {
-      return (
-        (typeof message === 'string' && message) ||
-        'The server is temporarily unavailable. Please try again in a moment.'
-      )
-    }
 
     if (Array.isArray(message) && message.length > 0) return message[0]!
     if (typeof message === 'string' && message) return message

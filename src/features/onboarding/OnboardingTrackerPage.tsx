@@ -1,169 +1,135 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect } from 'react'
 import {
   UserCheck,
   CheckCircle,
   Clock,
+  FileCheck,
+  Laptop,
+  ShieldCheck,
   Plus,
+  Search,
   X,
-  Loader2,
+  Trash2,
   Calendar,
-  AlertCircle,
-  FileCheck2,
-  User,
+  CheckCircle2,
+  ListChecks,
+  ExternalLink,
   Users,
-  Compass,
-  Laptop
 } from 'lucide-react'
-import { onboardingService, type OnboardingRecord, type OnboardingTask } from '@/services/onboardingService'
+import {
+  onboardingTrackerService,
+  type OnboardingItem,
+  type OnboardingTask,
+} from '@/services/onboardingTrackerService'
+
+const CATEGORY_COLORS: Record<string, string> = {
+  DOCS: 'bg-blue-50 text-blue-700 border-blue-200',
+  IT: 'bg-purple-50 text-purple-700 border-purple-200',
+  HR: 'bg-teal-50 text-teal-700 border-teal-200',
+  TRAINING: 'bg-amber-50 text-amber-700 border-amber-200',
+}
 
 export default function OnboardingTrackerPage() {
-  const [data, setData] = useState<{
-    scope: 'company' | 'team' | 'me';
-    records: OnboardingRecord[];
-    summary: { total: number; pending: number; completed: number; avgProgress: number };
-  } | null>(null)
-
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-  
-  // Modals & form state
-  const [addingTaskRecord, setAddingTaskRecord] = useState<OnboardingRecord | null>(null)
-  const [taskTitle, setTaskTitle] = useState('')
-  const [taskCategory, setTaskCategory] = useState<'HR' | 'IT' | 'MANAGER' | 'EMPLOYEE'>('HR')
-  const [taskDescription, setTaskDescription] = useState('')
-  const [taskDueDate, setTaskDueDate] = useState('')
-  const [submittingTask, setSubmittingTask] = useState(false)
-
-  // Filters
+  const [items, setItems] = useState<OnboardingItem[]>([])
+  const [loading, setLoading] = useState(false)
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'IN_PROGRESS' | 'COMPLETED'>('ALL')
 
-  const fetchOnboardings = useCallback(async () => {
+  // Modals state
+  const [showNewModal, setShowNewModal] = useState(false)
+  const [activeItem, setActiveItem] = useState<OnboardingItem | null>(null)
+
+  // New joiner form state
+  const [newName, setNewName] = useState('')
+  const [newEmail, setNewEmail] = useState('')
+  const [newJobTitle, setNewJobTitle] = useState('')
+  const [newDept, setNewDept] = useState('Engineering')
+  const [newDate, setNewDate] = useState(new Date().toISOString().slice(0, 10))
+  const [newBuddy, setNewBuddy] = useState('')
+  const [submitting, setSubmitting] = useState(false)
+
+  const loadData = async () => {
     try {
-      setError(null)
-      const res = await onboardingService.getOnboardings()
-      setData(res)
+      setLoading(true)
+      const data = await onboardingTrackerService.getAll()
+      setItems(data)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to fetch onboarding checklists.')
+      console.error('Failed to load onboarding items', err)
     } finally {
       setLoading(false)
     }
-  }, [])
+  }
 
   useEffect(() => {
-    fetchOnboardings()
-  }, [fetchOnboardings])
+    loadData()
+  }, [])
 
-  const handleToggleTask = async (record: OnboardingRecord, task: OnboardingTask) => {
-    const nextStatus = task.status === 'COMPLETED' ? 'PENDING' : 'COMPLETED'
-    
-    // Optimistic UI update
-    setData((prev) => {
-      if (!prev) return null
-      const nextRecords = prev.records.map((r) => {
-        if (r.id !== record.id) return r
-        const nextTasks = r.tasks.map((t) => (t.id === task.id ? { ...t, status: nextStatus as 'PENDING' | 'COMPLETED' } : t))
-        const completedCount = nextTasks.filter((t) => t.status === 'COMPLETED').length
-        const checklistProgress = nextTasks.length === 0 ? 0 : Math.round((completedCount / nextTasks.length) * 100)
-        return { ...r, tasks: nextTasks, checklistProgress }
-      })
-      
-      const total = nextRecords.length
-      const completed = nextRecords.filter((r) => r.status === 'COMPLETED').length
-      const pending = total - completed
-      const avgProgress = total === 0 ? 0 : Math.round(nextRecords.reduce((acc, r) => acc + r.checklistProgress, 0) / total)
-
-      return {
-        ...prev,
-        records: nextRecords,
-        summary: { total, pending, completed, avgProgress }
-      }
-    })
-
-    try {
-      await onboardingService.updateTaskStatus(task.id, nextStatus as 'PENDING' | 'COMPLETED')
-    } catch (err) {
-      // Revert optimistic update on failure
-      fetchOnboardings()
-    }
-  };
-
-  const handleAddTask = async (e: React.FormEvent) => {
+  const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!addingTaskRecord || !taskTitle.trim()) return
+    if (!newName.trim() || !newJobTitle.trim() || submitting) return
 
-    setSubmittingTask(true)
+    setSubmitting(true)
     try {
-      await onboardingService.addTask(addingTaskRecord.employeeId, {
-        title: taskTitle.trim(),
-        description: taskDescription.trim() || undefined,
-        category: taskCategory,
-        dueDate: taskDueDate || undefined,
+      const created = await onboardingTrackerService.create({
+        name: newName.trim(),
+        email: newEmail.trim(),
+        jobTitle: newJobTitle.trim(),
+        department: newDept,
+        joiningDate: newDate,
+        buddy: newBuddy.trim() || 'Unassigned',
       })
-      setAddingTaskRecord(null)
-      setTaskTitle('')
-      setTaskDescription('')
-      setTaskDueDate('')
-      fetchOnboardings()
+
+      setItems([created, ...items])
+      setNewName('')
+      setNewEmail('')
+      setNewJobTitle('')
+      setNewBuddy('')
+      setShowNewModal(false)
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Failed to add task')
+      console.error('Failed to create onboarding entry', err)
     } finally {
-      setSubmittingTask(false)
+      setSubmitting(false)
     }
   }
 
-  const handleCompleteOnboarding = async (record: OnboardingRecord) => {
-    if (!confirm(`Are you sure you want to finalize onboarding for ${record.employeeName}?`)) return
-    
+  const handleDelete = async (id: string, name: string) => {
+    if (!window.confirm(`Delete onboarding record for "${name}"?`)) return
     try {
-      await onboardingService.completeOnboarding(record.employeeId)
-      fetchOnboardings()
+      await onboardingTrackerService.delete(id)
+      setItems((prev) => prev.filter((i) => i.id !== id))
+      if (activeItem?.id === id) setActiveItem(null)
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Failed to complete onboarding')
+      console.error('Failed to delete', err)
     }
   }
 
-  const categoryIcon = (category: OnboardingTask['category']) => {
-    switch (category) {
-      case 'HR':
-        return <FileCheck2 size={13} className="text-pink-600" />
-      case 'IT':
-        return <Laptop size={13} className="text-blue-600" />
-      case 'MANAGER':
-        return <Users size={13} className="text-violet-600" />
-      case 'EMPLOYEE':
-        return <User size={13} className="text-emerald-600" />
+  const handleToggleTask = async (itemId: string, taskId: string, currentCompleted: boolean) => {
+    try {
+      const updated = await onboardingTrackerService.toggleTask(itemId, taskId, !currentCompleted)
+      setItems((prev) => prev.map((item) => (item.id === itemId ? updated : item)))
+      if (activeItem?.id === itemId) {
+        setActiveItem(updated)
+      }
+    } catch (err) {
+      console.error('Failed to toggle task', err)
     }
   }
 
-  if (loading) {
-    return (
-      <div className="flex flex-col items-center justify-center py-20 space-y-4">
-        <Loader2 size={36} className="text-teal-600 animate-spin" />
-        <p className="text-xs text-muted font-bold tracking-wide">Loading Induction Checklists…</p>
-      </div>
-    )
-  }
+  const filteredItems = items.filter((item) => {
+    const matchesSearch =
+      item.name.toLowerCase().includes(search.toLowerCase()) ||
+      item.jobTitle.toLowerCase().includes(search.toLowerCase()) ||
+      item.department.toLowerCase().includes(search.toLowerCase())
 
-  if (error) {
-    return (
-      <div className="p-5 rounded-2xl bg-rose-50 border border-rose-200 text-rose-800 text-xs flex items-start gap-3">
-        <AlertCircle size={18} className="shrink-0" />
-        <div>
-          <p className="font-bold">Induction Catalog Error</p>
-          <p className="mt-1">{error}</p>
-        </div>
-      </div>
-    )
-  }
-
-  const records = data?.records ?? []
-  
-  const filteredRecords = records.filter((r) => {
-    if (search && !r.employeeName.toLowerCase().includes(search.toLowerCase())) return false
-    if (statusFilter !== 'ALL' && r.status !== statusFilter) return false
-    return true
+    const matchesStatus = statusFilter === 'ALL' || item.status === statusFilter
+    return matchesSearch && matchesStatus
   })
+
+  // Dynamic Metrics
+  const activeCount = items.filter((i) => i.status === 'IN_PROGRESS').length
+  const completedCount = items.filter((i) => i.status === 'COMPLETED').length
+  const avgProgress =
+    items.length > 0 ? Math.round(items.reduce((acc, i) => acc + i.checklistProgress, 0) / items.length) : 0
 
   return (
     <div className="space-y-6">
@@ -171,274 +137,371 @@ export default function OnboardingTrackerPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-gradient-to-r from-slate-900 to-teal-950 text-white p-6 rounded-2xl border border-teal-500/20 shadow-xl">
         <div>
           <div className="flex items-center gap-2 text-teal-400 text-xs font-semibold uppercase tracking-wider mb-1">
-            <UserCheck size={14} /> Digital New Hire Onboarding Engine
+            <UserCheck size={14} /> Digital Employee Onboarding Engine
           </div>
           <h1 className="text-2xl font-bold font-display">New Joiner Tracker & Induction Checklists</h1>
           <p className="text-slate-300 text-sm mt-1">
-            Audit and complete mandatory IT access provisioning, contract agreements, buddy pairings, and HR documents.
+            E-signatures, document verification, IT account setup, and buddy assignments.
           </p>
         </div>
-      </div>
-
-      {/* Summary Metrics */}
-      <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
-        <div className="bg-white p-4 rounded-xl border border-hairline shadow-2xs">
-          <span className="text-muted text-xs font-medium">Total Onboarding Records</span>
-          <p className="text-2xl font-bold text-ink mt-1">{data?.summary.total ?? 0}</p>
-          <span className="text-[11px] text-muted inline-block mt-0.5">Hired candidates conversion</span>
-        </div>
-        <div className="bg-white p-4 rounded-xl border border-hairline shadow-2xs">
-          <span className="text-muted text-xs font-medium">In Progress Checklists</span>
-          <p className="text-2xl font-bold text-amber-600 mt-1">{data?.summary.pending ?? 0}</p>
-          <span className="text-[11px] text-amber-600 font-semibold inline-block mt-0.5">Tasks outstanding</span>
-        </div>
-        <div className="bg-white p-4 rounded-xl border border-hairline shadow-2xs">
-          <span className="text-muted text-xs font-medium">Inductions Finalized</span>
-          <p className="text-2xl font-bold text-emerald-600 mt-1">{data?.summary.completed ?? 0}</p>
-          <span className="text-[11px] text-emerald-600 font-semibold inline-block mt-0.5">Active profiles</span>
-        </div>
-        <div className="bg-white p-4 rounded-xl border border-hairline shadow-2xs">
-          <span className="text-muted text-xs font-medium">Avg. Completion Rate</span>
-          <p className="text-2xl font-bold text-teal-600 mt-1">{data?.summary.avgProgress ?? 0}%</p>
-          <span className="text-[11px] text-teal-600 font-semibold inline-block mt-0.5">Overall task completions</span>
+        <div>
+          <button
+            onClick={() => setShowNewModal(true)}
+            className="flex items-center gap-2 bg-teal-500 hover:bg-teal-400 text-slate-950 font-bold px-4 py-2.5 rounded-xl transition shadow-lg cursor-pointer text-xs"
+          >
+            <Plus size={16} /> Initiate Onboarding
+          </button>
         </div>
       </div>
 
-      {/* Toolbar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-3 rounded-2xl border border-hairline shadow-2xs">
+      {/* Metrics */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="bg-white p-4 rounded-xl border border-hairline shadow-sm">
+          <div className="flex items-center justify-between text-muted text-xs font-medium">
+            <span>Active Onboardings</span>
+            <Clock size={16} className="text-teal-600" />
+          </div>
+          <p className="text-2xl font-bold text-teal-600 mt-2">{activeCount}</p>
+          <span className="text-[11px] text-teal-600 font-semibold mt-1 inline-block">
+            In progress induction
+          </span>
+        </div>
+        <div className="bg-white p-4 rounded-xl border border-hairline shadow-sm">
+          <div className="flex items-center justify-between text-muted text-xs font-medium">
+            <span>Induction Completion</span>
+            <CheckCircle size={16} className="text-emerald-600" />
+          </div>
+          <p className="text-2xl font-bold text-emerald-600 mt-2">{completedCount} Completed</p>
+          <span className="text-[11px] text-emerald-600 font-semibold mt-1 inline-block">
+            100% Verified joiners
+          </span>
+        </div>
+        <div className="bg-white p-4 rounded-xl border border-hairline shadow-sm">
+          <div className="flex items-center justify-between text-muted text-xs font-medium">
+            <span>Overall Task Completion</span>
+            <ListChecks size={16} className="text-teal-600" />
+          </div>
+          <p className="text-2xl font-bold text-ink mt-2">{avgProgress}%</p>
+          <span className="text-[11px] text-muted mt-1 inline-block">Across all candidate checklists</span>
+        </div>
+      </div>
+
+      {/* Controls & Search */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-3 rounded-xl border border-hairline">
         <div className="flex items-center gap-2">
-          <span className="text-xs font-bold text-ink px-2">Listings ({filteredRecords.length})</span>
-          <div className="flex bg-wash p-0.5 rounded-lg border border-hairline">
+          {(['ALL', 'IN_PROGRESS', 'COMPLETED'] as const).map((st) => (
             <button
-              onClick={() => setStatusFilter('ALL')}
-              className={`px-3 py-1 text-[11px] font-bold rounded-md transition cursor-pointer ${
-                statusFilter === 'ALL' ? 'bg-white text-ink shadow-2xs' : 'text-muted hover:text-ink'
+              key={st}
+              onClick={() => setStatusFilter(st)}
+              className={`px-3 py-1.5 rounded-lg font-semibold text-xs transition cursor-pointer ${
+                statusFilter === st
+                  ? 'bg-slate-900 text-white shadow-sm'
+                  : 'text-muted hover:bg-wash'
               }`}
             >
-              All
+              {st === 'ALL' ? `All (${items.length})` : st === 'IN_PROGRESS' ? 'In Progress' : 'Completed'}
             </button>
+          ))}
+        </div>
+
+        <div className="relative w-full sm:w-64">
+          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
+          <input
+            type="text"
+            placeholder="Search joiners, roles, dept..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full pl-9 pr-3 py-1.5 text-xs rounded-lg border border-hairline focus:outline-none focus:border-teal-500 bg-wash/30"
+          />
+        </div>
+      </div>
+
+      {/* Cards List */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {filteredItems.map((item) => (
+          <div
+            key={item.id}
+            className="bg-white p-5 rounded-2xl border border-hairline shadow-sm hover:border-teal-400 transition flex flex-col justify-between space-y-4"
+          >
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="size-10 rounded-full bg-teal-100 text-teal-800 font-bold flex items-center justify-center text-xs">
+                  {item.name.slice(0, 2).toUpperCase()}
+                </div>
+                <div className="flex items-center gap-2">
+                  <span
+                    className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                      item.status === 'COMPLETED'
+                        ? 'bg-emerald-100 text-emerald-800'
+                        : 'bg-amber-100 text-amber-800'
+                    }`}
+                  >
+                    {item.status === 'COMPLETED' ? 'COMPLETED' : 'IN PROGRESS'}
+                  </span>
+                  <button
+                    onClick={() => handleDelete(item.id, item.name)}
+                    className="text-slate-400 hover:text-rose-600 transition p-1"
+                    title="Delete Onboarding"
+                  >
+                    <Trash2 size={13} />
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <h3 className="font-bold text-sm text-ink">{item.name}</h3>
+                <p className="text-xs text-muted">
+                  {item.jobTitle} • {item.department}
+                </p>
+                <div className="flex items-center gap-2 text-[11px] text-muted mt-1.5">
+                  <Calendar size={12} />
+                  <span>Joined: {item.joiningDate}</span>
+                </div>
+                <div className="flex items-center gap-2 text-[11px] text-muted mt-0.5">
+                  <Users size={12} />
+                  <span>Buddy: {item.buddy}</span>
+                </div>
+              </div>
+
+              {/* Progress bar */}
+              <div className="space-y-1">
+                <div className="flex justify-between text-[11px] font-bold">
+                  <span className="text-muted">Checklist Progress</span>
+                  <span className="text-teal-600">{item.checklistProgress}%</span>
+                </div>
+                <div className="w-full bg-wash h-2 rounded-full overflow-hidden">
+                  <div
+                    className={`h-full rounded-full transition-all duration-300 ${
+                      item.checklistProgress === 100 ? 'bg-emerald-500' : 'bg-teal-500'
+                    }`}
+                    style={{ width: `${item.checklistProgress}%` }}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* View Checklist Button */}
             <button
-              onClick={() => setStatusFilter('IN_PROGRESS')}
-              className={`px-3 py-1 text-[11px] font-bold rounded-md transition cursor-pointer ${
-                statusFilter === 'IN_PROGRESS' ? 'bg-white text-ink shadow-2xs' : 'text-muted hover:text-ink'
-              }`}
+              onClick={() => setActiveItem(item)}
+              className="w-full py-2 px-3 bg-wash hover:bg-teal-50 text-slate-800 hover:text-teal-800 font-bold text-xs rounded-xl transition flex items-center justify-center gap-2 border border-hairline cursor-pointer"
             >
-              In Progress
-            </button>
-            <button
-              onClick={() => setStatusFilter('COMPLETED')}
-              className={`px-3 py-1 text-[11px] font-bold rounded-md transition cursor-pointer ${
-                statusFilter === 'COMPLETED' ? 'bg-white text-ink shadow-2xs' : 'text-muted hover:text-ink'
-              }`}
-            >
-              Completed
+              <ListChecks size={14} className="text-teal-600" />
+              View Induction Checklist ({item.tasks?.filter((t) => t.completed).length || 0}/
+              {item.tasks?.length || 8})
             </button>
           </div>
-        </div>
+        ))}
 
-        <input
-          type="text"
-          placeholder="Search by employee name…"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="px-3 py-1.5 text-xs rounded-xl border border-hairline focus:border-teal-500 focus:outline-none w-full sm:w-72"
-        />
+        {filteredItems.length === 0 && (
+          <div className="col-span-full bg-white p-12 text-center rounded-2xl border border-dashed border-hairline text-muted">
+            <UserCheck size={32} className="mx-auto mb-2 text-slate-300" />
+            <p className="font-semibold text-sm">No onboarding records found</p>
+            <p className="text-xs mt-1">Initiate a new joiner onboarding to track induction tasks.</p>
+          </div>
+        )}
       </div>
 
-      {/* Cards Catalog */}
-      {filteredRecords.length === 0 ? (
-        <div className="bg-white py-16 text-center text-muted text-xs space-y-2 rounded-2xl border border-hairline">
-          <Compass size={36} className="mx-auto text-slate-300 animate-pulse" />
-          <p className="font-bold text-ink">No new joiner checklists found</p>
-          <p className="max-w-xs mx-auto">
-            Hired candidates from the Recruitment panel are automatically registered here as pending inductions.
-          </p>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {filteredRecords.map((record) => {
-            const allTasksCompleted = record.tasks.length > 0 && record.tasks.every((t) => t.status === 'COMPLETED')
-            
-            return (
-              <div key={record.id} className="bg-white p-5 rounded-2xl border border-hairline shadow-xs flex flex-col justify-between space-y-5">
-                {/* Header */}
-                <div className="flex items-start justify-between border-b border-hairline/60 pb-3">
-                  <div>
-                    <h3 className="font-bold text-base text-ink leading-snug">{record.employeeName}</h3>
-                    <p className="text-xs text-muted mt-0.5">{record.jobTitle} · {record.department}</p>
-                    <p className="text-[10px] text-muted/80 mt-1 font-medium">Joined: {record.joiningDate} | Buddy: {record.buddy || 'None'}</p>
-                  </div>
-                  <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold tracking-wider ${
-                    record.status === 'COMPLETED'
-                      ? 'bg-emerald-100 text-emerald-800'
-                      : allTasksCompleted
-                      ? 'bg-amber-100 text-amber-800'
-                      : 'bg-slate-100 text-slate-700'
-                  }`}>
-                    {record.status === 'COMPLETED' ? 'COMPLETED' : allTasksCompleted ? 'READY FOR SIGN-OFF' : 'IN PROGRESS'}
+      {/* Task Checklist Modal */}
+      {activeItem && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/40 backdrop-blur-xs p-4">
+          <div className="bg-white w-full max-w-lg p-6 rounded-2xl shadow-xl border border-hairline space-y-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-start justify-between">
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-bold text-teal-600 uppercase tracking-wider">
+                    Induction Checklist
+                  </span>
+                  <span
+                    className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                      activeItem.checklistProgress === 100
+                        ? 'bg-emerald-100 text-emerald-800'
+                        : 'bg-amber-100 text-amber-800'
+                    }`}
+                  >
+                    {activeItem.checklistProgress}% Completed
                   </span>
                 </div>
-
-                {/* Progress bar */}
-                <div className="space-y-1.5">
-                  <div className="flex justify-between text-[11px] font-bold">
-                    <span className="text-muted">Induction Tasks Progress</span>
-                    <span className="text-teal-600">{record.checklistProgress}%</span>
-                  </div>
-                  <div className="w-full bg-wash h-2 rounded-full overflow-hidden">
-                    <div
-                      className="bg-teal-500 h-full rounded-full transition-all duration-300"
-                      style={{ width: `${record.checklistProgress}%` }}
-                    />
-                  </div>
-                </div>
-
-                {/* Task Checklist Items */}
-                <div className="space-y-2">
-                  <span className="text-[11px] font-bold text-ink block uppercase tracking-wider">Checklist Items</span>
-                  <div className="space-y-1.5 max-h-56 overflow-y-auto pr-1">
-                    {record.tasks.map((task) => (
-                      <div
-                        key={task.id}
-                        onClick={() => handleToggleTask(record, task)}
-                        className="flex items-start gap-2.5 p-2 rounded-xl bg-wash/50 border border-hairline/30 hover:border-teal-300 transition cursor-pointer select-none"
-                      >
-                        <input
-                          type="checkbox"
-                          checked={task.status === 'COMPLETED'}
-                          onChange={() => {}} // handled by click
-                          className="mt-0.5 size-3.5 rounded-sm border-gray-300 text-teal-600 focus:ring-teal-500 shrink-0 pointer-events-none"
-                        />
-                        <div className="flex-1 text-xs">
-                          <p className={`font-bold leading-normal ${task.status === 'COMPLETED' ? 'line-through text-muted font-semibold' : 'text-ink'}`}>
-                            {task.title}
-                          </p>
-                          {task.description && (
-                            <p className="text-[11px] text-muted leading-snug mt-0.5">{task.description}</p>
-                          )}
-                          <div className="flex items-center gap-2 mt-1">
-                            <span className="flex items-center gap-1 bg-white border border-hairline/60 px-1.5 py-0.5 rounded text-[9px] font-bold uppercase text-muted">
-                              {categoryIcon(task.category)}
-                              {task.category}
-                            </span>
-                            {task.dueDate && (
-                              <span className="flex items-center gap-0.5 text-[9px] font-bold text-rose-600 font-mono">
-                                <Calendar size={9} /> {task.dueDate}
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Footer Controls */}
-                <div className="pt-3 border-t border-hairline/60 flex items-center justify-between gap-3 text-xs">
-                  <button
-                    onClick={() => setAddingTaskRecord(record)}
-                    className="flex items-center gap-1 text-teal-600 hover:text-teal-500 font-bold cursor-pointer"
-                  >
-                    <Plus size={14} /> Add Custom Task
-                  </button>
-
-                  {record.status === 'IN_PROGRESS' && allTasksCompleted && (
-                    <button
-                      onClick={() => handleCompleteOnboarding(record)}
-                      className="flex items-center gap-1 bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-3 py-1.5 rounded-lg shadow-sm transition cursor-pointer text-[11px]"
-                    >
-                      <CheckCircle size={13} /> Complete Onboarding
-                    </button>
-                  )}
-                </div>
-              </div>
-            )
-          })}
-        </div>
-      )}
-
-      {/* Add Task Modal */}
-      {addingTaskRecord && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
-          <div className="bg-white max-w-md w-full rounded-2xl p-6 shadow-2xl border border-hairline space-y-4">
-            <div className="flex items-start justify-between border-b border-hairline pb-3">
-              <div>
-                <span className="text-[10px] font-bold text-teal-600 uppercase tracking-wider">New Induction Task</span>
-                <h3 className="font-bold text-base text-ink mt-0.5">Assign Task for {addingTaskRecord.employeeName}</h3>
+                <h3 className="text-lg font-bold text-ink mt-1">{activeItem.name}</h3>
+                <p className="text-xs text-muted">
+                  {activeItem.jobTitle} • {activeItem.department} • Buddy: {activeItem.buddy}
+                </p>
               </div>
               <button
-                onClick={() => setAddingTaskRecord(null)}
-                className="text-muted hover:text-ink cursor-pointer p-1"
+                onClick={() => setActiveItem(null)}
+                className="p-1 text-slate-400 hover:text-slate-600 rounded-lg"
               >
                 <X size={18} />
               </button>
             </div>
 
-            <form onSubmit={handleAddTask} className="space-y-4 text-xs font-semibold">
-              <div className="space-y-1">
-                <label className="text-ink font-bold block">Task Title *</label>
+            {/* Checklist progress bar */}
+            <div className="w-full bg-wash h-2 rounded-full overflow-hidden">
+              <div
+                className="bg-teal-500 h-full rounded-full transition-all duration-300"
+                style={{ width: `${activeItem.checklistProgress}%` }}
+              />
+            </div>
+
+            {/* Tasks list */}
+            <div className="space-y-2.5 pt-2">
+              {activeItem.tasks?.map((task) => (
+                <div
+                  key={task.id}
+                  onClick={() => handleToggleTask(activeItem.id, task.id, task.completed)}
+                  className={`p-3 rounded-xl border transition flex items-center justify-between gap-3 cursor-pointer select-none ${
+                    task.completed
+                      ? 'bg-emerald-50/40 border-emerald-200 text-slate-700'
+                      : 'bg-white border-hairline hover:border-teal-300 text-ink'
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="checkbox"
+                      checked={task.completed}
+                      onChange={() => {}} // handled by parent onClick
+                      className="size-4 rounded text-teal-600 focus:ring-teal-500 border-gray-300 cursor-pointer"
+                    />
+                    <div>
+                      <p
+                        className={`text-xs font-semibold ${
+                          task.completed ? 'line-through text-slate-400' : 'text-ink'
+                        }`}
+                      >
+                        {task.title}
+                      </p>
+                      {task.completedAt && (
+                        <p className="text-[10px] text-emerald-600 mt-0.5">
+                          ✓ Completed on {task.completedAt}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                  <span
+                    className={`text-[9px] font-bold px-2 py-0.5 rounded border uppercase shrink-0 ${
+                      CATEGORY_COLORS[task.category] || 'bg-gray-100 text-gray-700'
+                    }`}
+                  >
+                    {task.category}
+                  </span>
+                </div>
+              ))}
+            </div>
+
+            <div className="flex justify-end pt-3 border-t border-hairline">
+              <button
+                onClick={() => setActiveItem(null)}
+                className="px-4 py-2 rounded-xl bg-slate-900 text-white font-semibold text-xs hover:bg-slate-800"
+              >
+                Close Checklist
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* New Onboarding Modal */}
+      {showNewModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/40 backdrop-blur-xs p-4">
+          <div className="bg-white w-full max-w-md p-6 rounded-2xl shadow-xl border border-hairline space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-bold text-ink">Initiate Employee Onboarding</h3>
+              <button
+                onClick={() => setShowNewModal(false)}
+                className="p-1 text-slate-400 hover:text-slate-600"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <form onSubmit={handleCreate} className="space-y-4 text-xs">
+              <div>
+                <label className="block text-muted font-semibold mb-1">Employee Full Name *</label>
                 <input
                   type="text"
                   required
-                  placeholder="e.g. Schedule DevOps infrastructure setup call"
-                  value={taskTitle}
-                  onChange={(e) => setTaskTitle(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl border border-hairline focus:border-teal-500 focus:outline-none"
+                  placeholder="e.g. Siddharth Varma"
+                  value={newName}
+                  onChange={(e) => setNewName(e.target.value)}
+                  className="w-full px-3 py-2 rounded-lg border border-hairline focus:border-teal-500 focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-muted font-semibold mb-1">Email Address</label>
+                <input
+                  type="email"
+                  placeholder="e.g. siddharth@example.com"
+                  value={newEmail}
+                  onChange={(e) => setNewEmail(e.target.value)}
+                  className="w-full px-3 py-2 rounded-lg border border-hairline focus:border-teal-500 focus:outline-none"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1">
-                  <label className="text-ink font-bold block">Category *</label>
+                <div>
+                  <label className="block text-muted font-semibold mb-1">Job Title *</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. Senior Frontend Lead"
+                    value={newJobTitle}
+                    onChange={(e) => setNewJobTitle(e.target.value)}
+                    className="w-full px-3 py-2 rounded-lg border border-hairline focus:border-teal-500 focus:outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-muted font-semibold mb-1">Department</label>
                   <select
-                    value={taskCategory}
-                    onChange={(e) => setTaskCategory(e.target.value as any)}
-                    className="w-full px-3 py-2 rounded-xl border border-hairline focus:border-teal-500 focus:outline-none"
+                    value={newDept}
+                    onChange={(e) => setNewDept(e.target.value)}
+                    className="w-full px-3 py-2 rounded-lg border border-hairline focus:border-teal-500 focus:outline-none"
                   >
-                    <option value="HR">HR Dept Task</option>
-                    <option value="IT">IT Provisioning</option>
-                    <option value="MANAGER">Manager actions</option>
-                    <option value="EMPLOYEE">Employee task</option>
+                    <option value="Engineering">Engineering</option>
+                    <option value="Human Resources">Human Resources</option>
+                    <option value="Product">Product</option>
+                    <option value="Sales">Sales</option>
+                    <option value="Marketing">Marketing</option>
+                    <option value="Finance">Finance</option>
                   </select>
                 </div>
+              </div>
 
-                <div className="space-y-1">
-                  <label className="text-ink font-bold block">Due Date</label>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-muted font-semibold mb-1">Joining Date</label>
                   <input
                     type="date"
-                    value={taskDueDate}
-                    onChange={(e) => setTaskDueDate(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl border border-hairline focus:border-teal-500 focus:outline-none"
+                    value={newDate}
+                    onChange={(e) => setNewDate(e.target.value)}
+                    className="w-full px-3 py-2 rounded-lg border border-hairline focus:border-teal-500 focus:outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-muted font-semibold mb-1">Assigned Buddy</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Rahul Mehta"
+                    value={newBuddy}
+                    onChange={(e) => setNewBuddy(e.target.value)}
+                    className="w-full px-3 py-2 rounded-lg border border-hairline focus:border-teal-500 focus:outline-none"
                   />
                 </div>
               </div>
 
-              <div className="space-y-1">
-                <label className="text-ink font-bold block">Description (Optional)</label>
-                <textarea
-                  rows={3}
-                  placeholder="Provide instructions or links for completion…"
-                  value={taskDescription}
-                  onChange={(e) => setTaskDescription(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl border border-hairline focus:border-teal-500 focus:outline-none resize-none"
-                />
-              </div>
-
-              <div className="pt-2 flex items-center justify-end gap-2.5">
+              <div className="flex justify-end gap-2 pt-2">
                 <button
                   type="button"
-                  onClick={() => setAddingTaskRecord(null)}
-                  className="px-4 py-2 rounded-xl bg-wash hover:bg-slate-200 text-ink transition cursor-pointer"
+                  onClick={() => setShowNewModal(false)}
+                  className="px-4 py-2 rounded-lg border border-hairline text-muted hover:bg-wash font-semibold"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  disabled={submittingTask || !taskTitle.trim()}
-                  className="px-4 py-2 rounded-xl bg-teal-600 hover:bg-teal-500 text-white font-bold transition cursor-pointer flex items-center gap-1.5 disabled:opacity-50"
+                  disabled={submitting}
+                  className="px-4 py-2 rounded-lg bg-teal-600 hover:bg-teal-500 disabled:opacity-50 text-white font-semibold shadow-sm transition"
                 >
-                  {submittingTask && <Loader2 size={13} className="animate-spin" />}
-                  Assign Task
+                  {submitting ? 'Creating...' : 'Initiate Induction'}
                 </button>
               </div>
             </form>
