@@ -211,6 +211,16 @@ export default function ProfilePage() {
                   </select>
                 </div>
                 <div>
+                  <label className="font-bold text-ink block mb-1">Date of Birth (DOB)</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. 15th August 1996 or YYYY-MM-DD"
+                    value={formData.dob}
+                    onChange={(e) => setFormData({ ...formData, dob: e.target.value })}
+                    className="w-full rounded-lg border border-hairline px-3 py-2 text-ink outline-none focus:border-emerald-500"
+                  />
+                </div>
+                <div>
                   <label className="font-bold text-ink block mb-1">Emergency Contact / Address</label>
                   <input
                     type="text"
