@@ -36,6 +36,16 @@ apiClient.interceptors.request.use((config) => {
   return config
 })
 
+apiClient.interceptors.response.use(
+  (response) => {
+    if (typeof response.data === 'string' && response.data.trim().toLowerCase().startsWith('<!doctype html')) {
+      return Promise.reject(new Error('API endpoint returned HTML instead of JSON. Backend service may not be running.'))
+    }
+    return response
+  },
+  (error) => Promise.reject(error),
+)
+
 type ApiErrorBody = {
   message?: string | string[]
   error?: string
