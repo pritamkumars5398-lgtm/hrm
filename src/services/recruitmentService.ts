@@ -12,6 +12,7 @@ export type JobPosting = {
   description: string
   requirements: string[]
   benefits: string[]
+  headcount?: number
   status: 'OPEN' | 'CLOSED' | 'DRAFT'
   createdAt: string
   applicantCount?: number
@@ -28,7 +29,7 @@ export type JobApplication = {
   coverLetter?: string
   experienceYears?: number
   expectedSalary?: string
-  status: 'APPLIED' | 'SCREENING' | 'INTERVIEW' | 'OFFERED' | 'HIRED' | 'REJECTED'
+  status: 'APPLIED' | 'SCREENED' | 'INTERVIEW' | 'OFFERED' | 'HIRED' | 'REJECTED'
   interviewDate?: string
   notes?: string
   rating?: number

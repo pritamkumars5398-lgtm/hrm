@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { ArrowLeft, Send, CheckCircle2, Star, Upload, AlertTriangle, ShieldCheck } from 'lucide-react'
 import { useAuthStore } from '@/features/auth/store/authStore'
@@ -8,7 +8,11 @@ export default function FillFormPage() {
   const navigate = useNavigate()
   const user = useAuthStore((s) => s.user)
   const { formId } = useParams<{ formId: string }>()
-  const { forms, submitResponse, hasUserSubmitted } = useFormStore()
+  const { forms, fetchForms, submitResponse, hasUserSubmitted } = useFormStore()
+
+  useEffect(() => {
+    fetchForms()
+  }, [fetchForms])
 
   // Find form definition or fallback
   const form = forms.find((f) => f.id === formId) || forms[0]
@@ -28,22 +32,28 @@ export default function FillFormPage() {
   })
 
   const [submitted, setSubmitted] = useState(false)
+  const [submitting, setSubmitting] = useState(false)
 
   const handleFieldValueChange = (fieldId: string, value: string | number) => {
     setAnswers((prev) => ({ ...prev, [fieldId]: value }))
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
     // Prevent duplicate submission check
-    if (previousSubmission) return
+    if (previousSubmission || submitting) return
 
-    submitResponse(form.id, respondentName, answers)
-    setSubmitted(true)
-    setTimeout(() => {
-      navigate('/dashboard/forms')
-    }, 2000)
+    setSubmitting(true)
+    try {
+      await submitResponse(form.id, respondentName, answers)
+      setSubmitted(true)
+      setTimeout(() => {
+        navigate('/dashboard/forms')
+      }, 1500)
+    } catch {
+      setSubmitting(false)
+    }
   }
 
   // Render Already Submitted Screen if user has filled this form before
@@ -244,9 +254,10 @@ export default function FillFormPage() {
           <div className="pt-2 flex justify-end">
             <button
               type="submit"
-              className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-6 py-2.5 rounded-xl text-xs shadow-md transition cursor-pointer"
+              disabled={submitting}
+              className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white font-bold px-6 py-2.5 rounded-xl text-xs shadow-md transition cursor-pointer"
             >
-              <Send size={15} /> Submit Response
+              <Send size={15} /> {submitting ? 'Submitting...' : 'Submit Response'}
             </button>
           </div>
         </form>

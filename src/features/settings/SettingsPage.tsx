@@ -6,6 +6,7 @@ import {
   Building2,
   Check,
   Loader2,
+  MapPin,
   Palette,
   Shield,
   ShieldCheck,
@@ -27,11 +28,13 @@ import {
 } from '@/services/organizationService'
 import { AuthError, authService } from '@/services/authService'
 import RolesPermissions from './components/RolesPermissions'
+import AttendanceSettings from './components/AttendanceSettings'
 
-type Tab = 'company' | 'roles' | 'notifications' | 'appearance' | 'security'
+type Tab = 'company' | 'attendance' | 'roles' | 'notifications' | 'appearance' | 'security'
 
 const TABS: Array<{ key: Tab; label: string; icon: typeof Building2; color: string }> = [
   { key: 'company', label: 'Company profile', icon: Building2, color: 'text-indigo-500' },
+  { key: 'attendance', label: 'Attendance & Geofence', icon: MapPin, color: 'text-teal-600' },
   { key: 'roles', label: 'Roles & Permissions', icon: Users, color: 'text-violet-500' },
   { key: 'notifications', label: 'Notifications', icon: Bell, color: 'text-amber-500' },
   { key: 'appearance', label: 'Appearance', icon: Palette, color: 'text-emerald-600' },
@@ -642,9 +645,9 @@ export default function SettingsPage() {
                     type="button"
                     onClick={() => setTab(t.key)}
                     aria-current={active ? 'page' : undefined}
-                    className={`flex w-[80%] items-center gap-2.5 rounded-ctl px-3.5 py-2.5 text-[13.5px] font-semibold whitespace-nowrap transition-all duration-200 cursor-pointer ${
+                    className={`flex w-full items-center gap-2.5 rounded-ctl px-3.5 py-2.5 text-[13.5px] font-semibold whitespace-nowrap transition-all duration-200 cursor-pointer ${
                       active
-                        ? 'bg-[#059669] text-white shadow-sm'
+                        ? 'bg-pine text-white shadow-sm'
                         : 'text-muted hover:bg-wash hover:text-ink'
                     }`}
                   >
@@ -671,6 +674,7 @@ export default function SettingsPage() {
               transition={{ duration: 0.2 }}
             >
               {tab === 'company' && <CompanyProfile />}
+              {tab === 'attendance' && <AttendanceSettings />}
               {tab === 'roles' && <RolesPermissions />}
               {tab === 'notifications' && <Notifications />}
               {tab === 'appearance' && <Appearance />}

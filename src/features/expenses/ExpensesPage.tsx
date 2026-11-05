@@ -1,55 +1,109 @@
-import { useState } from 'react'
-import { CreditCard, Plus, Search, Filter, CheckCircle, Clock, FileText, Upload, DollarSign, AlertCircle } from 'lucide-react'
-
-type Expense = {
-  id: string
-  title: string
-  category: 'Travel' | 'Food' | 'Fuel' | 'Hotel' | 'Client Dinner' | 'Misc'
-  amount: number
-  date: string
-  employee: string
-  status: 'SUBMITTED' | 'APPROVED' | 'REJECTED' | 'REIMBURSED'
-  receiptName: string
-}
-
-const INITIAL_EXPENSES: Expense[] = [
-  { id: 'exp-1', title: 'Client Meeting Lunch - Tech Corp', category: 'Client Dinner', amount: 3450, date: '2026-08-02', employee: 'Rahul Mehta', status: 'REIMBURSED', receiptName: 'lunch_receipt.pdf' },
-  { id: 'exp-2', title: 'Flight Ticket to Bengaluru Offsite', category: 'Travel', amount: 8200, date: '2026-08-04', employee: 'Priya Sharma', status: 'APPROVED', receiptName: 'flight_ticket.pdf' },
-  { id: 'exp-3', title: 'Taxi Fare - Airport to Office', category: 'Fuel', amount: 950, date: '2026-08-05', employee: 'Ananya Verma', status: 'SUBMITTED', receiptName: 'cab_bill.png' },
-]
+import { useState, useEffect } from 'react'
+import {
+  CreditCard,
+  Plus,
+  Search,
+  Filter,
+  CheckCircle,
+  Clock,
+  FileText,
+  Upload,
+  DollarSign,
+  AlertCircle,
+  Trash2,
+  X,
+} from 'lucide-react'
+import { expensesService, type Expense } from '@/services/expensesService'
 
 export default function ExpensesPage() {
-  const [expenses, setExpenses] = useState<Expense[]>(INITIAL_EXPENSES)
+  const [expenses, setExpenses] = useState<Expense[]>([])
+  const [loading, setLoading] = useState(false)
+  const [search, setSearch] = useState('')
   const [showModal, setShowModal] = useState(false)
+  const [submitting, setSubmitting] = useState(false)
+
+  // Form state
   const [title, setTitle] = useState('')
   const [amount, setAmount] = useState('')
   const [category, setCategory] = useState<Expense['category']>('Travel')
 
-  const handleAdd = (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!title.trim() || !amount) return
-    const newE: Expense = {
-      id: `exp-${Date.now()}`,
-      title,
-      category,
-      amount: parseFloat(amount),
-      date: new Date().toISOString().split('T')[0],
-      employee: 'Priya Sharma',
-      status: 'SUBMITTED',
-      receiptName: 'uploaded_receipt.pdf'
+  const loadData = async () => {
+    try {
+      setLoading(true)
+      const data = await expensesService.getAll()
+      setExpenses(data)
+    } catch (err) {
+      console.warn('Backend expenses load fallback', err)
+    } finally {
+      setLoading(false)
     }
-    setExpenses([newE, ...expenses])
-    setTitle('')
-    setAmount('')
-    setShowModal(false)
   }
 
-  const handleStatus = (id: string, newStatus: Expense['status']) => {
-    setExpenses(prev => prev.map(e => e.id === id ? { ...e, status: newStatus } : e))
+  useEffect(() => {
+    loadData()
+  }, [])
+
+  const handleAdd = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!title.trim() || !amount || submitting) return
+
+    setSubmitting(true)
+    try {
+      const created = await expensesService.create({
+        title: title.trim(),
+        category,
+        amount: parseFloat(amount),
+        receiptName: `${category.toLowerCase()}_receipt.pdf`,
+      })
+
+      setExpenses([created, ...expenses])
+      setTitle('')
+      setAmount('')
+      setShowModal(false)
+    } catch (err) {
+      console.error('Failed to submit claim', err)
+    } finally {
+      setSubmitting(false)
+    }
   }
 
-  const totalSubmitted = expenses.filter(e => e.status === 'SUBMITTED').reduce((a, b) => a + b.amount, 0)
-  const totalReimbursed = expenses.filter(e => e.status === 'REIMBURSED').reduce((a, b) => a + b.amount, 0)
+  const handleStatus = async (id: string, newStatus: Expense['status']) => {
+    setExpenses((prev) =>
+      prev.map((e) => (e.id === id ? { ...e, status: newStatus } : e)),
+    )
+    try {
+      await expensesService.updateStatus(id, newStatus)
+    } catch (err) {
+      console.error('Failed to update status', err)
+    }
+  }
+
+  const handleDelete = async (id: string, title: string) => {
+    if (!window.confirm(`Delete expense claim "${title}"?`)) return
+    try {
+      await expensesService.delete(id)
+      setExpenses((prev) => prev.filter((e) => e.id !== id))
+    } catch (err) {
+      console.error('Failed to delete claim', err)
+    }
+  }
+
+  const filtered = expenses.filter(
+    (e) =>
+      e.title.toLowerCase().includes(search.toLowerCase()) ||
+      e.employee.toLowerCase().includes(search.toLowerCase()) ||
+      e.category.toLowerCase().includes(search.toLowerCase()),
+  )
+
+  const totalSubmitted = expenses
+    .filter((e) => e.status === 'SUBMITTED')
+    .reduce((a, b) => a + b.amount, 0)
+  const totalReimbursed = expenses
+    .filter((e) => e.status === 'REIMBURSED')
+    .reduce((a, b) => a + b.amount, 0)
+  const approvedUnpaid = expenses
+    .filter((e) => e.status === 'APPROVED')
+    .reduce((a, b) => a + b.amount, 0)
 
   return (
     <div className="space-y-6">
@@ -60,7 +114,9 @@ export default function ExpensesPage() {
             <CreditCard size={14} /> Finance & Expense Claims Desk
           </div>
           <h1 className="text-2xl font-bold font-display">Employee Expense Reimbursements</h1>
-          <p className="text-slate-300 text-sm mt-1">Submit receipts, manage multi-tier approvals, and track disbursal status.</p>
+          <p className="text-slate-300 text-sm mt-1">
+            Submit receipts, manage multi-tier approvals, and track disbursal status.
+          </p>
         </div>
         <button
           onClick={() => setShowModal(true)}
@@ -76,25 +132,40 @@ export default function ExpensesPage() {
           <span className="text-muted text-xs font-medium">Pending Approvals</span>
           <p className="text-2xl font-bold text-amber-600 mt-1">₹{totalSubmitted.toLocaleString()}</p>
           <span className="text-[11px] text-amber-600 font-semibold mt-1 inline-block">
-            {expenses.filter(e => e.status === 'SUBMITTED').length} Claims Pending
+            {expenses.filter((e) => e.status === 'SUBMITTED').length} Claims Pending
           </span>
         </div>
         <div className="bg-white p-4 rounded-xl border border-hairline shadow-sm">
           <span className="text-muted text-xs font-medium">Total Reimbursed</span>
-          <p className="text-2xl font-bold text-emerald-600 mt-1">₹{totalReimbursed.toLocaleString()}</p>
-          <span className="text-[11px] text-emerald-600 font-semibold mt-1 inline-block">Disbursed to Bank</span>
+          <p className="text-2xl font-bold text-emerald-600 mt-1">
+            ₹{totalReimbursed.toLocaleString()}
+          </p>
+          <span className="text-[11px] text-emerald-600 font-semibold mt-1 inline-block">
+            Disbursed to Bank
+          </span>
         </div>
         <div className="bg-white p-4 rounded-xl border border-hairline shadow-sm">
           <span className="text-muted text-xs font-medium">Approved Unpaid</span>
-          <p className="text-2xl font-bold text-purple-600 mt-1">
-            ₹{expenses.filter(e => e.status === 'APPROVED').reduce((a, b) => a + b.amount, 0).toLocaleString()}
-          </p>
-          <span className="text-[11px] text-purple-600 font-semibold mt-1 inline-block">Queued for Next Payroll</span>
+          <p className="text-2xl font-bold text-purple-600 mt-1">₹{approvedUnpaid.toLocaleString()}</p>
+          <span className="text-[11px] text-purple-600 font-semibold mt-1 inline-block">
+            Queued for Next Payroll
+          </span>
         </div>
       </div>
 
       {/* Table */}
-      <div className="bg-white rounded-xl border border-hairline shadow-sm p-4">
+      <div className="bg-white rounded-xl border border-hairline shadow-sm p-4 space-y-4">
+        <div className="relative w-full sm:w-72">
+          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
+          <input
+            type="text"
+            placeholder="Search claim, employee, category..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full pl-9 pr-3 py-1.5 text-xs rounded-lg border border-hairline focus:border-purple-500 focus:outline-none bg-wash/30"
+          />
+        </div>
+
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs">
             <thead className="bg-wash border-b border-hairline text-muted font-semibold uppercase text-[10px]">
@@ -110,7 +181,7 @@ export default function ExpensesPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-hairline">
-              {expenses.map(e => (
+              {filtered.map((e) => (
                 <tr key={e.id} className="hover:bg-wash/30 transition">
                   <td className="p-3 font-semibold text-ink">{e.title}</td>
                   <td className="p-3 text-muted">{e.category}</td>
@@ -121,25 +192,42 @@ export default function ExpensesPage() {
                     <FileText size={14} className="inline mr-1" /> {e.receiptName}
                   </td>
                   <td className="p-3">
-                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                      e.status === 'REIMBURSED' ? 'bg-emerald-100 text-emerald-800' :
-                      e.status === 'APPROVED' ? 'bg-purple-100 text-purple-800' :
-                      e.status === 'SUBMITTED' ? 'bg-amber-100 text-amber-800' : 'bg-rose-100 text-rose-800'
-                    }`}>
+                    <span
+                      className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                        e.status === 'REIMBURSED'
+                          ? 'bg-emerald-100 text-emerald-800'
+                          : e.status === 'APPROVED'
+                            ? 'bg-purple-100 text-purple-800'
+                            : e.status === 'SUBMITTED'
+                              ? 'bg-amber-100 text-amber-800'
+                              : 'bg-rose-100 text-rose-800'
+                      }`}
+                    >
                       {e.status}
                     </span>
                   </td>
                   <td className="p-3 text-right">
-                    <select
-                      value={e.status}
-                      onChange={ev => handleStatus(e.id, ev.target.value as Expense['status'])}
-                      className="text-[10px] font-semibold bg-wash border border-hairline rounded px-2 py-1 focus:outline-none"
-                    >
-                      <option value="SUBMITTED">Pending</option>
-                      <option value="APPROVED">Approve Claim</option>
-                      <option value="REIMBURSED">Mark Reimbursed</option>
-                      <option value="REJECTED">Reject Claim</option>
-                    </select>
+                    <div className="flex items-center justify-end gap-2">
+                      <select
+                        value={e.status}
+                        onChange={(ev) =>
+                          handleStatus(e.id, ev.target.value as Expense['status'])
+                        }
+                        className="text-[10px] font-semibold bg-wash border border-hairline rounded px-2 py-1 focus:outline-none"
+                      >
+                        <option value="SUBMITTED">Pending</option>
+                        <option value="APPROVED">Approve Claim</option>
+                        <option value="REIMBURSED">Mark Reimbursed</option>
+                        <option value="REJECTED">Reject Claim</option>
+                      </select>
+                      <button
+                        onClick={() => handleDelete(e.id, e.title)}
+                        className="p-1 text-slate-400 hover:text-rose-600 transition cursor-pointer"
+                        title="Delete Claim"
+                      >
+                        <Trash2 size={13} />
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -152,16 +240,21 @@ export default function ExpensesPage() {
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/40 backdrop-blur-xs p-4">
           <div className="bg-white w-full max-w-md p-6 rounded-2xl shadow-xl border border-hairline">
-            <h3 className="text-lg font-bold text-ink mb-4">File Expense Reimbursement</h3>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-bold text-ink">File Expense Reimbursement</h3>
+              <button onClick={() => setShowModal(false)} className="p-1 text-slate-400 hover:text-slate-600">
+                <X size={18} />
+              </button>
+            </div>
             <form onSubmit={handleAdd} className="space-y-4 text-xs">
               <div>
-                <label className="block text-muted font-semibold mb-1">Expense Title</label>
+                <label className="block text-muted font-semibold mb-1">Expense Title *</label>
                 <input
                   type="text"
                   required
                   placeholder="e.g. Taxi Fare to Client Site"
                   value={title}
-                  onChange={ev => setTitle(ev.target.value)}
+                  onChange={(ev) => setTitle(ev.target.value)}
                   className="w-full px-3 py-2 rounded-lg border border-hairline focus:border-purple-500 focus:outline-none"
                 />
               </div>
@@ -170,7 +263,7 @@ export default function ExpensesPage() {
                   <label className="block text-muted font-semibold mb-1">Category</label>
                   <select
                     value={category}
-                    onChange={ev => setCategory(ev.target.value as Expense['category'])}
+                    onChange={(ev) => setCategory(ev.target.value as Expense['category'])}
                     className="w-full px-3 py-2 rounded-lg border border-hairline focus:border-purple-500 focus:outline-none"
                   >
                     <option value="Travel">Travel</option>
@@ -182,13 +275,14 @@ export default function ExpensesPage() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-muted font-semibold mb-1">Amount (₹)</label>
+                  <label className="block text-muted font-semibold mb-1">Amount (₹) *</label>
                   <input
                     type="number"
                     required
+                    min="1"
                     placeholder="e.g. 1500"
                     value={amount}
-                    onChange={ev => setAmount(ev.target.value)}
+                    onChange={(ev) => setAmount(ev.target.value)}
                     className="w-full px-3 py-2 rounded-lg border border-hairline focus:border-purple-500 focus:outline-none"
                   />
                 </div>
@@ -210,9 +304,10 @@ export default function ExpensesPage() {
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 rounded-lg bg-purple-600 text-white font-semibold hover:bg-purple-700 shadow-sm"
+                  disabled={submitting}
+                  className="px-4 py-2 rounded-lg bg-purple-600 hover:bg-purple-500 disabled:opacity-50 text-white font-semibold transition"
                 >
-                  Submit Claim
+                  {submitting ? 'Submitting...' : 'Submit Claim'}
                 </button>
               </div>
             </form>

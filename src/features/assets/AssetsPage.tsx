@@ -1,56 +1,104 @@
-import { useState } from 'react'
-import { Laptop, Plus, Search, Filter, Wrench, CheckCircle, Clock, ShieldCheck, UserCheck, AlertTriangle } from 'lucide-react'
-
-type Asset = {
-  id: string
-  assetTag: string
-  name: string
-  category: 'Laptop' | 'Desktop' | 'Mobile' | 'SIM' | 'Accessory' | 'License'
-  assignedTo: string
-  status: 'AVAILABLE' | 'ASSIGNED' | 'REPAIR' | 'RETIRED'
-  serialNumber: string
-  purchaseDate: string
-}
-
-const INITIAL_ASSETS: Asset[] = [
-  { id: 'ast-1', assetTag: 'AST-MAC-01', name: 'MacBook Pro M3 Max 16"', category: 'Laptop', assignedTo: 'Priya Sharma', status: 'ASSIGNED', serialNumber: 'C02GX001XYZ', purchaseDate: '2025-01-10' },
-  { id: 'ast-2', assetTag: 'AST-DEL-04', name: 'Dell XPS 15 9530', category: 'Laptop', assignedTo: 'Rahul Mehta', status: 'ASSIGNED', serialNumber: 'DLXPS88721', purchaseDate: '2024-08-15' },
-  { id: 'ast-3', assetTag: 'AST-MON-09', name: 'Dell UltraSharp 27" 4K', category: 'Accessory', assignedTo: 'Unassigned', status: 'AVAILABLE', serialNumber: 'CN0981273', purchaseDate: '2025-03-01' },
-  { id: 'ast-4', assetTag: 'AST-PHN-02', name: 'iPhone 15 Pro 256GB', category: 'Mobile', assignedTo: 'Amit Kumar', status: 'REPAIR', serialNumber: 'F2LXYZ9812', purchaseDate: '2024-11-20' },
-]
+import { useState, useEffect } from 'react'
+import {
+  Laptop,
+  Plus,
+  Search,
+  Filter,
+  Wrench,
+  CheckCircle,
+  Clock,
+  ShieldCheck,
+  UserCheck,
+  AlertTriangle,
+  Trash2,
+} from 'lucide-react'
+import { assetsService, type Asset } from '@/services/assetsService'
 
 export default function AssetsPage() {
-  const [assets, setAssets] = useState<Asset[]>(INITIAL_ASSETS)
+  const [assets, setAssets] = useState<Asset[]>([])
+  const [loading, setLoading] = useState(false)
   const [search, setSearch] = useState('')
   const [showAddModal, setShowAddModal] = useState(false)
+  const [submitting, setSubmitting] = useState(false)
+
+  // Form state
   const [name, setName] = useState('')
   const [category, setCategory] = useState<Asset['category']>('Laptop')
+  const [assignedTo, setAssignedTo] = useState('')
+  const [serialNumber, setSerialNumber] = useState('')
 
-  const handleAdd = (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!name.trim()) return
-    const newA: Asset = {
-      id: `ast-${Date.now()}`,
-      assetTag: `AST-${category.slice(0, 3).toUpperCase()}-${Math.floor(10 + Math.random() * 90)}`,
-      name,
-      category,
-      assignedTo: 'Unassigned',
-      status: 'AVAILABLE',
-      serialNumber: `SN${Math.floor(100000 + Math.random() * 900000)}`,
-      purchaseDate: new Date().toISOString().split('T')[0]
+  const loadData = async () => {
+    try {
+      setLoading(true)
+      const data = await assetsService.getAll()
+      setAssets(data)
+    } catch (err) {
+      console.warn('Backend assets load fallback', err)
+    } finally {
+      setLoading(false)
     }
-    setAssets([newA, ...assets])
-    setName('')
-    setShowAddModal(false)
   }
 
-  const handleStatusChange = (id: string, newStatus: Asset['status']) => {
-    setAssets(prev => prev.map(a => a.id === id ? { ...a, status: newStatus } : a))
+  useEffect(() => {
+    loadData()
+  }, [])
+
+  const handleAdd = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!name.trim() || submitting) return
+
+    setSubmitting(true)
+    try {
+      const created = await assetsService.create({
+        name: name.trim(),
+        category,
+        assignedTo: assignedTo.trim() || 'Unassigned',
+        serialNumber: serialNumber.trim(),
+      })
+
+      setAssets([created, ...assets])
+      setName('')
+      setAssignedTo('')
+      setSerialNumber('')
+      setShowAddModal(false)
+    } catch (err) {
+      console.error('Failed to create asset', err)
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  const handleStatusChange = async (id: string, newStatus: Asset['status']) => {
+    setAssets((prev) =>
+      prev.map((a) => (a.id === id ? { ...a, status: newStatus } : a)),
+    )
+    try {
+      await assetsService.update(id, { status: newStatus })
+    } catch (err) {
+      console.error('Failed to update asset status', err)
+    }
+  }
+
+  const handleDelete = async (id: string, assetName: string) => {
+    if (!window.confirm(`Delete asset "${assetName}"?`)) return
+    try {
+      await assetsService.delete(id)
+      setAssets((prev) => prev.filter((a) => a.id !== id))
+    } catch (err) {
+      console.error('Failed to delete asset', err)
+    }
   }
 
   const filtered = assets.filter(
-    a => a.name.toLowerCase().includes(search.toLowerCase()) || a.assetTag.toLowerCase().includes(search.toLowerCase()) || a.assignedTo.toLowerCase().includes(search.toLowerCase())
+    (a) =>
+      a.name.toLowerCase().includes(search.toLowerCase()) ||
+      a.assetTag.toLowerCase().includes(search.toLowerCase()) ||
+      a.assignedTo.toLowerCase().includes(search.toLowerCase()),
   )
+
+  const assignedCount = assets.filter((a) => a.status === 'ASSIGNED').length
+  const availableCount = assets.filter((a) => a.status === 'AVAILABLE').length
+  const repairCount = assets.filter((a) => a.status === 'REPAIR').length
 
   return (
     <div className="space-y-6">
@@ -61,7 +109,9 @@ export default function AssetsPage() {
             <Laptop size={14} /> IT & Company Asset Control
           </div>
           <h1 className="text-2xl font-bold font-display">Asset Inventory & Allocations</h1>
-          <p className="text-slate-300 text-sm mt-1">Track hardware devices, IT accounts, software licenses, and repair requests.</p>
+          <p className="text-slate-300 text-sm mt-1">
+            Track hardware devices, IT accounts, software licenses, and repair requests.
+          </p>
         </div>
         <button
           onClick={() => setShowAddModal(true)}
@@ -80,18 +130,24 @@ export default function AssetsPage() {
         </div>
         <div className="bg-white p-4 rounded-xl border border-hairline shadow-sm">
           <span className="text-muted text-xs font-medium">Assigned</span>
-          <p className="text-2xl font-bold text-emerald-600 mt-1">{assets.filter(a => a.status === 'ASSIGNED').length}</p>
-          <span className="text-[11px] text-emerald-600 font-semibold mt-1 inline-block">Active with Employees</span>
+          <p className="text-2xl font-bold text-emerald-600 mt-1">{assignedCount}</p>
+          <span className="text-[11px] text-emerald-600 font-semibold mt-1 inline-block">
+            Active with Employees
+          </span>
         </div>
         <div className="bg-white p-4 rounded-xl border border-hairline shadow-sm">
           <span className="text-muted text-xs font-medium">Available Inventory</span>
-          <p className="text-2xl font-bold text-blue-600 mt-1">{assets.filter(a => a.status === 'AVAILABLE').length}</p>
-          <span className="text-[11px] text-blue-600 font-semibold mt-1 inline-block">Ready to Allocate</span>
+          <p className="text-2xl font-bold text-blue-600 mt-1">{availableCount}</p>
+          <span className="text-[11px] text-blue-600 font-semibold mt-1 inline-block">
+            Ready to Allocate
+          </span>
         </div>
         <div className="bg-white p-4 rounded-xl border border-hairline shadow-sm">
           <span className="text-muted text-xs font-medium">Under Repair</span>
-          <p className="text-2xl font-bold text-amber-600 mt-1">{assets.filter(a => a.status === 'REPAIR').length}</p>
-          <span className="text-[11px] text-amber-600 font-semibold mt-1 inline-block">IT Maintenance</span>
+          <p className="text-2xl font-bold text-amber-600 mt-1">{repairCount}</p>
+          <span className="text-[11px] text-amber-600 font-semibold mt-1 inline-block">
+            IT Maintenance
+          </span>
         </div>
       </div>
 
@@ -103,7 +159,7 @@ export default function AssetsPage() {
             type="text"
             placeholder="Search by tag, name, or employee..."
             value={search}
-            onChange={e => setSearch(e.target.value)}
+            onChange={(e) => setSearch(e.target.value)}
             className="w-full pl-9 pr-3 py-1.5 text-xs rounded-lg border border-hairline focus:border-blue-500 focus:outline-none bg-wash/30"
           />
         </div>
@@ -121,7 +177,7 @@ export default function AssetsPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-hairline">
-              {filtered.map(asset => (
+              {filtered.map((asset) => (
                 <tr key={asset.id} className="hover:bg-wash/30 transition">
                   <td className="p-3 font-mono font-bold text-blue-600">{asset.assetTag}</td>
                   <td className="p-3 font-semibold text-ink">
@@ -131,25 +187,42 @@ export default function AssetsPage() {
                   <td className="p-3 text-muted">{asset.category}</td>
                   <td className="p-3 font-medium text-ink">{asset.assignedTo}</td>
                   <td className="p-3">
-                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                      asset.status === 'ASSIGNED' ? 'bg-emerald-100 text-emerald-800' :
-                      asset.status === 'AVAILABLE' ? 'bg-blue-100 text-blue-800' :
-                      asset.status === 'REPAIR' ? 'bg-amber-100 text-amber-800' : 'bg-slate-100 text-slate-700'
-                    }`}>
+                    <span
+                      className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                        asset.status === 'ASSIGNED'
+                          ? 'bg-emerald-100 text-emerald-800'
+                          : asset.status === 'AVAILABLE'
+                            ? 'bg-blue-100 text-blue-800'
+                            : asset.status === 'REPAIR'
+                              ? 'bg-amber-100 text-amber-800'
+                              : 'bg-slate-100 text-slate-700'
+                      }`}
+                    >
                       {asset.status}
                     </span>
                   </td>
                   <td className="p-3 text-right">
-                    <select
-                      value={asset.status}
-                      onChange={e => handleStatusChange(asset.id, e.target.value as Asset['status'])}
-                      className="text-[10px] font-semibold bg-wash border border-hairline rounded px-2 py-1 focus:outline-none"
-                    >
-                      <option value="AVAILABLE">Mark Available</option>
-                      <option value="ASSIGNED">Mark Assigned</option>
-                      <option value="REPAIR">Send to Repair</option>
-                      <option value="RETIRED">Retire Asset</option>
-                    </select>
+                    <div className="flex items-center justify-end gap-2">
+                      <select
+                        value={asset.status}
+                        onChange={(e) =>
+                          handleStatusChange(asset.id, e.target.value as Asset['status'])
+                        }
+                        className="text-[10px] font-semibold bg-wash border border-hairline rounded px-2 py-1 focus:outline-none"
+                      >
+                        <option value="AVAILABLE">Mark Available</option>
+                        <option value="ASSIGNED">Mark Assigned</option>
+                        <option value="REPAIR">Send to Repair</option>
+                        <option value="RETIRED">Retire Asset</option>
+                      </select>
+                      <button
+                        onClick={() => handleDelete(asset.id, asset.name)}
+                        className="p-1 text-slate-400 hover:text-rose-600 transition cursor-pointer"
+                        title="Delete Asset"
+                      >
+                        <Trash2 size={13} />
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -165,21 +238,22 @@ export default function AssetsPage() {
             <h3 className="text-lg font-bold text-ink mb-4">Add IT Asset</h3>
             <form onSubmit={handleAdd} className="space-y-4 text-xs">
               <div>
-                <label className="block text-muted font-semibold mb-1">Asset Name</label>
+                <label className="block text-muted font-semibold mb-1">Asset Name *</label>
                 <input
                   type="text"
                   required
-                  placeholder="e.g. MacBook Pro M3"
+                  placeholder="e.g. MacBook Pro M3 Max"
                   value={name}
-                  onChange={e => setName(e.target.value)}
+                  onChange={(e) => setName(e.target.value)}
                   className="w-full px-3 py-2 rounded-lg border border-hairline focus:border-blue-500 focus:outline-none"
                 />
               </div>
+
               <div>
                 <label className="block text-muted font-semibold mb-1">Category</label>
                 <select
                   value={category}
-                  onChange={e => setCategory(e.target.value as Asset['category'])}
+                  onChange={(e) => setCategory(e.target.value as Asset['category'])}
                   className="w-full px-3 py-2 rounded-lg border border-hairline focus:border-blue-500 focus:outline-none"
                 >
                   <option value="Laptop">Laptop</option>
@@ -190,6 +264,30 @@ export default function AssetsPage() {
                   <option value="License">Software License</option>
                 </select>
               </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-muted font-semibold mb-1">Serial Number</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. C02GX001XYZ"
+                    value={serialNumber}
+                    onChange={(e) => setSerialNumber(e.target.value)}
+                    className="w-full px-3 py-2 rounded-lg border border-hairline focus:border-blue-500 focus:outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-muted font-semibold mb-1">Assigned To</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Priya Sharma"
+                    value={assignedTo}
+                    onChange={(e) => setAssignedTo(e.target.value)}
+                    className="w-full px-3 py-2 rounded-lg border border-hairline focus:border-blue-500 focus:outline-none"
+                  />
+                </div>
+              </div>
+
               <div className="flex justify-end gap-2 pt-2">
                 <button
                   type="button"
@@ -200,9 +298,10 @@ export default function AssetsPage() {
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 rounded-lg bg-blue-600 text-white font-semibold hover:bg-blue-700 shadow-sm"
+                  disabled={submitting}
+                  className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white font-semibold shadow-sm transition"
                 >
-                  Save Asset
+                  {submitting ? 'Saving...' : 'Save Asset'}
                 </button>
               </div>
             </form>

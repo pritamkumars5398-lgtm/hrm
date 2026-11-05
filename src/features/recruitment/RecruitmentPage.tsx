@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import {
   Briefcase,
@@ -14,7 +14,10 @@ import {
   TrendingUp,
   Download,
   Building,
+  UserCheck,
+  Trash2,
 } from 'lucide-react'
+import { recruitmentService } from '@/services/recruitmentService'
 
 type Job = {
   id: string
@@ -38,50 +41,136 @@ type Candidate = {
   appliedDate: string
 }
 
-const INITIAL_JOBS: Job[] = [
-  { id: 'job-1', title: 'Senior Full Stack Engineer', department: 'Engineering', location: 'Remote / Bengaluru', headcount: 3, applicantsCount: 42, status: 'OPEN', type: 'Full-time' },
-  { id: 'job-2', title: 'HR Business Partner', department: 'Human Resources', location: 'Mumbai', headcount: 1, applicantsCount: 18, status: 'OPEN', type: 'Full-time' },
-  { id: 'job-3', title: 'Product Manager - SaaS', department: 'Product', location: 'Hybrid / Delhi NCR', headcount: 2, applicantsCount: 29, status: 'OPEN', type: 'Full-time' },
-  { id: 'job-4', title: 'Talent Acquisition Lead', department: 'Human Resources', location: 'Bengaluru', headcount: 1, applicantsCount: 12, status: 'DRAFT', type: 'Full-time' },
-]
-
-const INITIAL_CANDIDATES: Candidate[] = [
-  { id: 'cand-1', name: 'Rahul Sharma', email: 'rahul.s@example.com', jobTitle: 'Senior Full Stack Engineer', stage: 'INTERVIEW', aiScore: 94, experience: '6 yrs', appliedDate: '2026-08-01' },
-  { id: 'cand-2', name: 'Ananya Verma', email: 'ananya.v@example.com', jobTitle: 'HR Business Partner', stage: 'OFFERED', aiScore: 98, experience: '5 yrs', appliedDate: '2026-07-28' },
-  { id: 'cand-3', name: 'Vikram Mehta', email: 'vikram.m@example.com', jobTitle: 'Product Manager - SaaS', stage: 'SCREENED', aiScore: 88, experience: '7 yrs', appliedDate: '2026-08-03' },
-  { id: 'cand-4', name: 'Sneha Patel', email: 'sneha.p@example.com', jobTitle: 'Senior Full Stack Engineer', stage: 'APPLIED', aiScore: 79, experience: '4 yrs', appliedDate: '2026-08-05' },
-  { id: 'cand-5', name: 'Karan Kapoor', email: 'karan.k@example.com', jobTitle: 'Product Manager - SaaS', stage: 'HIRED', aiScore: 96, experience: '8 yrs', appliedDate: '2026-07-20' },
-]
-
 export default function RecruitmentPage() {
   const [activeTab, setActiveTab] = useState<'pipeline' | 'jobs' | 'ai-match'>('pipeline')
   const [search, setSearch] = useState('')
-  const [jobs, setJobs] = useState<Job[]>(INITIAL_JOBS)
-  const [candidates, setCandidates] = useState<Candidate[]>(INITIAL_CANDIDATES)
+  const [jobs, setJobs] = useState<Job[]>([])
+  const [candidates, setCandidates] = useState<Candidate[]>([])
+  const [loading, setLoading] = useState(false)
+  const [loadError, setLoadError] = useState<string | null>(null)
   const [showNewJobModal, setShowNewJobModal] = useState(false)
   const [newJobTitle, setNewJobTitle] = useState('')
   const [newJobDept, setNewJobDept] = useState('Engineering')
+  const [newJobLocation, setNewJobLocation] = useState('Remote / Bengaluru')
+  const [newJobType, setNewJobType] = useState('Full-time')
+  const [newJobHeadcount, setNewJobHeadcount] = useState(1)
+  const [convertingId, setConvertingId] = useState<string | null>(null)
 
-  const handleAddJob = (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!newJobTitle.trim()) return
-    const newJ: Job = {
-      id: `job-${Date.now()}`,
-      title: newJobTitle,
-      department: newJobDept,
-      location: 'Hybrid',
-      headcount: 1,
-      applicantsCount: 0,
-      status: 'OPEN',
-      type: 'Full-time'
+  const loadData = async () => {
+    try {
+      setLoading(true)
+      setLoadError(null)
+      const [fetchedJobs, fetchedApplications] = await Promise.all([
+        recruitmentService.getJobs(),
+        recruitmentService.getApplications(),
+      ])
+
+      setJobs(
+          (fetchedJobs ?? []).map((j: any) => ({
+            id: j.id,
+            title: j.title,
+            department: j.department,
+            location: j.location,
+            headcount: j.headcount ?? 1,
+            applicantsCount: j.applicantCount ?? j.applicantsCount ?? 0,
+            status: (j.status as 'OPEN' | 'DRAFT' | 'CLOSED') || 'OPEN',
+            type: j.type ?? 'Full-time',
+          })),
+        )
+
+      setCandidates(
+          (fetchedApplications ?? []).map((a: any) => ({
+            id: a.id,
+            name: a.candidateName || a.name,
+            email: a.email,
+            jobTitle: a.jobTitle || 'Role',
+            stage: (a.stage || a.status) as Candidate['stage'],
+            aiScore: a.aiScore ?? 85,
+            experience: a.experience || `${a.experienceYears ?? 0} yrs`,
+            appliedDate: String(a.appliedDate || a.appliedAt || '').slice(0, 10),
+          })),
+        )
+    } catch (err) {
+      console.error('Recruitment fetch failed', err)
+      setLoadError('Could not load jobs and candidates. Check that the backend is running.')
+    } finally {
+      setLoading(false)
     }
-    setJobs([newJ, ...jobs])
-    setNewJobTitle('')
-    setShowNewJobModal(false)
   }
 
-  const handleStageChange = (candId: string, newStage: Candidate['stage']) => {
-    setCandidates(prev => prev.map(c => c.id === candId ? { ...c, stage: newStage } : c))
+  useEffect(() => {
+    loadData()
+  }, [])
+
+  const handleAddJob = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!newJobTitle.trim()) return
+
+    try {
+      const created = await recruitmentService.createJob({
+        title: newJobTitle.trim(),
+        department: newJobDept,
+        location: newJobLocation,
+        type: newJobType,
+        headcount: Number(newJobHeadcount),
+        status: 'OPEN',
+      })
+
+      const newJ: Job = {
+        id: created.id,
+        title: created.title,
+        department: created.department,
+        location: created.location,
+        headcount: created.headcount ?? 1,
+        applicantsCount: 0,
+        status: (created.status as 'OPEN' | 'DRAFT' | 'CLOSED') || 'OPEN',
+        type: created.type ?? 'Full-time',
+      }
+      setJobs([newJ, ...jobs])
+      setNewJobTitle('')
+      setShowNewJobModal(false)
+    } catch (err) {
+      console.error('Failed to create job', err)
+      alert('Could not create the job requisition.')
+    }
+  }
+
+  const handleDeleteJob = async (id: string, title: string) => {
+    if (!window.confirm(`Delete requisition "${title}"?`)) return
+    try {
+      await recruitmentService.deleteJob(id)
+      setJobs((prev) => prev.filter((j) => j.id !== id))
+    } catch (err) {
+      console.error('Failed to delete job', err)
+    }
+  }
+
+  const handleStageChange = async (candId: string, newStage: Candidate['stage']) => {
+    setCandidates((prev) => prev.map((c) => (c.id === candId ? { ...c, stage: newStage } : c)))
+    try {
+      await recruitmentService.updateApplication(candId, { status: newStage })
+    } catch (err) {
+      console.error('Failed to update stage in backend', err)
+      alert('Could not update the candidate stage.')
+      void loadData()
+    }
+  }
+
+  const handleConvertToEmployee = async (candId: string, candName: string) => {
+    if (!window.confirm(`Convert "${candName}" into an active employee in Employee Directory?`)) return
+    try {
+      setConvertingId(candId)
+      await recruitmentService.convertToEmployee(candId)
+      setCandidates((prev) =>
+        prev.map((c) => (c.id === candId ? { ...c, stage: 'HIRED' } : c)),
+      )
+      alert(`🎉 ${candName} was hired and added to the employee directory!`)
+    } catch (err) {
+      console.error('Failed to convert candidate', err)
+      alert('Could not convert candidate to employee.')
+    } finally {
+      setConvertingId(null)
+    }
   }
 
   const filteredCandidates = candidates.filter(
@@ -182,6 +271,13 @@ export default function RecruitmentPage() {
         </div>
       </div>
 
+      {loadError && (
+        <div role="alert" className="rounded-xl border border-clay/30 bg-clay/5 p-3 text-[13px] text-clay">
+          {loadError}
+        </div>
+      )}
+      {loading && <p className="text-[13px] text-muted">Loading recruitment data…</p>}
+
       {/* Tab 1: Kanban Pipeline */}
       {activeTab === 'pipeline' && (
         <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-3 overflow-x-auto pb-4">
@@ -226,6 +322,19 @@ export default function RecruitmentPage() {
                           <option key={s} value={s}>Move to {s}</option>
                         ))}
                       </select>
+
+                      {/* Convert to Employee Button when HIRED or OFFERED */}
+                      {(cand.stage === 'HIRED' || cand.stage === 'OFFERED') && (
+                        <button
+                          type="button"
+                          disabled={convertingId === cand.id}
+                          onClick={() => handleConvertToEmployee(cand.id, cand.name)}
+                          className="mt-2 w-full flex items-center justify-center gap-1.5 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white font-bold text-[10px] py-1 px-2 rounded transition cursor-pointer shadow-xs"
+                        >
+                          <UserCheck size={12} />
+                          {convertingId === cand.id ? 'Converting...' : 'Convert to Employee'}
+                        </button>
+                      )}
                     </motion.div>
                   ))}
                   {stageCandidates.length === 0 && (
@@ -252,6 +361,7 @@ export default function RecruitmentPage() {
                 <th className="p-3">Headcount</th>
                 <th className="p-3">Applicants</th>
                 <th className="p-3">Status</th>
+                <th className="p-3 text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-hairline">
@@ -268,6 +378,15 @@ export default function RecruitmentPage() {
                     }`}>
                       {job.status}
                     </span>
+                  </td>
+                  <td className="p-3 text-right">
+                    <button
+                      onClick={() => handleDeleteJob(job.id, job.title)}
+                      className="p-1.5 text-slate-400 hover:text-rose-600 transition cursor-pointer"
+                      title="Delete Requisition"
+                    >
+                      <Trash2 size={14} />
+                    </button>
                   </td>
                 </tr>
               ))}
@@ -293,19 +412,56 @@ export default function RecruitmentPage() {
                   className="w-full px-3 py-2 rounded-lg border border-hairline focus:border-emerald-500 focus:outline-none"
                 />
               </div>
-              <div>
-                <label className="block text-muted font-semibold mb-1">Department</label>
-                <select
-                  value={newJobDept}
-                  onChange={e => setNewJobDept(e.target.value)}
-                  className="w-full px-3 py-2 rounded-lg border border-hairline focus:border-emerald-500 focus:outline-none"
-                >
-                  <option value="Engineering">Engineering</option>
-                  <option value="Human Resources">Human Resources</option>
-                  <option value="Product">Product</option>
-                  <option value="Sales">Sales</option>
-                  <option value="Marketing">Marketing</option>
-                </select>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-muted font-semibold mb-1">Department</label>
+                  <select
+                    value={newJobDept}
+                    onChange={e => setNewJobDept(e.target.value)}
+                    className="w-full px-3 py-2 rounded-lg border border-hairline focus:border-emerald-500 focus:outline-none"
+                  >
+                    <option value="Engineering">Engineering</option>
+                    <option value="Human Resources">Human Resources</option>
+                    <option value="Product">Product</option>
+                    <option value="Sales">Sales</option>
+                    <option value="Marketing">Marketing</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-muted font-semibold mb-1">Headcount</label>
+                  <input
+                    type="number"
+                    min="1"
+                    value={newJobHeadcount}
+                    onChange={e => setNewJobHeadcount(Number(e.target.value))}
+                    className="w-full px-3 py-2 rounded-lg border border-hairline focus:border-emerald-500 focus:outline-none"
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-muted font-semibold mb-1">Location</label>
+                  <input
+                    type="text"
+                    value={newJobLocation}
+                    onChange={e => setNewJobLocation(e.target.value)}
+                    placeholder="e.g. Remote / Bengaluru"
+                    className="w-full px-3 py-2 rounded-lg border border-hairline focus:border-emerald-500 focus:outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-muted font-semibold mb-1">Employment Type</label>
+                  <select
+                    value={newJobType}
+                    onChange={e => setNewJobType(e.target.value)}
+                    className="w-full px-3 py-2 rounded-lg border border-hairline focus:border-emerald-500 focus:outline-none"
+                  >
+                    <option value="Full-time">Full-time</option>
+                    <option value="Part-time">Part-time</option>
+                    <option value="Contract">Contract</option>
+                    <option value="Internship">Internship</option>
+                  </select>
+                </div>
               </div>
               <div className="flex justify-end gap-2 pt-2">
                 <button

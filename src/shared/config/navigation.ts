@@ -9,6 +9,7 @@ import {
   Settings,
   Target,
   Users,
+  User,
   UserPlus,
   Briefcase,
   UserCheck,
@@ -24,13 +25,16 @@ import {
   GitBranch,
   ShieldCheck,
   Sparkles,
-  ShieldAlert,
-  Building2,
+  FolderKanban,
+  Megaphone,
+  Bell,
+  Calendar,
   type LucideIcon,
 } from 'lucide-react'
 
 export type ModuleKey =
   | 'dashboard'
+  | 'profile'
   | 'employees'
   | 'recruitment'
   | 'onboarding'
@@ -57,6 +61,10 @@ export type ModuleKey =
   | 'billing'
   | 'team'
   | 'settings'
+  | 'holidays'
+  | 'notifications'
+  | 'projects'
+  | 'announcements'
 
 export type NavItem = {
   key: ModuleKey
@@ -98,46 +106,57 @@ export const NAV_ITEMS: NavItem[] = [
   { key: 'reports', label: 'Reports & Analytics', path: '/dashboard/reports', icon: BarChart3, group: 'ai_saas' },
   { key: 'compliance', label: 'Statutory Compliance', path: '/dashboard/compliance', icon: ShieldCheck, group: 'ai_saas' },
   { key: 'ai-copilot', label: 'AI HR Copilot', path: '/dashboard/ai-copilot', icon: Sparkles, group: 'ai_saas' },
-  { key: 'billing', label: 'Subscriptions', path: '/dashboard/billing', icon: Building2, group: 'ai_saas' },
-  { key: 'superadmin', label: 'Super Admin SaaS', path: '/dashboard/superadmin', icon: ShieldAlert, group: 'ai_saas' },
 
   // Admin
   { key: 'team', label: 'Team Members', path: '/dashboard/team', icon: UserPlus, group: 'admin' },
   { key: 'settings', label: 'Settings', path: '/dashboard/settings', icon: Settings, group: 'admin' },
+  { key: 'projects', label: 'Projects', path: '/dashboard/projects', icon: FolderKanban, group: 'operations' },
+  { key: 'announcements', label: 'Announcements', path: '/dashboard/announcements', icon: Megaphone, group: 'engagement' },
+  { key: 'holidays', label: 'Holiday Calendar', path: '/dashboard/holiday-calendar', icon: Calendar, group: 'operations' },
+  { key: 'notifications', label: 'Notifications', path: '/dashboard/notifications', icon: Bell, group: 'engagement' },
 ]
 
 export type PermissionMatrix = Record<ModuleKey, string[]>
 
+/**
+ * For each module, lists which permissions grant access.
+ * Empty array [] means "always granted to everyone" (see ALWAYS_GRANTED).
+ * Modules with required permissions are hidden from sidebar if user lacks them.
+ */
 export const PERMISSION_MODULES: PermissionMatrix = {
-  dashboard: [],
+  dashboard: [],           // Always granted
+  profile: [],             // Always granted
   employees: ['employees.view', 'employees.manage'],
   recruitment: ['recruitment.view', 'recruitment.manage'],
   onboarding: ['onboarding.view', 'onboarding.manage'],
-  attendance: [],
-  leave: [],
+  attendance: [],          // Always granted
+  leave: [],               // Always granted
   payroll: ['payroll.view', 'payroll.manage'],
-  payslip: [],
-  timesheets: [],
+  payslip: [],             // Handled separately by canAccessPayslip()
+  timesheets: ['timesheets.view', 'timesheets.manage'],
   performance: ['performance.view', 'performance.manage'],
-  lms: [],
-  assets: [],
-  expenses: [],
-  travel: [],
-  helpdesk: [],
-  engagement: [],
-  communication: [],
+  lms: ['lms.view', 'lms.manage'],
+  assets: ['assets.view', 'assets.manage'],
+  expenses: ['expenses.view', 'expenses.manage'],
+  travel: ['travel.view', 'travel.manage'],
+  helpdesk: ['helpdesk.view', 'helpdesk.manage'],
+  engagement: ['engagement.view', 'engagement.manage'],
+  communication: ['communication.view', 'communication.manage'],
   documents: ['documents.view', 'documents.manage'],
-  forms: [],
+  forms: ['forms.view', 'forms.manage'],
   workflows: ['settings.manage'],
   reports: ['reports.view'],
   compliance: ['payroll.view', 'payroll.manage'],
-  'ai-copilot': [],
+  'ai-copilot': ['ai-copilot.view'],
   superadmin: ['settings.manage'],
   billing: ['settings.manage'],
   team: ['team.view', 'team.invite', 'team.managePermissions'],
   settings: ['settings.manage'],
+  holidays: [],
+  notifications: [],
+  projects: [],
+  announcements: [],
 }
-
 
 /**
  * Modules nobody can be locked out of.
@@ -151,7 +170,7 @@ export const PERMISSION_MODULES: PermissionMatrix = {
  * (company-wide vs. just you), decided server-side (§4.1). `payslip` is NOT
  * unconditional like the others — see the carve-out in `canAccess` below.
  */
-export const ALWAYS_GRANTED: ModuleKey[] = ['dashboard', 'attendance', 'leave']
+export const ALWAYS_GRANTED: ModuleKey[] = ['dashboard', 'profile', 'attendance', 'leave']
 
 /**
  * Payslip is the "my own payslip" ESS view, distinct from the Payroll
@@ -173,12 +192,117 @@ export function canAccess(permissions: string[] | undefined, moduleKey: ModuleKe
   if (ALWAYS_GRANTED.includes(moduleKey)) return true
 
   const requiredPerms = PERMISSION_MODULES[moduleKey] || []
-  return requiredPerms.some((p) => perms.includes(p))
+  // If no permissions required for this module and it's not in ALWAYS_GRANTED,
+  // then it's an open module — grant access.
+  if (requiredPerms.length === 0) return true
+
+  // Use hasPermission so wildcard permissions like `employees.*` are respected —
+  // a direct perms.includes(p) would miss them.
+  return requiredPerms.some((p) => hasPermission(perms, p))
 }
 
-export function navItemsFor(_permissions?: string[]): NavItem[] {
-  // Always return all navigation items so every enterprise feature is visible in the sidebar.
-  return NAV_ITEMS
+/**
+ * Returns only the nav items this user is allowed to see.
+ * - Owner (`*`) sees everything.
+ * - Others see only modules they have access to per canAccess().
+ * - Empty sidebar groups are automatically hidden in Sidebar.tsx.
+ */
+export function navItemsFor(permissions?: string[], role?: string): NavItem[] {
+  const perms = permissions ?? []
+
+  // OWNER (Unrestricted Access - Every single section is unhidden)
+  if (role === 'OWNER' || perms.includes('*')) {
+    return NAV_ITEMS
+  }
+
+  // HR (Exact 11 Sections Requested)
+  if (role === 'HR') {
+    const hrKeys: Array<{ key: ModuleKey; labelOverride?: string; groupOverride?: NavItem['group'] }> = [
+      // Core Staffing & Records
+      { key: 'dashboard', labelOverride: 'Dashboard', groupOverride: 'main' },
+      { key: 'employees', labelOverride: 'Employees', groupOverride: 'main' },
+      { key: 'recruitment', labelOverride: 'Recruitment', groupOverride: 'main' },
+      { key: 'attendance', labelOverride: 'Attendance', groupOverride: 'main' },
+      { key: 'leave', labelOverride: 'Leave Management', groupOverride: 'main' },
+
+      // Compensation & Structure
+      { key: 'payroll', labelOverride: 'Payroll', groupOverride: 'operations' },
+      { key: 'team', labelOverride: 'Departments', groupOverride: 'operations' },
+      { key: 'performance', labelOverride: 'Performance', groupOverride: 'operations' },
+
+      // Learning, Grievance & Analytics
+      { key: 'lms', labelOverride: 'Training', groupOverride: 'engagement' },
+      { key: 'helpdesk', labelOverride: 'Complaints', groupOverride: 'engagement' },
+      { key: 'reports', labelOverride: 'Reports', groupOverride: 'engagement' },
+    ]
+
+    return hrKeys.map(({ key, labelOverride, groupOverride }) => {
+      const original = NAV_ITEMS.find((item) => item.key === key)!
+      return {
+        ...original,
+        label: labelOverride || original.label,
+        group: groupOverride || original.group,
+      }
+    })
+  }
+
+  // MANAGER (Exact 10 Sections Requested)
+  if (role === 'MANAGER') {
+    const managerKeys: Array<{ key: ModuleKey; labelOverride?: string; groupOverride?: NavItem['group'] }> = [
+      // Core Team Leadership
+      { key: 'dashboard', labelOverride: '1. Dashboard', groupOverride: 'main' },
+      { key: 'employees', labelOverride: '2. My Team', groupOverride: 'main' },
+      { key: 'timesheets', labelOverride: '3. Task Management', groupOverride: 'main' },
+      { key: 'attendance', labelOverride: '4. Attendance', groupOverride: 'main' },
+      { key: 'leave', labelOverride: '5. Leave Requests', groupOverride: 'main' },
+
+      // Performance & Projects
+      { key: 'performance', labelOverride: '6. Performance', groupOverride: 'operations' },
+      { key: 'projects', labelOverride: '7. Projects', groupOverride: 'operations' },
+      { key: 'reports', labelOverride: '8. Work Reports', groupOverride: 'operations' },
+
+      // Communication & Broadcasts
+      { key: 'announcements', labelOverride: '9. Announcements', groupOverride: 'engagement' },
+      { key: 'communication', labelOverride: '10. Messages', groupOverride: 'engagement' },
+    ]
+
+    return managerKeys.map(({ key, labelOverride, groupOverride }) => {
+      const original = NAV_ITEMS.find((item) => item.key === key)!
+      return {
+        ...original,
+        label: labelOverride || original.label,
+        group: groupOverride || original.group,
+      }
+    })
+  }
+
+  // EMPLOYEE (Exact 11 Sections for Self Service)
+  if (role === 'EMPLOYEE') {
+    const employeeKeys: Array<{ key: ModuleKey; labelOverride?: string; groupOverride?: NavItem['group'] }> = [
+      { key: 'dashboard', labelOverride: '1. Dashboard', groupOverride: 'main' },
+      { key: 'attendance', labelOverride: '2. My Attendance', groupOverride: 'main' },
+      { key: 'leave', labelOverride: '3. My Leave', groupOverride: 'main' },
+      { key: 'payslip', labelOverride: '4. My Salary', groupOverride: 'main' },
+      { key: 'timesheets', labelOverride: '5. My Tasks', groupOverride: 'operations' },
+      { key: 'documents', labelOverride: '6. My Documents', groupOverride: 'operations' },
+      { key: 'holidays', labelOverride: '7. Holiday Calendar', groupOverride: 'operations' },
+      { key: 'notifications', labelOverride: '8. Notifications', groupOverride: 'engagement' },
+      { key: 'helpdesk', labelOverride: '9. Help & Support', groupOverride: 'engagement' },
+      { key: 'settings', labelOverride: '10. Settings', groupOverride: 'engagement' },
+    ]
+
+    return employeeKeys.map(({ key, labelOverride, groupOverride }) => {
+      const original = NAV_ITEMS.find((item) => item.key === key)!
+      return {
+        ...original,
+        label: labelOverride || original.label,
+        group: groupOverride || original.group,
+      }
+    })
+  }
+
+  // Fallback (Regular Employees or Custom)
+  return NAV_ITEMS.filter((item) => canAccess(perms, item.key))
 }
 
 /**
@@ -239,6 +363,76 @@ export const PERMISSION_KEY_GROUPS: Array<{ label: string; keys: Array<{ key: st
     ],
   },
   {
+    label: 'Recruitment',
+    keys: [
+      { key: 'recruitment.view', label: 'View job postings & candidates' },
+      { key: 'recruitment.manage', label: 'Manage job postings & candidates' },
+    ],
+  },
+  {
+    label: 'Onboarding',
+    keys: [
+      { key: 'onboarding.view', label: 'View onboarding trackers' },
+      { key: 'onboarding.manage', label: 'Manage onboarding tasks' },
+    ],
+  },
+  {
+    label: 'Timesheets',
+    keys: [
+      { key: 'timesheets.view', label: 'View timesheets' },
+      { key: 'timesheets.manage', label: 'Approve / reject timesheets' },
+    ],
+  },
+  {
+    label: 'LMS Academy',
+    keys: [
+      { key: 'lms.view', label: 'View training courses' },
+      { key: 'lms.manage', label: 'Create and manage courses' },
+    ],
+  },
+  {
+    label: 'Assets',
+    keys: [
+      { key: 'assets.view', label: 'View assets' },
+      { key: 'assets.manage', label: 'Assign and manage assets' },
+    ],
+  },
+  {
+    label: 'Expenses',
+    keys: [
+      { key: 'expenses.view', label: 'View expense claims' },
+      { key: 'expenses.manage', label: 'Approve / reject expenses' },
+    ],
+  },
+  {
+    label: 'Travel',
+    keys: [
+      { key: 'travel.view', label: 'View travel requests' },
+      { key: 'travel.manage', label: 'Approve / reject travel requests' },
+    ],
+  },
+  {
+    label: 'Helpdesk',
+    keys: [
+      { key: 'helpdesk.view', label: 'View helpdesk tickets' },
+      { key: 'helpdesk.manage', label: 'Resolve and manage tickets' },
+    ],
+  },
+  {
+    label: 'Engagement',
+    keys: [
+      { key: 'engagement.view', label: 'View engagement feed' },
+      { key: 'engagement.manage', label: 'Post kudos and announcements' },
+    ],
+  },
+  {
+    label: 'Communication',
+    keys: [
+      { key: 'communication.view', label: 'View chat channels' },
+      { key: 'communication.manage', label: 'Post in chat channels' },
+    ],
+  },
+  {
     label: 'Documents',
     keys: [
       { key: 'documents.view', label: 'View documents' },
@@ -246,8 +440,19 @@ export const PERMISSION_KEY_GROUPS: Array<{ label: string; keys: Array<{ key: st
     ],
   },
   {
+    label: 'Forms',
+    keys: [
+      { key: 'forms.view', label: 'View forms' },
+      { key: 'forms.manage', label: 'Create and manage forms' },
+    ],
+  },
+  {
     label: 'Reports',
-    keys: [{ key: 'reports.view', label: 'View reports' }],
+    keys: [{ key: 'reports.view', label: 'View reports & analytics' }],
+  },
+  {
+    label: 'AI Copilot',
+    keys: [{ key: 'ai-copilot.view', label: 'Use AI HR Copilot' }],
   },
   {
     label: 'Team',

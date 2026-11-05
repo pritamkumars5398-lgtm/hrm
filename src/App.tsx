@@ -28,19 +28,23 @@ import RecruitmentPage from '@/features/recruitment/RecruitmentPage'
 import TimesheetsPage from '@/features/timesheets/TimesheetsPage'
 import AssetsPage from '@/features/assets/AssetsPage'
 import ExpensesPage from '@/features/expenses/ExpensesPage'
+import TravelPage from '@/features/travel/TravelPage'
 import HelpdeskPage from '@/features/helpdesk/HelpdeskPage'
 import LMSPage from '@/features/lms/LMSPage'
 import EngagementPage from '@/features/engagement/EngagementPage'
 import CommunicationPage from '@/features/communication/CommunicationPage'
+import AnnouncementsPage from '@/features/communication/AnnouncementsPage'
+import ProjectsPage from '@/features/projects/ProjectsPage'
 import WorkflowsPage from '@/features/workflows/WorkflowsPage'
 import CompliancePage from '@/features/compliance/CompliancePage'
 import AICopilotPage from '@/features/ai/AICopilotPage'
-import SuperAdminPage from '@/features/superadmin/SuperAdminPage'
 import OnboardingTrackerPage from '@/features/onboarding/OnboardingTrackerPage'
 import FormsListPage from '@/features/forms/FormsListPage'
 import FormBuilder from '@/features/forms/FormBuilder'
 import MyFormsPage from '@/features/forms/MyFormsPage'
 import FillFormPage from '@/features/forms/FillFormPage'
+import HolidayCalendarPage from '@/features/leave/HolidayCalendarPage'
+import NotificationsPage from '@/features/notifications/NotificationsPage'
 import ComingSoon from '@/shared/components/ComingSoon'
 import { registerWorkspaceGetter } from '@/services/apiClient'
 import { useAuthStore } from '@/features/auth/store/authStore'
@@ -108,7 +112,7 @@ export default function App() {
         <Route path="timesheets" element={<TimesheetsPage />} />
         <Route path="assets" element={<AssetsPage />} />
         <Route path="expenses" element={<ExpensesPage />} />
-        <Route path="travel" element={<ExpensesPage />} />
+        <Route path="travel" element={<TravelPage />} />
         <Route path="helpdesk" element={<HelpdeskPage />} />
         <Route path="lms" element={<LMSPage />} />
         <Route path="engagement" element={<EngagementPage />} />
@@ -116,8 +120,10 @@ export default function App() {
         <Route path="workflows" element={<WorkflowsPage />} />
         <Route path="compliance" element={<CompliancePage />} />
         <Route path="ai-copilot" element={<AICopilotPage />} />
-        <Route path="superadmin" element={<SuperAdminPage />} />
-        <Route path="billing" element={<SuperAdminPage />} />
+        <Route path="holiday-calendar" element={<HolidayCalendarPage />} />
+        <Route path="notifications" element={<NotificationsPage />} />
+        <Route path="projects" element={<ProjectsPage />} />
+        <Route path="announcements" element={<AnnouncementsPage />} />
 
         {/* Custom Forms */}
         <Route path="forms" element={<FormsListPage />} />

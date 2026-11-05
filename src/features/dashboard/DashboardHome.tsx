@@ -17,6 +17,7 @@ import { hasPermission } from '@/shared/config/navigation'
 import { timeAgo } from '@/shared/utils/timeAgo'
 import { useAttendanceStore } from '@/features/attendance/store/attendanceStore'
 import CheckInOutCard from '@/features/attendance/components/CheckInOutCard'
+import EmployeeDashboard from './EmployeeDashboard'
 import { useDashboardStore } from './store/dashboardStore'
 
 const LEAVE_TYPE_COLOR: Record<string, string> = {
@@ -108,7 +109,11 @@ const getStatStyle = (id: string, label: string) => {
 
 export default function DashboardHome() {
   const user = useAuthStore((s) => s.user)!
+  if (user?.role === 'EMPLOYEE') {
+    return <EmployeeDashboard />
+  }
   const { status, data, error, load } = useDashboardStore()
+  const isOwner = user.role === 'OWNER' || user.permissions.includes('*')
   const viewer = { permissions: user.permissions, name: user.name }
   const {
     data: attendanceData,
@@ -488,7 +493,7 @@ export default function DashboardHome() {
             {/* Check In / Out — a real shortcut, same store and endpoint as /attendance.
                 Hidden entirely (not an explanatory dead-end) for anyone with no Employee
                 record — e.g. an Owner isn't necessarily an employee of their own company. */}
-            {attendanceData && attendanceData.myTodayStatus !== null && (
+            {!isOwner && attendanceData && attendanceData.myTodayStatus !== null && (
               <CheckInOutCard
                 status={attendanceData.myTodayStatus}
                 loading={checkingInOut}

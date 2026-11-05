@@ -1,6 +1,7 @@
 
-import { useEffect } from 'react'
-import { AlertCircle, CalendarClock, ChevronLeft, ChevronRight, Clock, UserCheck, UserX, Users } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { AlertCircle, CalendarClock, ChevronLeft, ChevronRight, Clock, MapPin, UserCheck, UserX, Users } from 'lucide-react'
+import { attendanceService, type AttendanceSettings } from '@/services/attendanceService'
 import { motion } from 'framer-motion'
 import Card from '@/shared/components/Card'
 import { useAuthStore } from '@/features/auth/store/authStore'
@@ -139,12 +140,18 @@ export default function AttendancePage() {
 
   const viewer = { permissions: user.permissions, name: user.name }
   const canManage = hasPermission(user.permissions, 'attendance.manage')
+  const isOwner = user.role === 'OWNER' || user.permissions.includes('*')
 
   useEffect(() => {
     void load(viewer)
     // The viewer is stable for the session; re-running on identity would refetch forever.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [load, user.permissions, user.name])
+
+  const [punchSettings, setPunchSettings] = useState<AttendanceSettings | null>(null)
+  useEffect(() => {
+    attendanceService.getSettings().then(setPunchSettings).catch(() => setPunchSettings(null))
+  }, [user.activeOrganizationId])
 
   const isLoading = status === 'loading'
   const isCurrentMonth =
@@ -166,16 +173,21 @@ export default function AttendancePage() {
           </p>
         </div>
 
-        {/* Punch Mode Simulator Badges */}
+        {/* Punch mode — visible ONLY to OWNER */}
+        {isOwner && (
         <div className="flex items-center gap-2">
           <span className="text-[10px] font-bold uppercase tracking-wider text-muted">Punch Mode:</span>
-          <span className="px-2.5 py-1 rounded-lg text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center gap-1">
-            <Clock size={12} /> Web & Geofence GPS Active
-          </span>
-          <span className="px-2.5 py-1 rounded-lg text-[11px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-200 flex items-center gap-1">
-            <UserCheck size={12} /> Face Match Ready
-          </span>
+          {punchSettings?.geofenceEnabled ? (
+            <span className="px-2.5 py-1 rounded-lg text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center gap-1">
+              <MapPin size={12} /> Geofence · within {punchSettings.geofenceRadiusMeters ?? 200} m of office
+            </span>
+          ) : (
+            <span className="px-2.5 py-1 rounded-lg text-[11px] font-bold bg-wash text-muted border border-hairline flex items-center gap-1">
+              <Clock size={12} /> Web punch · any location
+            </span>
+          )}
         </div>
+        )}
 
         {/* Month navigation */}
         <div className="flex items-center gap-2 bg-surface border border-hairline/80 p-1.5 rounded-ctl transition-all duration-300">
@@ -222,7 +234,7 @@ export default function AttendancePage() {
 
       {status !== 'error' && (
         <>
-          {data?.scope === 'me' && (
+          {!isOwner && data?.scope === 'me' && (
             <CheckInOutCard
               status={data.myTodayStatus}
               loading={checkingInOut}

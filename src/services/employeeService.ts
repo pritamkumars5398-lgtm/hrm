@@ -144,6 +144,19 @@ export const employeeService = {
     return applyQuery(mockState, query)
   },
 
+  async getMe(): Promise<Employee> {
+    if (hasBackend) {
+      try {
+        const { data } = await apiClient.get<Employee>('/employees/me')
+        return data
+      } catch (error) {
+        throw new EmployeeError(apiErrorMessage(error, 'Could not load your employee profile.'))
+      }
+    }
+    await delay()
+    return mockState[0]!
+  },
+
   async getById(id: string): Promise<Employee> {
     if (hasBackend) {
       try {

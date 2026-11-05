@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
-import { Bell, LogOut, Menu, Search, Settings, User, Building, Check, CheckCheck, ChevronDown, Plus } from 'lucide-react'
+import { Sparkles, Bell, LogOut, Menu, Search, Settings, User, Building, Check, CheckCheck, ChevronDown, Plus } from 'lucide-react'
 import Card from '@/shared/components/Card'
 import { useAuthStore, type SessionUser } from '@/features/auth/store/authStore'
 import { useNotificationsStore } from '@/features/notifications/store/notificationsStore'
@@ -8,6 +8,7 @@ import { timeAgo } from '@/shared/utils/timeAgo'
 import { notificationsService } from '@/services/notificationsService'
 import { requestPushToken, onForegroundPush } from '@/config/firebase'
 import { subscribeToNotifications } from '@/config/socket'
+import { useCopilotDrawer } from '@/features/ai/copilotStore'
 
 type TopbarProps = {
   user: SessionUser
@@ -193,6 +194,18 @@ export default function Topbar({
             </Card>
           )}
         </div>
+
+                {/* HR AI Copilot Trigger */}
+        <button
+          type="button"
+          onClick={() => useCopilotDrawer.getState().toggleCopilot()}
+          aria-label="Open HR Copilot"
+          title="Open HR AI Copilot"
+          className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-ctl text-xs font-semibold text-pine bg-pine-tint hover:bg-pine hover:text-white transition cursor-pointer"
+        >
+          <Sparkles size={14} />
+          <span className="hidden md:inline">HR Copilot</span>
+        </button>
 
         {/* Notifications */}
         <div className="relative">
