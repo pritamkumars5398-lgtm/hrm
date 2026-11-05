@@ -52,6 +52,7 @@ import { useEffect } from 'react'
 import { registerWorkspaceGetter } from '@/services/apiClient'
 import { useAuthStore } from '@/features/auth/store/authStore'
 import { authService } from '@/services/authService'
+import { hasBackend } from '@/config/env'
 
 // Wire up the active workspace so every API request includes X-Workspace-Id.
 // This runs once at module-load time before any request is made.
@@ -63,7 +64,7 @@ export default function App() {
   const clearSession = useAuthStore((s) => s.clearSession)
 
   useEffect(() => {
-    if (isAuthenticated) {
+    if (isAuthenticated && hasBackend) {
       authService.me()
         .then((user) => {
           if (user) {
