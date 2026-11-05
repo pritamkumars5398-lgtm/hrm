@@ -47,18 +47,10 @@ export default function EmployeeDashboard() {
   const firstName = user.name.split(' ')[0]
 
   // Mock pending tasks for employee
-  const pendingTasks = [
-    { id: '1', title: 'Complete Frontend Security Audit', due: 'Tomorrow, 5:00 PM', priority: 'High', project: 'HRMS App' },
-    { id: '2', title: 'Review API Documentation for Travel Desk', due: '06 Nov 2026', priority: 'Medium', project: 'Internal Tools' },
-    { id: '3', title: 'Submit Monthly Timesheet Logs', due: 'Friday, EOD', priority: 'Urgent', project: 'Operations' },
-  ]
+  const pendingTasks: Array<{ id: string; title: string; due: string; priority: string; project: string }> = []
 
   // Leave Balance summary
-  const leaveBalances = [
-    { type: 'Casual Leave', total: 12, used: 3, available: 9, color: 'bg-emerald-500' },
-    { type: 'Sick Leave', total: 10, used: 2, available: 8, color: 'bg-amber-500' },
-    { type: 'Privilege Leave', total: 15, used: 5, available: 10, color: 'bg-indigo-500' },
-  ]
+  const leaveBalances: Array<{ type: string; total: number; used: number; available: number; color: string }> = []
 
   return (
     <div className="space-y-5 max-w-6xl mx-auto">

@@ -22,7 +22,8 @@ import Button from '@/shared/components/Button'
 import { recruitmentService, type JobPosting } from '@/services/recruitmentService'
 
 // MOCK DATA Fallback if backend service returns empty (e.g. initial launch)
-const DEFAULT_JOBS: JobPosting[] = [
+const DEFAULT_JOBS: JobPosting[] = [] // empty initial
+const OLD_DEFAULT_JOBS: JobPosting[] = [
   {
     id: 'job-mock-1',
     organizationId: 'org-demo',
