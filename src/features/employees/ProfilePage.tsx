@@ -30,6 +30,7 @@ export default function ProfilePage() {
   const [empProfile, setEmpProfile] = useState<any>(null)
   const [isEditing, setIsEditing] = useState(false)
   const [savedSuccess, setSavedSuccess] = useState(false)
+  const [saving, setSaving] = useState(false)
 
   const [formData, setFormData] = useState({
     name: user?.name || '',

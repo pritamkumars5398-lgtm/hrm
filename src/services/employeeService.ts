@@ -41,6 +41,9 @@ export type EmployeeUpdate = {
   employeeId?: string
   contactNumber?: string
   homeAddress?: string
+  dob?: string
+  gender?: string
+  financialDetails?: any
   jobTitle?: string
   department?: string
   startDate?: string
