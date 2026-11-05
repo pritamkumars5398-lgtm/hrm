@@ -37,7 +37,12 @@ apiClient.interceptors.request.use((config) => {
 })
 
 apiClient.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    if (typeof response.data === "string" && response.data.trim().toLowerCase().startsWith("<!doctype html")) {
+      return Promise.reject(new Error("API endpoint returned HTML instead of JSON. Backend service may not be running."))
+    }
+    return response
+  },
   async (error) => {
     if (error.response?.status === 401) {
       const path = window.location.pathname

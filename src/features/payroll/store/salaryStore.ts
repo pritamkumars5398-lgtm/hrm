@@ -29,7 +29,7 @@ export const useSalaryStore = create<SalaryState>()((set, get) => ({
 
     try {
       const rows = await salaryService.listCompany()
-      set({ status: 'ready', rows })
+      set({ status: 'ready', rows: Array.isArray(rows) ? rows : [] })
     } catch {
       set({ status: 'error', error: 'We could not load salary structures.' })
     }

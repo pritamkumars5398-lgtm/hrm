@@ -226,7 +226,7 @@ export default function RequirementsView() {
 
             <div className="space-y-1">
               <label className="text-[11px] font-bold text-ink flex items-center gap-1">
-                Applicability Rules (JSON) <HelpCircle size={12} className="text-muted" title="JSON criteria match: e.g. {&quot;location&quot;:&quot;London&quot;}" />
+                Applicability Rules (JSON) <span title="JSON criteria match: e.g. {&quot;location&quot;:&quot;London&quot;}"><HelpCircle size={12} className="text-muted" /></span>
               </label>
               <input
                 type="text"
