@@ -23,7 +23,7 @@ export const mockInvites: Invite[] = [
   {
     id: 'inv-1',
     organizationId: MOCK_ORGANIZATION_ID,
-    email: 'dan.whitfield@alderway.com',
+    email: 'claire.bennett@alderway.com',
     role: 'MANAGER',
     status: 'PENDING',
     invitedBy: 'usr-1',
@@ -33,7 +33,7 @@ export const mockInvites: Invite[] = [
   {
     id: 'inv-2',
     organizationId: MOCK_ORGANIZATION_ID,
-    email: 'aisha.rahman@alderway.com',
+    email: 'sophie.taylor@alderway.com',
     role: 'HR',
     status: 'PENDING',
     invitedBy: 'usr-1',

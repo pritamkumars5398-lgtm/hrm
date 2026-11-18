@@ -71,6 +71,7 @@ export type NavItem = {
   label: string
   path: string
   icon: LucideIcon
+  description?: string
   /** Sidebar grouping — modules vs. administrative/AI tools. */
   group: 'main' | 'operations' | 'engagement' | 'ai_saas' | 'admin'
 }
@@ -226,7 +227,7 @@ export function navItemsFor(permissions?: string[], role?: string): NavItem[] {
       { key: 'leave', labelOverride: 'Leave Management', groupOverride: 'main' },
 
       // Compensation & Structure
-      { key: 'payroll', labelOverride: 'Payroll', groupOverride: 'operations' },
+      { key: 'payslip', labelOverride: 'My Payslip', groupOverride: 'operations' },
       { key: 'team', labelOverride: 'Departments', groupOverride: 'operations' },
       { key: 'performance', labelOverride: 'Performance', groupOverride: 'operations' },
 
@@ -467,3 +468,29 @@ export const PERMISSION_KEY_GROUPS: Array<{ label: string; keys: Array<{ key: st
     keys: [{ key: 'settings.manage', label: 'Manage company settings' }],
   },
 ]
+
+export function getPageTitle(pathname: string): string {
+  if (pathname === '/dashboard') return 'Dashboard'
+  if (pathname === '/dashboard/employees/new') return 'Add Employee'
+  if (pathname.startsWith('/dashboard/forms/builder')) return 'Form Builder'
+  if (pathname.startsWith('/dashboard/forms/fill')) return 'Fill Form'
+  if (pathname.startsWith('/dashboard/holiday-calendar')) return 'Holiday Calendar'
+  if (pathname.startsWith('/dashboard/onboarding-tracker')) return 'Digital Onboarding'
+
+  const matched = NAV_ITEMS.find((item) =>
+    item.key === 'dashboard' ? pathname === '/dashboard' : pathname.startsWith(item.path)
+  )
+  if (matched) return matched.label
+
+  if (pathname.includes('/profile')) return 'Profile'
+  if (pathname.includes('/settings')) return 'Settings'
+  if (pathname.includes('/payroll')) return 'Payroll'
+  if (pathname.includes('/leave')) return 'Leave Planner'
+  if (pathname.includes('/attendance')) return 'Attendance'
+  if (pathname.includes('/team')) return 'Team Members'
+  if (pathname.includes('/helpdesk')) return 'Helpdesk'
+  if (pathname.includes('/reports')) return 'Reports & Analytics'
+  if (pathname.includes('/compliance')) return 'Statutory Compliance'
+
+  return 'Dashboard'
+}

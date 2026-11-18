@@ -26,6 +26,8 @@ export type ActivityItem = {
   kind: 'leave' | 'payroll' | 'employee' | 'performance'
 }
 
+const currentMonth = new Date().toLocaleDateString('en-US', { month: 'long' })
+
 export const mockDashboardStats: DashboardStat[] = [
   {
     id: 'st-headcount',
@@ -46,13 +48,13 @@ export const mockDashboardStats: DashboardStat[] = [
     organizationId: MOCK_ORGANIZATION_ID,
     label: 'On leave',
     value: String(onLeave),
-    delta: '1 pending approval',
+    delta: '6 pending approval',
   },
   {
     id: 'st-payroll',
     organizationId: MOCK_ORGANIZATION_ID,
-    label: 'March payroll',
-    value: '₹1,82,400',
+    label: `${currentMonth} payroll`,
+    value: '₹31,20,000',
     delta: 'Ready to review',
     // Anyone without real payroll access has no business seeing this figure.
     restrictedPermission: 'payroll.view',
@@ -70,8 +72,8 @@ export const mockActivity: ActivityItem[] = [
   {
     id: 'ac-2',
     organizationId: MOCK_ORGANIZATION_ID,
-    title: 'March payroll is ready to review',
-    meta: '248 employees · ₹8,47,204',
+    title: `${currentMonth} payroll is ready to review`,
+    meta: `${headcount} employees · ₹31,20,000`,
     kind: 'payroll',
   },
   {
@@ -85,7 +87,7 @@ export const mockActivity: ActivityItem[] = [
     id: 'ac-4',
     organizationId: MOCK_ORGANIZATION_ID,
     title: 'Q1 performance reviews opened',
-    meta: '12 of 248 completed',
+    meta: `12 of ${headcount} completed`,
     kind: 'performance',
   },
 ]

@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Megaphone, Plus, Bell, Calendar, Pin, MessageSquare, Send, CheckCircle2 } from 'lucide-react'
 import Card from '@/shared/components/Card'
 import Button from '@/shared/components/Button'
+import { useAuthStore } from '@/features/auth/store/authStore'
 
 type Announcement = {
   id: string
@@ -25,18 +26,18 @@ const INITIAL_ANNOUNCEMENTS: Announcement[] = [
   },
   {
     id: 'ann-2',
-    title: 'Diwali Festival Holiday & Celebrations',
-    content: 'Wishing everyone a very Happy Diwali in advance! The office will remain closed for the national festival break. Please plan your client deliverables accordingly.',
-    postedBy: 'HR Operations',
+    title: 'Festival Holidays & Office Closure Notice',
+    content: 'Wishing everyone a very Happy festive break! The office will remain closed for the national festival holiday. Please plan your client deliverables accordingly.',
+    postedBy: 'Marta Lindqvist (HR Manager)',
     date: 'Yesterday at 11:30 AM',
     isPinned: true,
-    category: 'Event'
+    category: 'Holiday'
   },
   {
     id: 'ann-3',
     title: 'Weekly Team 1-on-1 Sync Slots Open',
     content: 'Check your calendar invites for this week’s 1-on-1 progress check-ins. If you need to reschedule your slot, please ping on direct message.',
-    postedBy: 'Samuel Okafor (Manager)',
+    postedBy: 'Priya Nair (Founder & CEO)',
     date: '28 Oct 2026',
     isPinned: false,
     category: 'General'
@@ -44,6 +45,7 @@ const INITIAL_ANNOUNCEMENTS: Announcement[] = [
 ]
 
 export default function AnnouncementsPage() {
+  const user = useAuthStore((s) => s.user)
   const [announcements, setAnnouncements] = useState<Announcement[]>(INITIAL_ANNOUNCEMENTS)
   const [showForm, setShowForm] = useState(false)
   const [newTitle, setNewTitle] = useState('')
@@ -54,11 +56,12 @@ export default function AnnouncementsPage() {
     e.preventDefault()
     if (!newTitle.trim() || !newContent.trim()) return
 
+    const roleLabel = user?.role === 'OWNER' ? 'Owner' : user?.role === 'HR' ? 'HR Manager' : 'Manager'
     const item: Announcement = {
       id: `ann-${Date.now()}`,
       title: newTitle,
       content: newContent,
-      postedBy: 'Manager (You)',
+      postedBy: user ? `${user.name} (${roleLabel})` : 'You',
       date: 'Just now',
       isPinned: false,
       category: newCategory
@@ -161,12 +164,15 @@ export default function AnnouncementsPage() {
                     <Pin size={13} />
                   </span>
                 )}
-                <span className={`text-[10px] font-bold px-2 py-0.2 rounded-full border uppercase tracking-wider ${item.category === 'Important'
-                  ? 'bg-rose-50 text-rose-700 border-rose-200'
-                  : item.category === 'Event'
+                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border uppercase tracking-wider ${
+                  item.category === 'Important'
+                    ? 'bg-rose-50 text-rose-700 border-rose-200'
+                    : item.category === 'Event'
                     ? 'bg-purple-50 text-purple-700 border-purple-200'
+                    : item.category === 'Holiday'
+                    ? 'bg-amber-50 text-amber-700 border-amber-200'
                     : 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                  }`}>
+                }`}>
                   {item.category}
                 </span>
                 <span className="text-[11.5px] text-muted font-medium">· {item.date}</span>

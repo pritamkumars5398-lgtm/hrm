@@ -73,7 +73,12 @@ export function isWeekend(date: Date): boolean {
   return day === 0 || day === 6
 }
 
-const toISO = (d: Date) => d.toISOString().slice(0, 10)
+const toISO = (d: Date) => {
+  const y = d.getFullYear()
+  const m = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${y}-${m}-${day}`
+}
 
 /** Builds every employee's record for every day of the given month. */
 export function buildMonth(year: number, month: number): AttendanceRecord[] {
@@ -90,7 +95,11 @@ export function buildMonth(year: number, month: number): AttendanceRecord[] {
       if (employee.status === 'INACTIVE') continue
       if (employee.joinedAt > iso) continue
 
-      const status = statusFor(employee.id, iso, weekend)
+      let status = statusFor(employee.id, iso, weekend)
+      // Directory status reflects actual leave status (BUG-025)
+      if (!weekend && employee.status === 'ON_LEAVE') {
+        status = 'LEAVE'
+      }
       const roll = seeded(employee.id, iso)
 
       records.push({

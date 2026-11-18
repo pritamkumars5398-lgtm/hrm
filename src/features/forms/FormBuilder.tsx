@@ -34,10 +34,18 @@ export default function FormBuilder() {
   }
 
   const [saving, setSaving] = useState(false)
+  const [titleError, setTitleError] = useState<string | null>(null)
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!title.trim() || saving) return
+    setTitleError(null)
+
+    if (!title.trim()) {
+      setTitleError('Form title is required.')
+      return
+    }
+
+    if (saving) return
 
     setSaving(true)
     try {
@@ -78,18 +86,23 @@ export default function FormBuilder() {
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Form Creator Left/Main */}
-        <form onSubmit={handleSave} className={`space-y-6 bg-white p-6 rounded-2xl border border-hairline shadow-sm ${showPreview ? 'lg:col-span-7' : 'lg:col-span-12'}`}>
+        <form onSubmit={handleSave} noValidate className={`space-y-6 bg-white p-6 rounded-2xl border border-hairline shadow-sm ${showPreview ? 'lg:col-span-7' : 'lg:col-span-12'}`}>
           <div className="space-y-4 text-xs">
             <div>
               <label className="block text-ink font-bold mb-1">Form Title *</label>
               <input
                 type="text"
-                required
                 placeholder="e.g. Q3 Leadership & Manager 360 Review"
                 value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                className="w-full px-3 py-2 text-sm font-semibold rounded-xl border border-hairline focus:border-indigo-500 focus:outline-none"
+                onChange={(e) => {
+                  setTitle(e.target.value)
+                  if (titleError) setTitleError(null)
+                }}
+                className={`w-full px-3 py-2 text-sm font-semibold rounded-xl border ${
+                  titleError ? 'border-clay focus:border-clay' : 'border-hairline focus:border-indigo-500'
+                } focus:outline-none`}
               />
+              {titleError && <p className="mt-1 text-[11.5px] font-semibold text-clay">{titleError}</p>}
             </div>
 
             <div>

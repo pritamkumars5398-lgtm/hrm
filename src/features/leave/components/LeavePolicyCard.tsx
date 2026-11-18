@@ -10,9 +10,11 @@ type Form = { annual: number; sick: number; personal: number }
 
 export default function LeavePolicyCard({
   policy,
+  readOnly = false,
   onSave,
 }: {
   policy: { annual: number; sick: number; personal: number }
+  readOnly?: boolean
   onSave: (patch: LeavePolicyPatch) => Promise<void>
 }) {
   const [saved, setSaved] = useState(false)
@@ -75,22 +77,43 @@ export default function LeavePolicyCard({
               label="Annual"
               type="number"
               min={0}
+              max={365}
+              step={1}
+              disabled={readOnly}
               error={errors.annual?.message}
-              {...register('annual', { required: true, valueAsNumber: true, min: { value: 0, message: 'Can\'t be negative.' } })}
+              {...register('annual', {
+                required: 'Annual allowance is required.',
+                valueAsNumber: true,
+                validate: (v) => (Number.isInteger(Number(v)) && Number(v) >= 0 && Number(v) <= 365) || 'Must be a whole number (0–365).',
+              })}
             />
             <Input
               label="Sick"
               type="number"
               min={0}
+              max={365}
+              step={1}
+              disabled={readOnly}
               error={errors.sick?.message}
-              {...register('sick', { required: true, valueAsNumber: true, min: { value: 0, message: 'Can\'t be negative.' } })}
+              {...register('sick', {
+                required: 'Sick allowance is required.',
+                valueAsNumber: true,
+                validate: (v) => (Number.isInteger(Number(v)) && Number(v) >= 0 && Number(v) <= 365) || 'Must be a whole number (0–365).',
+              })}
             />
             <Input
               label="Personal"
               type="number"
               min={0}
+              max={365}
+              step={1}
+              disabled={readOnly}
               error={errors.personal?.message}
-              {...register('personal', { required: true, valueAsNumber: true, min: { value: 0, message: 'Can\'t be negative.' } })}
+              {...register('personal', {
+                required: 'Personal allowance is required.',
+                valueAsNumber: true,
+                validate: (v) => (Number.isInteger(Number(v)) && Number(v) >= 0 && Number(v) <= 365) || 'Must be a whole number (0–365).',
+              })}
             />
           </div>
 
@@ -104,22 +127,30 @@ export default function LeavePolicyCard({
           )}
 
           <div className="mt-4 pt-4 border-t border-gray-100 flex items-center justify-end gap-3">
-            {saved && (
-              <span className="inline-flex items-center gap-1.5 text-[12.5px] font-semibold text-[#059669]">
-                <Check size={14} strokeWidth={3} />
-                Policy saved
+            {readOnly ? (
+              <span className="text-[11.5px] font-semibold text-muted bg-wash px-3 py-1 rounded-full border border-hairline">
+                Read-only (Managed by HR / Owner)
               </span>
+            ) : (
+              <>
+                {saved && (
+                  <span className="inline-flex items-center gap-1.5 text-[12.5px] font-semibold text-[#059669]">
+                    <Check size={14} strokeWidth={3} />
+                    Policy saved
+                  </span>
+                )}
+                <Button type="submit" size="sm" disabled={isSubmitting || !isDirty}>
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 size={13} className="animate-spin" />
+                      Saving…
+                    </>
+                  ) : (
+                    'Save policy'
+                  )}
+                </Button>
+              </>
             )}
-            <Button type="submit" size="sm" disabled={isSubmitting || !isDirty}>
-              {isSubmitting ? (
-                <>
-                  <Loader2 size={13} className="animate-spin" />
-                  Saving…
-                </>
-              ) : (
-                'Save policy'
-              )}
-            </Button>
           </div>
         </form>
       </div>

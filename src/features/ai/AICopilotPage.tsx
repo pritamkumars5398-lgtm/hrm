@@ -198,6 +198,12 @@ export default function AICopilotPage() {
             Suggested Prompts:
           </span>
           <button
+            onClick={() => handleAsk('Who is the best employee of the year? Give their name so I can surprise them.')}
+            className="px-3 py-1 rounded-full text-[11px] font-medium bg-purple-50 text-purple-900 border border-purple-200 hover:bg-purple-100 transition whitespace-nowrap cursor-pointer"
+          >
+            🏆 Employee of the Year
+          </button>
+          <button
             onClick={() => handleAsk('Who has the highest attrition risk in the company?')}
             className="px-3 py-1 rounded-full text-[11px] font-medium bg-purple-50 text-purple-900 border border-purple-200 hover:bg-purple-100 transition whitespace-nowrap cursor-pointer"
           >
@@ -224,23 +230,38 @@ export default function AICopilotPage() {
         </div>
 
         {/* Chat Body */}
-        <div className="space-y-4 min-h-[300px] max-h-[460px] overflow-y-auto p-2 bg-wash/30 rounded-xl border border-hairline">
-          {messages.map((m) => (
-            <div
-              key={m.id}
-              className={`flex ${m.sender === 'user' ? 'justify-end' : 'justify-start'}`}
-            >
-              <div
-                className={`p-4 rounded-2xl text-xs max-w-xl leading-relaxed whitespace-pre-line shadow-2xs ${
-                  m.sender === 'user'
-                    ? 'bg-purple-600 text-white font-medium rounded-tr-xs'
-                    : 'bg-white text-ink border border-hairline rounded-tl-xs'
-                }`}
-              >
-                {m.text}
-              </div>
+        <div className="space-y-4 min-h-[300px] max-h-[460px] overflow-y-auto p-3 bg-wash/30 rounded-xl border border-hairline">
+          {loading && messages.length === 0 ? (
+            <div className="p-12 text-center text-xs text-muted">
+              <RefreshCw size={20} className="animate-spin mx-auto mb-2 text-purple-600" />
+              Connecting to HR Copilot...
             </div>
-          ))}
+          ) : messages.length === 0 ? (
+            <div className="p-12 text-center text-xs text-muted space-y-1.5">
+              <Bot size={32} className="mx-auto text-purple-600 mb-2" />
+              <p className="font-bold text-sm text-ink">Ask anything about HR &amp; Staff</p>
+              <p className="text-xs max-w-md mx-auto">
+                I can check your progress, analyze payroll runs, look up leave policies and balances, flag attrition risk, and draft HR emails.
+              </p>
+            </div>
+          ) : (
+            messages.map((m) => (
+              <div
+                key={m.id}
+                className={`flex ${m.sender === 'user' ? 'justify-end' : 'justify-start'}`}
+              >
+                <div
+                  className={`p-4 rounded-2xl text-xs max-w-xl leading-relaxed whitespace-pre-line shadow-2xs ${
+                    m.sender === 'user'
+                      ? 'bg-purple-600 text-white font-medium rounded-tr-xs'
+                      : 'bg-white text-ink border border-hairline rounded-tl-xs'
+                  }`}
+                >
+                  {m.text}
+                </div>
+              </div>
+            ))
+          )}
 
           {asking && (
             <div className="flex justify-start">

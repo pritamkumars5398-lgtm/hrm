@@ -14,16 +14,74 @@ import { canAccess, type ModuleKey } from '@/shared/config/navigation'
  */
 export default function RequireModule({
   module,
+  ownerOnly,
+  allowedRoles,
   children,
 }: {
-  module: ModuleKey
+  module?: ModuleKey
+  ownerOnly?: boolean
+  allowedRoles?: Array<'OWNER' | 'HR' | 'MANAGER' | 'EMPLOYEE'>
   children: ReactNode
 }) {
   const user = useAuthStore((s) => s.user)
 
   if (!user) return null
 
-  if (!canAccess(user.permissions, module)) {
+  const isOwner = user.role === 'OWNER' || user.permissions.includes('*')
+
+  if (ownerOnly && !isOwner) {
+    return (
+      <div className="flex min-h-[60vh] items-center justify-center">
+        <div className="max-w-sm text-center">
+          <span className="mx-auto flex size-11 items-center justify-center rounded-full bg-clay/10 text-clay">
+            <ShieldOff size={20} className="text-clay" aria-hidden="true" />
+          </span>
+
+          <h1 className="font-display mt-5 text-xl font-semibold tracking-[-0.01em] text-ink">
+            Owner Access Only
+          </h1>
+          <p className="mt-2 text-[14px] leading-relaxed text-muted">
+            This workspace section is restricted exclusively to organization owners.
+          </p>
+
+          <Link
+            to="/dashboard"
+            className="mt-6 inline-flex text-[14px] font-medium text-pine hover:text-pine-deep"
+          >
+            Back to dashboard
+          </Link>
+        </div>
+      </div>
+    )
+  }
+
+  if (allowedRoles && !allowedRoles.includes(user.role) && !isOwner) {
+    return (
+      <div className="flex min-h-[60vh] items-center justify-center">
+        <div className="max-w-sm text-center">
+          <span className="mx-auto flex size-11 items-center justify-center rounded-full bg-wash">
+            <ShieldOff size={18} className="text-muted" aria-hidden="true" />
+          </span>
+
+          <h1 className="font-display mt-5 text-xl font-semibold tracking-[-0.01em]">
+            You don't have access to this
+          </h1>
+          <p className="mt-2 text-[14px] leading-relaxed text-muted">
+            Your role ({user.role}) does not have permission to access this page.
+          </p>
+
+          <Link
+            to="/dashboard"
+            className="mt-6 inline-flex text-[14px] font-medium text-pine hover:text-pine-deep"
+          >
+            Back to dashboard
+          </Link>
+        </div>
+      </div>
+    )
+  }
+
+  if (module && !canAccess(user.permissions, module)) {
     return (
       <div className="flex min-h-[60vh] items-center justify-center">
         <div className="max-w-sm text-center">

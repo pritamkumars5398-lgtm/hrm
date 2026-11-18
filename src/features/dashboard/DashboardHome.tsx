@@ -124,10 +124,10 @@ export default function DashboardHome() {
   } = useAttendanceStore()
 
   useEffect(() => {
-    void load(user.permissions)
+    void load(user.permissions, user.role)
     void loadAttendance(viewer)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [load, user.permissions])
+  }, [load, user.permissions, user.role])
 
   const firstName = user.name.split(' ')[0]
   const greeting = greetingFor(new Date().getHours())
@@ -156,7 +156,7 @@ export default function DashboardHome() {
                 variant="secondary"
                 size="sm"
                 className="h-9.5"
-                onClick={() => void load(user.permissions, { force: true })}
+                onClick={() => void load(user.permissions, user.role, { force: true })}
               >
                 <RotateCw size={14} />
                 Refresh
@@ -219,7 +219,7 @@ export default function DashboardHome() {
             <p className="text-[14px] font-medium text-clay">{error}</p>
             <button
               type="button"
-              onClick={() => void load(user.permissions, { force: true })}
+              onClick={() => void load(user.permissions, user.role, { force: true })}
               className="mt-2 text-[13px] font-medium text-clay underline underline-offset-2"
             >
               Try again

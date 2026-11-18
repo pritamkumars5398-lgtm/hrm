@@ -12,6 +12,8 @@ type AuthLayoutProps = {
   reverse?: boolean
   /** Custom illustration image path (defaults to /hrm-illustration.png) */
   image?: string
+  /** When false: hides floating cards and platform badge in the context panel */
+  showContextHighlights?: boolean
 }
 
 function FloatCard({
@@ -40,7 +42,7 @@ function FloatCard({
   )
 }
 
-function ContextPanel({ image }: { image: string }) {
+function ContextPanel({ image, showContextHighlights }: { image: string; showContextHighlights: boolean }) {
   return (
     <div className="relative hidden lg:flex flex-col overflow-hidden h-full">
 
@@ -71,112 +73,115 @@ function ContextPanel({ image }: { image: string }) {
 
         {/* ── Floating animated cards — positioned in the middle ── */}
         <div className="relative flex-1">
+          {showContextHighlights && (
+            <>
+              {/* Card — Employees (top-left) */}
+              <FloatCard className="top-6 left-0" delay={0.35}>
+                <div className="flex items-center gap-2.5 rounded-2xl bg-white/15 backdrop-blur-md border border-white/25 shadow-xl px-4 py-3">
+                  <div className="w-8 h-8 rounded-xl bg-emerald-400/25 flex items-center justify-center shrink-0">
+                    <svg className="w-4 h-4 text-emerald-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" />
+                      <path d="M23 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                    </svg>
+                  </div>
+                  <div>
+                    <div className="text-[20px] font-bold text-white leading-none">248</div>
+                    <div className="text-[10px] text-white/60 mt-0.5 uppercase tracking-wider">Employees</div>
+                  </div>
+                </div>
+              </FloatCard>
 
-          {/* Card — Employees (top-left) */}
-          <FloatCard className="top-6 left-0" delay={0.35}>
-            <div className="flex items-center gap-2.5 rounded-2xl bg-white/15 backdrop-blur-md border border-white/25 shadow-xl px-4 py-3">
-              <div className="w-8 h-8 rounded-xl bg-emerald-400/25 flex items-center justify-center shrink-0">
-                <svg className="w-4 h-4 text-emerald-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" />
-                  <path d="M23 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" />
-                </svg>
-              </div>
-              <div>
-                <div className="text-[20px] font-bold text-white leading-none">248</div>
-                <div className="text-[10px] text-white/60 mt-0.5 uppercase tracking-wider">Employees</div>
-              </div>
-            </div>
-          </FloatCard>
+              {/* Card — Payroll accuracy (top-right) */}
+              <FloatCard className="top-6 right-0" delay={0.5}>
+                <div className="flex items-center gap-2.5 rounded-2xl bg-white/15 backdrop-blur-md border border-white/25 shadow-xl px-4 py-3">
+                  <div className="w-8 h-8 rounded-xl bg-blue-400/25 flex items-center justify-center shrink-0">
+                    <svg className="w-4 h-4 text-blue-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <line x1="12" y1="1" x2="12" y2="23" /><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+                    </svg>
+                  </div>
+                  <div>
+                    <div className="text-[20px] font-bold text-white leading-none">99.8%</div>
+                    <div className="text-[10px] text-white/60 mt-0.5 uppercase tracking-wider">Payroll accuracy</div>
+                  </div>
+                </div>
+              </FloatCard>
 
-          {/* Card — Payroll accuracy (top-right) */}
-          <FloatCard className="top-6 right-0" delay={0.5}>
-            <div className="flex items-center gap-2.5 rounded-2xl bg-white/15 backdrop-blur-md border border-white/25 shadow-xl px-4 py-3">
-              <div className="w-8 h-8 rounded-xl bg-blue-400/25 flex items-center justify-center shrink-0">
-                <svg className="w-4 h-4 text-blue-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <line x1="12" y1="1" x2="12" y2="23" /><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
-                </svg>
-              </div>
-              <div>
-                <div className="text-[20px] font-bold text-white leading-none">99.8%</div>
-                <div className="text-[10px] text-white/60 mt-0.5 uppercase tracking-wider">Payroll accuracy</div>
-              </div>
-            </div>
-          </FloatCard>
+              {/* Card — Leave approved notification (left-center) */}
+              <FloatCard className="top-1/3 left-0" delay={0.6}>
+                <div className="flex items-center gap-2.5 rounded-2xl bg-white/15 backdrop-blur-md border border-white/25 shadow-xl px-4 py-3">
+                  <div className="w-2 h-2 rounded-full bg-emerald-400 shrink-0 animate-pulse" />
+                  <div>
+                    <div className="text-[12.5px] font-semibold text-white leading-none">Leave approved</div>
+                    <div className="text-[10px] text-white/55 mt-1">Priya N. · Just now</div>
+                  </div>
+                </div>
+              </FloatCard>
 
-          {/* Card — Leave approved notification (left-center) */}
-          <FloatCard className="top-1/3 left-0" delay={0.6}>
-            <div className="flex items-center gap-2.5 rounded-2xl bg-white/15 backdrop-blur-md border border-white/25 shadow-xl px-4 py-3">
-              <div className="w-2 h-2 rounded-full bg-emerald-400 shrink-0 animate-pulse" />
-              <div>
-                <div className="text-[12.5px] font-semibold text-white leading-none">Leave approved</div>
-                <div className="text-[10px] text-white/55 mt-1">Priya N. · Just now</div>
-              </div>
-            </div>
-          </FloatCard>
+              {/* Card — Departments (right-center) */}
+              <FloatCard className="top-1/3 right-0" delay={0.7}>
+                <div className="flex items-center gap-2.5 rounded-2xl bg-white/15 backdrop-blur-md border border-white/25 shadow-xl px-4 py-3">
+                  <div className="w-8 h-8 rounded-xl bg-purple-400/25 flex items-center justify-center shrink-0">
+                    <svg className="w-4 h-4 text-purple-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <rect x="2" y="7" width="20" height="14" rx="2" /><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2" />
+                    </svg>
+                  </div>
+                  <div>
+                    <div className="text-[20px] font-bold text-white leading-none">12</div>
+                    <div className="text-[10px] text-white/60 mt-0.5 uppercase tracking-wider">Departments</div>
+                  </div>
+                </div>
+              </FloatCard>
 
-          {/* Card — Departments (right-center) */}
-          <FloatCard className="top-1/3 right-0" delay={0.7}>
-            <div className="flex items-center gap-2.5 rounded-2xl bg-white/15 backdrop-blur-md border border-white/25 shadow-xl px-4 py-3">
-              <div className="w-8 h-8 rounded-xl bg-purple-400/25 flex items-center justify-center shrink-0">
-                <svg className="w-4 h-4 text-purple-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <rect x="2" y="7" width="20" height="14" rx="2" /><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2" />
-                </svg>
-              </div>
-              <div>
-                <div className="text-[20px] font-bold text-white leading-none">12</div>
-                <div className="text-[10px] text-white/60 mt-0.5 uppercase tracking-wider">Departments</div>
-              </div>
-            </div>
-          </FloatCard>
+              {/* Card — New hire (center, floats in middle) */}
+              <FloatCard className="top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-max" delay={0.8}>
+                <div className="flex items-center gap-2.5 rounded-2xl bg-teal-500/25 backdrop-blur-md border border-teal-400/40 shadow-xl px-4 py-3">
+                  <div className="w-7 h-7 rounded-full bg-gradient-to-br from-teal-400 to-emerald-500 flex items-center justify-center text-[11px] font-bold text-white shrink-0">
+                    S
+                  </div>
+                  <div className="text-[12.5px] font-semibold text-white">Samuel joined Engineering 🎉</div>
+                </div>
+              </FloatCard>
 
-          {/* Card — New hire (center, floats in middle) */}
-          <FloatCard className="top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-max" delay={0.8}>
-            <div className="flex items-center gap-2.5 rounded-2xl bg-teal-500/25 backdrop-blur-md border border-teal-400/40 shadow-xl px-4 py-3">
-              <div className="w-7 h-7 rounded-full bg-gradient-to-br from-teal-400 to-emerald-500 flex items-center justify-center text-[11px] font-bold text-white shrink-0">
-                S
-              </div>
-              <div className="text-[12.5px] font-semibold text-white">Samuel joined Engineering 🎉</div>
-            </div>
-          </FloatCard>
+              {/* Card — Attendance mini chart (bottom-left) */}
+              <FloatCard className="bottom-8 left-0" delay={0.9}>
+                <div className="rounded-2xl bg-white/15 backdrop-blur-md border border-white/25 shadow-xl px-4 py-3">
+                  <div className="text-[10px] text-white/60 uppercase tracking-wider mb-2">Attendance · this week</div>
+                  <div className="flex items-end gap-1.5 h-9">
+                    {[65, 82, 58, 93, 76, 42, 88].map((h, i) => (
+                      <motion.div
+                        key={i}
+                        className="flex-1 rounded-sm bg-gradient-to-t from-teal-400 to-emerald-300"
+                        initial={{ scaleY: 0 }}
+                        animate={{ scaleY: 1 }}
+                        transition={{ duration: 0.5, delay: 0.95 + i * 0.07, ease: 'easeOut' }}
+                        style={{ height: `${h}%`, transformOrigin: 'bottom' }}
+                      />
+                    ))}
+                  </div>
+                  <div className="flex justify-between mt-1.5">
+                    {['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((d, i) => (
+                      <span key={i} className="text-[9px] text-white/35 flex-1 text-center">{d}</span>
+                    ))}
+                  </div>
+                </div>
+              </FloatCard>
 
-          {/* Card — Attendance mini chart (bottom-left) */}
-          <FloatCard className="bottom-8 left-0" delay={0.9}>
-            <div className="rounded-2xl bg-white/15 backdrop-blur-md border border-white/25 shadow-xl px-4 py-3">
-              <div className="text-[10px] text-white/60 uppercase tracking-wider mb-2">Attendance · this week</div>
-              <div className="flex items-end gap-1.5 h-9">
-                {[65, 82, 58, 93, 76, 42, 88].map((h, i) => (
-                  <motion.div
-                    key={i}
-                    className="flex-1 rounded-sm bg-gradient-to-t from-teal-400 to-emerald-300"
-                    initial={{ scaleY: 0 }}
-                    animate={{ scaleY: 1 }}
-                    transition={{ duration: 0.5, delay: 0.95 + i * 0.07, ease: 'easeOut' }}
-                    style={{ height: `${h}%`, transformOrigin: 'bottom' }}
-                  />
-                ))}
-              </div>
-              <div className="flex justify-between mt-1.5">
-                {['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((d, i) => (
-                  <span key={i} className="text-[9px] text-white/35 flex-1 text-center">{d}</span>
-                ))}
-              </div>
-            </div>
-          </FloatCard>
-
-          {/* Card — Payslip generated (bottom-right) */}
-          <FloatCard className="bottom-8 right-0" delay={1.0}>
-            <div className="flex items-center gap-2.5 rounded-2xl bg-white/15 backdrop-blur-md border border-white/25 shadow-xl px-4 py-3">
-              <div className="w-8 h-8 rounded-xl bg-amber-400/25 flex items-center justify-center shrink-0">
-                <svg className="w-4 h-4 text-amber-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /><line x1="16" y1="13" x2="8" y2="13" /><line x1="16" y1="17" x2="8" y2="17" />
-                </svg>
-              </div>
-              <div>
-                <div className="text-[12.5px] font-semibold text-white leading-none">Payslip generated</div>
-                <div className="text-[10px] text-white/55 mt-1">Samuel K. · May 2025</div>
-              </div>
-            </div>
-          </FloatCard>
+              {/* Card — Payslip generated (bottom-right) */}
+              <FloatCard className="bottom-8 right-0" delay={1.0}>
+                <div className="flex items-center gap-2.5 rounded-2xl bg-white/15 backdrop-blur-md border border-white/25 shadow-xl px-4 py-3">
+                  <div className="w-8 h-8 rounded-xl bg-amber-400/25 flex items-center justify-center shrink-0">
+                    <svg className="w-4 h-4 text-amber-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /><line x1="16" y1="13" x2="8" y2="13" /><line x1="16" y1="17" x2="8" y2="17" />
+                    </svg>
+                  </div>
+                  <div>
+                    <div className="text-[12.5px] font-semibold text-white leading-none">Payslip generated</div>
+                    <div className="text-[10px] text-white/55 mt-1">Samuel K. · May 2025</div>
+                  </div>
+                </div>
+              </FloatCard>
+            </>
+          )}
         </div>
 
         {/* ── Bottom headline + testimonial ── */}
@@ -186,10 +191,12 @@ function ContextPanel({ image }: { image: string }) {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.3 }}
           >
-            <div className="inline-flex items-center gap-2 rounded-full bg-white/10 border border-white/20 backdrop-blur-sm px-3 py-1.5 text-[10.5px] font-bold uppercase tracking-widest text-teal-200 mb-4">
-              <span className="w-1.5 h-1.5 rounded-full bg-teal-400 animate-pulse" />
-              HR Management Platform
-            </div>
+            {showContextHighlights && (
+              <div className="inline-flex items-center gap-2 rounded-full bg-white/10 border border-white/20 backdrop-blur-sm px-3 py-1.5 text-[10.5px] font-bold uppercase tracking-widest text-teal-200 mb-4">
+                <span className="w-1.5 h-1.5 rounded-full bg-teal-400 animate-pulse" />
+                HR Management Platform
+              </div>
+            )}
             <h2 className="font-display text-[28px] leading-[1.2] font-bold tracking-[-0.02em] text-white drop-shadow-md">
               Everything HR in one intelligent workspace.
             </h2>
@@ -229,6 +236,7 @@ export default function AuthLayout({
   footer,
   reverse = false,
   image = '/hrm-illustration.png',
+  showContextHighlights = true,
 }: AuthLayoutProps) {
   const reduced = useReducedMotion()
 
@@ -236,7 +244,7 @@ export default function AuthLayout({
     <div className="grid h-dvh lg:grid-cols-2 overflow-hidden">
       {/* Illustration panel — order-1 default (left), order-2 when reversed (right) */}
       <div className={`h-full ${reverse ? 'order-2' : 'order-1'}`}>
-        <ContextPanel image={image} />
+        <ContextPanel image={image} showContextHighlights={showContextHighlights} />
       </div>
 
       {/* Form panel — order-2 default (right), order-1 when reversed (left) */}

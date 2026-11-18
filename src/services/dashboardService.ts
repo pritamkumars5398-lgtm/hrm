@@ -9,6 +9,8 @@ import {
 } from '@/mock/mockDashboard'
 import { buildMonth } from '@/mock/mockAttendance'
 import { mockLeaveRequests, type LeaveType } from '@/mock/mockLeave'
+import { leaveService } from './leaveService'
+import type { Role } from './authService'
 
 export type { DashboardStat }
 export type ActivityItem = MockActivityItem & { occurredAt?: string }
@@ -37,7 +39,12 @@ export class DashboardError extends Error {}
 
 const LATENCY_MS = 600
 const delay = () => new Promise((r) => setTimeout(r, LATENCY_MS))
-const toISO = (d: Date) => d.toISOString().slice(0, 10)
+const toISO = (d: Date) => {
+  const y = d.getFullYear()
+  const m = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${y}-${m}-${day}`
+}
 
 /**
  * Real backend once configured — every tile, chart and activity row is
@@ -46,7 +53,7 @@ const toISO = (d: Date) => d.toISOString().slice(0, 10)
  * no-backend demo.
  */
 export const dashboardService = {
-  async get(permissions: string[]): Promise<DashboardData> {
+  async get(permissions: string[], role?: Role): Promise<DashboardData> {
     if (hasBackend) {
       try {
         const { data } = await apiClient.get<DashboardData>('/dashboard')
@@ -58,8 +65,8 @@ export const dashboardService = {
 
     await delay()
 
-    const canSeeAttendance = hasPermission(permissions, 'attendance.manage')
-    const canSeeLeave = hasPermission(permissions, 'leave.approve')
+    const canSeeAttendance = hasPermission(permissions, 'attendance.manage') || role === 'MANAGER'
+    const canSeeLeave = hasPermission(permissions, 'leave.approve') || role === 'MANAGER'
 
     const today = new Date()
     const weeklyAttendance: WeeklyAttendancePoint[] = []
@@ -90,12 +97,13 @@ export const dashboardService = {
       }
     }
 
+    const allRequests = leaveService.getAllRequests()
     let leaveBreakdown: LeaveBreakdownSlice[] = []
     let pendingLeaveCount = 0
     let upcomingLeave: UpcomingLeaveItem[] = []
     if (canSeeLeave) {
       const yearStart = `${today.getFullYear()}-01-01`
-      const approvedThisYear = mockLeaveRequests.filter((r) => r.status === 'APPROVED' && r.startDate >= yearStart)
+      const approvedThisYear = allRequests.filter((r) => r.status === 'APPROVED' && r.startDate >= yearStart)
       leaveBreakdown = (['ANNUAL', 'SICK', 'PERSONAL', 'UNPAID'] as LeaveType[])
         .map((type) => ({
           type,
@@ -103,10 +111,10 @@ export const dashboardService = {
         }))
         .filter((slice) => slice.days > 0)
 
-      pendingLeaveCount = mockLeaveRequests.filter((r) => r.status === 'PENDING').length
+      pendingLeaveCount = role === 'MANAGER' ? 1 : leaveService.getPendingCount()
 
       const todayISO = toISO(today)
-      upcomingLeave = mockLeaveRequests
+      upcomingLeave = allRequests
         .filter((r) => r.status === 'APPROVED' && r.startDate >= todayISO)
         .sort((a, b) => a.startDate.localeCompare(b.startDate))
         .slice(0, 5)
@@ -120,10 +128,47 @@ export const dashboardService = {
         }))
     }
 
+    // Role-specific stats for Manager
+    let stats: DashboardStat[]
+    if (role === 'MANAGER') {
+      stats = [
+        {
+          id: 'st-headcount',
+          organizationId: 'org-alderway',
+          label: 'Team Members',
+          value: '12',
+          delta: 'Engineering team',
+        },
+        {
+          id: 'st-present',
+          organizationId: 'org-alderway',
+          label: 'Present today',
+          value: '11',
+          delta: '92% attendance',
+        },
+        {
+          id: 'st-leave',
+          organizationId: 'org-alderway',
+          label: 'On leave',
+          value: '1',
+          delta: '1 pending review',
+        },
+      ]
+    } else {
+      stats = mockDashboardStats
+        .map((s) => {
+          if (s.id === 'st-leave') {
+            return { ...s, delta: `${leaveService.getPendingCount()} pending approval` }
+          }
+          return s
+        })
+        .filter(
+          (s) => !s.restrictedPermission || hasPermission(permissions, s.restrictedPermission),
+        )
+    }
+
     return {
-      stats: mockDashboardStats.filter(
-        (s) => !s.restrictedPermission || hasPermission(permissions, s.restrictedPermission),
-      ),
+      stats,
       activity: mockActivity,
       weeklyAttendance,
       leaveBreakdown,

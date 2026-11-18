@@ -74,7 +74,7 @@ function generateMockPayslip(emp: typeof mockEmployees[0], month: string): Paysl
 
   const now = new Date()
   const currentMonthStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
-  const status: PayslipStatus = month < currentMonthStr ? 'FINALIZED' : 'DRAFT'
+  const status: PayslipStatus = month <= currentMonthStr ? 'FINALIZED' : 'DRAFT'
 
   const payslip: Payslip = {
     id: `slip-${emp.id}-${month}`,

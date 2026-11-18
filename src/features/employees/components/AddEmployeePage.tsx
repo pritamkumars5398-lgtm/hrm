@@ -171,6 +171,7 @@ export default function AddEmployeePage() {
     register,
     handleSubmit,
     control,
+    trigger,
     setError,
     formState: { errors, isSubmitting },
   } = useForm<AddEmployeeForm>({
@@ -437,13 +438,74 @@ export default function AddEmployeePage() {
               </div>
 
               <div className="grid gap-4 sm:grid-cols-2">
-                <Input label="First Name" error={errors.firstName?.message} {...register('firstName', { required: 'Required' })} />
-                <Input label="Last Name" error={errors.lastName?.message} {...register('lastName', { required: 'Required' })} />
-                <Input label="Employee ID" placeholder="EMP-1008" error={errors.employeeId?.message} {...register('employeeId', { required: 'Required' })} />
-                <Input label="Email" type="email" error={errors.email?.message} {...register('email', { required: 'Required', pattern: { value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/, message: 'Enter a valid email.' } })} />
-                <Input label="Phone" type="tel" error={errors.contactNumber?.message} {...register('contactNumber')} />
+                <Input
+                  label="First Name"
+                  error={errors.firstName?.message}
+                  {...register('firstName', {
+                    required: 'First name is required.',
+                    pattern: { value: /^[^<>]*$/, message: 'HTML tags are not allowed.' },
+                  })}
+                />
+                <Input
+                  label="Last Name"
+                  error={errors.lastName?.message}
+                  {...register('lastName', {
+                    required: 'Last name is required.',
+                    pattern: { value: /^[^<>]*$/, message: 'HTML tags are not allowed.' },
+                  })}
+                />
+                <Input
+                  label="Employee ID"
+                  placeholder="EMP-1008"
+                  error={errors.employeeId?.message}
+                  {...register('employeeId', {
+                    required: 'Employee ID is required.',
+                    pattern: { value: /^[^<>]*$/, message: 'HTML tags are not allowed.' },
+                    validate: async (val) => {
+                      if (!val) return 'Required'
+                      const res = await employeeService.getAll({ search: val.trim() })
+                      const exists = res.rows.some((e) => (e.employeeId || '').toLowerCase() === val.trim().toLowerCase())
+                      return exists ? 'Employee ID is already assigned.' : true
+                    },
+                  })}
+                />
+                <Input
+                  label="Email"
+                  type="email"
+                  error={errors.email?.message}
+                  {...register('email', {
+                    required: 'Email is required.',
+                    pattern: { value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/, message: 'Enter a valid email address.' },
+                  })}
+                />
+                <Input
+                  label="Phone"
+                  type="tel"
+                  error={errors.contactNumber?.message}
+                  {...register('contactNumber', {
+                    pattern: {
+                      value: /^[+]?[0-9\s\-().]{7,16}$/,
+                      message: 'Enter a valid phone number (7–16 digits).',
+                    },
+                  })}
+                />
                 <Input label="Home Address" {...register('homeAddress')} />
-                <Input label="Date of Birth" type="date" error={errors.dob?.message} {...register('dob')} />
+                <Input
+                  label="Date of Birth"
+                  type="date"
+                  error={errors.dob?.message}
+                  {...register('dob', {
+                    validate: (val) => {
+                      if (!val) return true
+                      const d = new Date(val)
+                      const today = new Date()
+                      if (d >= today) return 'Date of birth must be in the past.'
+                      const age = (today.getTime() - d.getTime()) / (365.25 * 24 * 60 * 60 * 1000)
+                      if (age < 18) return 'Employee must be at least 18 years old.'
+                      return true
+                    },
+                  })}
+                />
                 <Select
                   label="Gender"
                   options={[
@@ -458,7 +520,14 @@ export default function AddEmployeePage() {
               </div>
 
               <div className="mt-6 flex justify-end gap-2 border-t border-hairline pt-5">
-                <Button type="button" onClick={() => setActiveSection('work')} className="font-bold shadow-sm">
+                <Button
+                  type="button"
+                  onClick={async () => {
+                    const valid = await trigger(['firstName', 'lastName', 'employeeId', 'email', 'contactNumber', 'dob'])
+                    if (valid) setActiveSection('work')
+                  }}
+                  className="font-bold shadow-sm"
+                >
                   Next Section: Work Info
                 </Button>
               </div>
@@ -483,9 +552,16 @@ export default function AddEmployeePage() {
                 instead.
               </div>
               <div className="grid gap-4 sm:grid-cols-2">
-                <Input label="Job Title" error={errors.jobTitle?.message} {...register('jobTitle', { required: 'Required' })} />
+                <Input
+                  label="Job Title"
+                  error={errors.jobTitle?.message}
+                  {...register('jobTitle', {
+                    required: 'Job title is required.',
+                    pattern: { value: /^[^<>]*$/, message: 'HTML tags are not allowed.' },
+                  })}
+                />
                 <Select label="Department" options={departments} {...register('department')} />
-                <Input label="Start Date" type="date" error={errors.startDate?.message} {...register('startDate', { required: 'Required' })} />
+                <Input label="Start Date" type="date" error={errors.startDate?.message} {...register('startDate', { required: 'Start date is required.' })} />
                 <Select label="Employment Type" options={[{ value: 'Full-time', label: 'Full-time' }, { value: 'Part-time', label: 'Part-time' }, { value: 'Contract', label: 'Contract' }, { value: 'Intern', label: 'Intern' }]} {...register('employmentType')} />
                 <Select label="Work Location" options={[{ value: 'Office', label: 'Office' }, { value: 'Remote', label: 'Remote' }, { value: 'Hybrid', label: 'Hybrid' }]} {...register('workLocation')} />
               </div>
@@ -494,7 +570,14 @@ export default function AddEmployeePage() {
                 <Button type="button" variant="secondary" onClick={() => setActiveSection('basic')}>
                   Back
                 </Button>
-                <Button type="button" onClick={() => setActiveSection('education')} className="font-bold shadow-sm">
+                <Button
+                  type="button"
+                  onClick={async () => {
+                    const valid = await trigger(['jobTitle', 'department', 'startDate'])
+                    if (valid) setActiveSection('education')
+                  }}
+                  className="font-bold shadow-sm"
+                >
                   Next Section: Education
                 </Button>
               </div>

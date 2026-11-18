@@ -44,6 +44,20 @@ export default function CopilotSidebarDrawer() {
   }, [])
 
   useEffect(() => {
+    if (!isOpen) return
+
+    const prevBodyOverflow = document.body.style.overflow
+    const prevHtmlOverflow = document.documentElement.style.overflow
+    document.body.style.overflow = 'hidden'
+    document.documentElement.style.overflow = 'hidden'
+
+    return () => {
+      document.body.style.overflow = prevBodyOverflow
+      document.documentElement.style.overflow = prevHtmlOverflow
+    }
+  }, [isOpen])
+
+  useEffect(() => {
     if (isOpen) {
       void fetchData()
     }
@@ -102,7 +116,7 @@ export default function CopilotSidebarDrawer() {
   return (
     <AnimatePresence>
       {isOpen && (
-        <div className="fixed inset-0 z-50 flex justify-end">
+        <div className="fixed inset-0 z-50 flex justify-end overscroll-none">
           {/* Backdrop overlay */}
           <motion.div
             initial={{ opacity: 0 }}
@@ -182,6 +196,13 @@ export default function CopilotSidebarDrawer() {
             <div className="px-3 pt-2 pb-1 border-b border-hairline/60 bg-paper/60 overflow-x-auto flex items-center gap-1.5 text-[11px] no-scrollbar">
               <button
                 type="button"
+                onClick={() => handleAsk('Who is the best employee of the year? Give their name so I can surprise them.')}
+                className="shrink-0 px-2.5 py-1 rounded-full bg-wash hover:bg-hairline text-ink border border-hairline transition cursor-pointer"
+              >
+                🏆 Employee of the Year
+              </button>
+              <button
+                type="button"
                 onClick={() => handleAsk('Who has the highest attrition risk in the company?')}
                 className="shrink-0 px-2.5 py-1 rounded-full bg-wash hover:bg-hairline text-ink border border-hairline transition cursor-pointer"
               >
@@ -204,7 +225,7 @@ export default function CopilotSidebarDrawer() {
             </div>
 
             {/* Chat Messages */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-wash/20">
+            <div className="flex-1 overflow-y-auto overscroll-contain p-4 space-y-3 bg-wash/20">
               {loading && messages.length === 0 ? (
                 <div className="p-8 text-center text-xs text-muted">
                   <RefreshCw size={18} className="animate-spin mx-auto mb-2 text-pine" />

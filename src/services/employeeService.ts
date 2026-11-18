@@ -56,8 +56,27 @@ export type EmployeeUpdate = {
 const LATENCY_MS = 550
 const delay = () => new Promise((r) => setTimeout(r, LATENCY_MS))
 
-/** Mutable copy for the offline path, so edit/delete persist within a session. */
-let mockState: Employee[] = [...mockEmployees]
+const EMPLOYEE_STORAGE_KEY = 'keystone_employees'
+
+function loadEmployees(): Employee[] {
+  try {
+    const raw = localStorage.getItem(EMPLOYEE_STORAGE_KEY)
+    if (raw) {
+      const parsed = JSON.parse(raw)
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed
+    }
+  } catch {}
+  return [...mockEmployees]
+}
+
+function saveEmployees(list: Employee[]) {
+  try {
+    localStorage.setItem(EMPLOYEE_STORAGE_KEY, JSON.stringify(list))
+  } catch {}
+}
+
+/** Mutable copy with localStorage persistence so additions/edits persist. */
+let mockState: Employee[] = loadEmployees()
 
 function applyQuery(source: Employee[], query: EmployeeQuery): Paginated<Employee> {
   const {
@@ -198,7 +217,49 @@ export const employeeService = {
       name,
     }
     mockState = mockState.map((e) => (e.id === id ? updated : e))
+    saveEmployees(mockState)
     return updated
+  },
+
+  async create(payload: Partial<Employee> & { firstName: string; lastName: string; email: string; department: string; designation: string }): Promise<Employee> {
+    if (hasBackend) {
+      try {
+        const { data } = await apiClient.post<Employee>('/employees', payload)
+        return data
+      } catch (error) {
+        throw new EmployeeError(apiErrorMessage(error, 'Could not create employee record.'))
+      }
+    }
+
+    await delay()
+
+    const name = `${payload.firstName} ${payload.lastName}`.trim()
+    const initials = `${payload.firstName[0] ?? ''}${payload.lastName[0] ?? ''}`.toUpperCase() || 'EM'
+    const newEmp: Employee = {
+      id: `emp-${crypto.randomUUID().slice(0, 8)}`,
+      organizationId: 'org-alderway',
+      name,
+      avatarInitials: initials,
+      email: payload.email.toLowerCase().trim(),
+      phone: payload.phone ?? '',
+      department: payload.department,
+      designation: payload.designation,
+      status: 'ACTIVE',
+      employmentType: (payload.employmentType as any) ?? 'Full-time',
+      location: payload.location ?? 'Office',
+      joinedAt: payload.joinedAt ?? new Date().toISOString().slice(0, 10),
+      managerName: payload.managerName ?? 'Priya Nair',
+      employmentHistory: [],
+      documents: [],
+      firstName: payload.firstName,
+      lastName: payload.lastName,
+      employeeId: payload.employeeId ?? `EMP-${Math.floor(1000 + Math.random() * 9000)}`,
+      homeAddress: payload.homeAddress ?? '',
+    }
+
+    mockState = [newEmp, ...mockState]
+    saveEmployees(mockState)
+    return newEmp
   },
 
   async remove(id: string): Promise<void> {
@@ -213,6 +274,7 @@ export const employeeService = {
 
     await delay()
     mockState = mockState.filter((e) => e.id !== id)
+    saveEmployees(mockState)
   },
 
   // ── Sub-resource fetchers (real API only) ──────────────────────────────

@@ -79,6 +79,7 @@ export default function SignupPage() {
     <AuthLayout
       title="Create your workspace "
       subtitle="You'll be the owner. Invite your HR team and managers once you're in."
+      showContextHighlights={false}
       footer={
         <>
           Already have a workspace?{' '}
@@ -287,6 +288,7 @@ export default function SignupPage() {
         open={googleOpen}
         onClose={() => setGoogleOpen(false)}
         onSignedIn={enter}
+        comingSoon
       />
     </AuthLayout>
   )

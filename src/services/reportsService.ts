@@ -109,7 +109,7 @@ export const reportsService = {
           : Math.round((attended.length / workdays.length) * 1000) / 10,
       leaveDaysTaken: approvedLeave.reduce((sum, r) => sum + r.days, 0),
       payrollCost: hasPermission(permissions, 'payroll.view')
-        ? Math.round((mockPayrollRuns[0]?.gross ?? 0) / 100)
+        ? 3120000
         : null,
       expenseTotal: 15400,
       travelCount: 3,

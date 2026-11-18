@@ -25,8 +25,27 @@ export class LeaveError extends Error {}
 const LATENCY_MS = 550
 const delay = () => new Promise((r) => setTimeout(r, LATENCY_MS))
 
-/** Mutable copy so approvals persist for the session without touching the seed. */
-let requests: LeaveRequest[] = [...mockLeaveRequests]
+const STORAGE_KEY = 'keystone_leave_requests'
+
+function loadRequests(): LeaveRequest[] {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY)
+    if (raw) {
+      const parsed = JSON.parse(raw)
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed
+    }
+  } catch {}
+  return [...mockLeaveRequests]
+}
+
+function saveRequests(list: LeaveRequest[]) {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(list))
+  } catch {}
+}
+
+/** Mutable copy with localStorage persistence so approvals persist across re-logins. */
+let requests: LeaveRequest[] = loadRequests()
 
 export type Viewer = {
   permissions: string[]
@@ -70,7 +89,20 @@ const employeeFor = (name: string) => mockEmployees.find((e) => e.name === name)
 function canDecide(viewer: Viewer, request: LeaveRequest): boolean {
   if (request.employeeName === viewer.name) return false
   if (request.status !== 'PENDING') return false
-  return hasPermission(viewer.permissions, 'leave.approve')
+  if (!hasPermission(viewer.permissions, 'leave.approve')) return false
+
+  const isOwner = viewer.permissions.includes('*')
+  const isHR = viewer.permissions.some((p) => p.startsWith('employees'))
+  if (isOwner || isHR) return true
+
+  // For Managers (team leads), only allow approving direct reports or department team members
+  const me = employeeFor(viewer.name)
+  if (!me) return false
+
+  const reqEmp = mockEmployees.find((e) => e.name === request.employeeName)
+  const isDirectReport = reqEmp?.managerName === viewer.name || reqEmp?.managerId === me.id
+  const isSameDepartment = reqEmp?.department === me.department
+  return Boolean(isDirectReport || isSameDepartment)
 }
 
 /**
@@ -207,6 +239,7 @@ export const leaveService = {
     }
 
     requests = [request, ...requests]
+    saveRequests(requests)
     return request
   },
 
@@ -242,6 +275,7 @@ export const leaveService = {
     }
 
     requests = requests.map((r) => (r.id === id ? decided : r))
+    saveRequests(requests)
     return decided
   },
 
@@ -270,6 +304,15 @@ export const leaveService = {
     }
 
     requests = requests.map((r) => (r.id === id ? cancelled : r))
+    saveRequests(requests)
     return cancelled
+  },
+
+  getPendingCount(): number {
+    return requests.filter((r) => r.status === 'PENDING').length
+  },
+
+  getAllRequests(): LeaveRequest[] {
+    return requests
   },
 }

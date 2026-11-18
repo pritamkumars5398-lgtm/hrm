@@ -7,6 +7,7 @@ type GoogleSignInDialogProps = {
   open: boolean
   onClose: () => void
   onSignedIn: (user: User) => void
+  comingSoon?: boolean
 }
 
 /**
@@ -18,9 +19,39 @@ export default function GoogleSignInDialog({
   open,
   onClose,
   onSignedIn,
+  comingSoon = false,
 }: GoogleSignInDialogProps) {
   const [pending, setPending] = useState<string | null>(null)
   const accounts = authService.getSimulatedGoogleAccounts()
+
+  if (comingSoon) {
+    return (
+      <Modal
+        open={open}
+        onClose={onClose}
+        title="Google Sign-In"
+        description="Coming soon"
+      >
+        <div className="space-y-4">
+          <div className="rounded-ctl border border-hairline bg-wash p-4 text-center">
+            <span className="inline-block rounded-full bg-pine-tint px-3 py-1 text-[11px] font-semibold uppercase tracking-wider text-pine-deep">
+              Coming soon
+            </span>
+            <p className="mt-2.5 text-[13px] leading-relaxed text-muted">
+              Google Sign-In is coming soon. Please sign in with your work email and password in the meantime.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="w-full rounded-ctl border border-hairline-strong bg-surface px-4 py-2 text-[13px] font-medium transition-colors hover:bg-wash"
+          >
+            Got it
+          </button>
+        </div>
+      </Modal>
+    )
+  }
 
   const choose = async (account: GoogleAccount) => {
     setPending(account.email)

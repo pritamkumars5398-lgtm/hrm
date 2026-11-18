@@ -29,11 +29,8 @@ export default function LoginPage() {
   const {
     register,
     handleSubmit,
-    setValue,
     formState: { errors, isSubmitting },
   } = useForm<LoginForm>({ defaultValues: { email: '', password: '' } })
-
-  const demo = authService.getDemoCredentials()
 
   const enter = (user: User) => {
     setSession(user)
@@ -51,12 +48,6 @@ export default function LoginPage() {
     }
   })
 
-  const applyDemoAccount = (email: string) => {
-    setValue('email', email, { shouldValidate: true })
-    setValue('password', demo.password, { shouldValidate: true })
-    setFormError(null)
-  }
-
   // Shared input style — underline style, clean and open
   const inputClass = (hasError: boolean) =>
     [
@@ -72,6 +63,7 @@ export default function LoginPage() {
       subtitle="Sign in to your Keystone workspace and pick up where you left off."
       reverse
       image="/hrm-login.png"
+      showContextHighlights={false}
       footer={
         <>
           Don&apos;t have an account?{' '}
@@ -204,35 +196,13 @@ export default function LoginPage() {
 
         </form>
 
-        {/* Demo accounts */}
-        <div className="pt-1">
-          <p className="text-[11px] font-bold uppercase tracking-widest text-gray-400 mb-2.5">
-            Try a demo account
-            <span className="normal-case tracking-normal font-normal ml-2 text-gray-300">
-              pw: <code className="font-mono text-gray-500">{demo.password}</code>
-            </span>
-          </p>
-          <div className="flex flex-wrap gap-2">
-            {demo.accounts.map((a) => (
-              <button
-                key={a.email}
-                type="button"
-                disabled={isSubmitting}
-                onClick={() => applyDemoAccount(a.email)}
-                className="rounded-xl border border-gray-200 bg-white px-3 py-1.5 text-[12px] font-semibold text-gray-600 transition-all hover:border-teal-400 hover:bg-teal-50 hover:text-teal-700 shadow-sm disabled:opacity-50 disabled:pointer-events-none"
-              >
-                {a.role.charAt(0) + a.role.slice(1).toLowerCase()}
-              </button>
-            ))}
-          </div>
-        </div>
-
       </div>
 
       <GoogleSignInDialog
         open={googleOpen}
         onClose={() => setGoogleOpen(false)}
         onSignedIn={enter}
+        comingSoon
       />
     </AuthLayout>
   )

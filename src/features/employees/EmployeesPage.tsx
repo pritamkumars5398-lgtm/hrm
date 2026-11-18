@@ -22,6 +22,7 @@ import { useEmployeeStore } from './store/employeeStore'
 import EmployeeStatusBadge from './components/EmployeeStatusBadge'
 import EmployeeDrawer from './components/EmployeeDrawer'
 import { STATUS_LABEL } from './labels'
+import { useAuthStore } from '@/features/auth/store/authStore'
 
 const formatDate = (iso: string) =>
   new Date(iso).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
@@ -74,6 +75,8 @@ const initialsColor = (initials: string) => {
 }
 
 export default function EmployeesPage() {
+  const user = useAuthStore((s) => s.user)
+  const canAddEmployee = user?.role === 'OWNER' || user?.role === 'HR'
   const { status, result, query, error, fetch, setQuery, toggleSort, reset } = useEmployeeStore()
   const navigate = useNavigate()
   const [selectedId, setSelectedId] = useState<string | null>(null)
@@ -131,9 +134,11 @@ export default function EmployeesPage() {
             >
               Refresh
             </button>
-            <Button onClick={() => navigate('/dashboard/employees/new')}>
-              Add Employee
-            </Button>
+            {canAddEmployee && (
+              <Button onClick={() => navigate('/dashboard/employees/new')}>
+                Add Employee
+              </Button>
+            )}
           </div>
         </div>
       </div>

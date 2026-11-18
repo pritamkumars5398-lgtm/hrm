@@ -19,6 +19,7 @@ import {
   type EngagementPost,
   type Celebration,
 } from '../../services/engagementService'
+import { mockEmployees } from '@/mock/mockEmployees'
 
 export default function EngagementPage() {
   const [feed, setFeed] = useState<EngagementPost[]>([])
@@ -28,7 +29,7 @@ export default function EngagementPage() {
 
   // Form State
   const [postText, setPostText] = useState('')
-  const [kudosUser, setKudosUser] = useState('Rahul Mehta')
+  const [kudosUser, setKudosUser] = useState(mockEmployees[0]?.name || 'Samuel Okafor')
   const [badge, setBadge] = useState('Team Player')
   const [submitting, setSubmitting] = useState(false)
 
@@ -169,13 +170,13 @@ export default function EngagementPage() {
                   <select
                     value={kudosUser}
                     onChange={(e) => setKudosUser(e.target.value)}
-                    className="px-3 py-1.5 rounded-lg border border-hairline font-semibold text-ink bg-wash cursor-pointer"
+                    className="px-3 py-1.5 rounded-lg border border-hairline font-semibold text-ink bg-wash cursor-pointer max-w-[240px] truncate"
                   >
-                    <option value="Rahul Mehta">To: Rahul Mehta (Tech Lead)</option>
-                    <option value="Ananya Verma">To: Ananya Verma (Operations)</option>
-                    <option value="Vikram Mehta">To: Vikram Mehta (Design)</option>
-                    <option value="Suresh Raina">To: Suresh Raina (Engineering)</option>
-                    <option value="Pooja Hegde">To: Pooja Hegde (Marketing)</option>
+                    {mockEmployees.map((emp) => (
+                      <option key={emp.id} value={emp.name}>
+                        To: {emp.name} ({emp.department})
+                      </option>
+                    ))}
                   </select>
 
                   <select

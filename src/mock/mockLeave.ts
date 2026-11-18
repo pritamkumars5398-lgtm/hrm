@@ -53,12 +53,22 @@ export function updateMockLeavePolicy(patch: Partial<Record<'ANNUAL' | 'SICK' | 
 
 const byName = (name: string) => mockEmployees.find((e) => e.name === name)!
 
-/** Whole days between two ISO dates, inclusive. */
+/** Working days between two ISO dates, inclusive (excluding weekends). */
 export function daysBetween(start: string, end: string): number {
   const from = new Date(`${start}T00:00:00`)
   const to = new Date(`${end}T00:00:00`)
-  const diff = Math.round((to.getTime() - from.getTime()) / (24 * 60 * 60 * 1000))
-  return diff + 1
+  if (to < from) return 0
+  
+  let count = 0
+  const cur = new Date(from)
+  while (cur <= to) {
+    const day = cur.getDay()
+    if (day !== 0 && day !== 6) { // 0 = Sunday, 6 = Saturday
+      count++
+    }
+    cur.setDate(cur.getDate() + 1)
+  }
+  return count > 0 ? count : 1
 }
 
 type Seed = [

@@ -124,7 +124,9 @@ export default function EmployeeDrawer({
   const [historyData, setHistoryData] = useState<{ employmentHistory: any[]; auditLogs: any[] } | null>(null)
   const [tabLoading, setTabLoading] = useState(false)
 
-  const permissions = useAuthStore((s) => s.user?.permissions)
+  const user = useAuthStore((s) => s.user)
+  const permissions = user?.permissions
+  const canViewPayroll = user?.role === 'OWNER' || hasPermission(user?.permissions, 'payroll.view')
   const canManage = hasPermission(permissions, 'employees.manage')
   const departments = employeeService.getDepartmentOptions()
 
@@ -265,7 +267,7 @@ export default function EmployeeDrawer({
               <Input label="First Name" error={errors.firstName?.message} {...register('firstName', { required: 'Required' })} />
               <Input label="Last Name" error={errors.lastName?.message} {...register('lastName', { required: 'Required' })} />
             </div>
-            <Input label="Employee ID" error={errors.employeeId?.message} {...register('employeeId', { required: 'Required' })} />
+            <Input label="Employee ID" error={errors.employeeId?.message} {...register('employeeId')} />
             <Input label="Job Title" error={errors.jobTitle?.message} {...register('jobTitle', { required: 'Required' })} />
             <Select label="Department" options={departments} {...register('department')} />
             <Input label="Phone" type="tel" {...register('contactNumber')} />
@@ -357,7 +359,7 @@ export default function EmployeeDrawer({
                 { id: 'leave', label: 'Leave' },
                 { id: 'documents', label: 'Documents' },
                 { id: 'performance', label: 'Performance' },
-                { id: 'payroll', label: 'Payroll' },
+                ...(canViewPayroll ? [{ id: 'payroll', label: 'Payroll' }] : []),
                 { id: 'history', label: 'History' },
               ].map((t) => (
                 <button
@@ -582,11 +584,33 @@ export default function EmployeeDrawer({
 
               {activeTab === 'payroll' && (
                 <div className="space-y-4">
-                  <h3 className="text-[11px] font-semibold tracking-[0.12em] text-muted uppercase">Salary Slips</h3>
+                  <h3 className="text-[11px] font-semibold tracking-[0.12em] text-muted uppercase">Salary & Payslips</h3>
                   {tabLoading ? (
                     <div className="flex justify-center py-8"><Loader2 className="animate-spin text-muted" size={20} /></div>
                   ) : !payroll || payroll.length === 0 ? (
-                    <p className="text-[13px] text-muted text-center py-6">No payslips found.</p>
+                    <div className="space-y-3">
+                      <div className="rounded-xl border border-hairline bg-surface p-4">
+                        <div className="flex items-center justify-between border-b border-hairline pb-2.5 mb-3">
+                          <div>
+                            <span className="text-[10px] font-bold text-pine uppercase tracking-wider bg-pine-tint px-2 py-0.5 rounded">Active Salary Structure</span>
+                            <h4 className="text-[13px] font-bold text-ink mt-1">Monthly CTC</h4>
+                          </div>
+                          <span className="text-[13px] font-bold text-ink">₹1,82,400 / mo</span>
+                        </div>
+                        <div className="space-y-1.5 text-[12px]">
+                          <div className="flex justify-between text-muted"><span>Basic Salary (50%)</span><span className="font-semibold text-ink">₹91,200</span></div>
+                          <div className="flex justify-between text-muted"><span>House Rent Allowance (HRA)</span><span className="font-semibold text-ink">₹45,600</span></div>
+                          <div className="flex justify-between text-muted"><span>Special Allowance</span><span className="font-semibold text-ink">₹45,600</span></div>
+                          <div className="flex justify-between text-muted border-t border-hairline/60 pt-1.5"><span>Provident Fund (EPF)</span><span className="font-semibold text-clay">-₹1,800</span></div>
+                          <div className="flex justify-between text-muted"><span>Professional Tax (PT)</span><span className="font-semibold text-clay">-₹200</span></div>
+                          <div className="flex justify-between font-bold text-ink border-t border-hairline pt-2 text-[13px]">
+                            <span>Estimated Net Take-home</span>
+                            <span className="text-emerald-700">₹1,80,400</span>
+                          </div>
+                        </div>
+                      </div>
+                      <p className="text-[11px] text-muted text-center">First monthly payslip will generate during the next pay cycle.</p>
+                    </div>
                   ) : (
                     <div className="space-y-3">
                       {payroll.map((p: any) => (

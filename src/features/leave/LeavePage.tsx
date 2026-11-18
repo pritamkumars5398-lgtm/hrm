@@ -583,7 +583,11 @@ export default function LeavePage() {
 
           {/* Leave policy — company-wide setting, editable by whoever decides leave */}
           {data && data.scope === 'company' && (
-            <LeavePolicyCard policy={data.policy} onSave={(patch) => updatePolicy(viewer, patch)} />
+            <LeavePolicyCard
+              policy={data.policy}
+              readOnly={user.role !== 'OWNER' && user.role !== 'HR'}
+              onSave={(patch) => updatePolicy(viewer, patch)}
+            />
           )}
 
           {actionError && (

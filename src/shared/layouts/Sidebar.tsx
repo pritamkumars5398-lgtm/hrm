@@ -3,7 +3,7 @@ import { NavLink, useLocation, useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ChevronDown, ChevronRight, Layers, FormInput, Sparkles, Building2 } from 'lucide-react'
 import Logo from '@/shared/components/Logo'
-import { navItemsFor, type NavItem } from '@/shared/config/navigation'
+import { navItemsFor, getPageTitle, type NavItem } from '@/shared/config/navigation'
 import { useCopilotDrawer } from '@/features/ai/copilotStore'
 import type { Role } from '@/services/authService'
 
@@ -33,7 +33,7 @@ export default function Sidebar({
 }: SidebarProps) {
   const navigate = useNavigate()
   const { pathname } = useLocation()
-  const items = navItemsFor(permissions)
+  const items = navItemsFor(permissions, role)
 
   const groups: GroupConfig[] = [
     {
@@ -66,7 +66,7 @@ export default function Sidebar({
       icon: Layers,
       items: items.filter((i) => i.group === 'admin'),
     },
-  ]
+  ].filter((g) => g.items.length > 0)
 
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>(() => {
     const activeGroup = groups.find((g) => g.items.some((item) => pathname.startsWith(item.path)))?.key
@@ -83,14 +83,11 @@ export default function Sidebar({
     setOpenGroups((prev) => ({ ...prev, [key]: !prev[key] }))
   }
 
-  // Find active item label for top header
-  const activeItem = items.find((item) =>
-    item.key === 'dashboard' ? pathname === '/dashboard' : pathname.startsWith(item.path)
-  )
-  const pageTitle = activeItem?.label || 'Home'
+  // Dynamic page title for top header and tab (BUG-039)
+  const pageTitle = getPageTitle(pathname)
 
   return (
-    <div className="flex h-full flex-col border-r border-hairline bg-[#f9fafb] text-ink select-none w-[210px]">
+    <div className={`flex h-full flex-col border-r border-hairline bg-[#f9fafb] text-ink select-none transition-all duration-200 overflow-x-hidden ${collapsed ? 'w-16' : 'w-[210px]'}`}>
       {/* Top Header: Current Page Title on Left, + Create button on Right (Matching Screenshot UI) */}
       <div className={`flex h-14 shrink-0 items-center border-b border-hairline px-3.5 ${collapsed ? 'justify-center' : ''}`}>
         {!collapsed ? (
@@ -112,41 +109,41 @@ export default function Sidebar({
 
           if (collapsed) {
             return (
-              <div key={group.key} className="space-y-1 border-b border-hairline/60 pb-1.5 mb-1.5 last:border-0">
+              <div key={group.key} className="flex flex-col items-center space-y-1.5 border-b border-hairline/60 pb-2 mb-2 last:border-0">
                 {group.items.map((item) => {
                   const Icon = item.icon
-                                          if (item.key === 'ai-copilot') {
-                          return (
-                            <li key={item.key}>
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  useCopilotDrawer.getState().openCopilot()
-                                  onNavigate?.()
-                                }}
-                                className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-[12px] text-pine font-semibold hover:bg-pine-tint/40 transition text-left cursor-pointer"
-                              >
-                                <Icon size={14} className="text-pine" />
-                                <span className="flex-1 truncate">{item.label}</span>
-                                <span className="text-[9px] px-1.5 py-0.2 rounded-full bg-pine text-white font-bold">Side</span>
-                              </button>
-                            </li>
-                          )
-                        }
-                        const isActive = item.key === 'dashboard' ? pathname === '/dashboard' : pathname.startsWith(item.path)
+                  if (item.key === 'ai-copilot') {
+                    return (
+                      <button
+                        key={item.key}
+                        type="button"
+                        title="AI Copilot"
+                        aria-label="AI Copilot"
+                        onClick={() => {
+                          useCopilotDrawer.getState().openCopilot()
+                          onNavigate?.()
+                        }}
+                        className="flex size-9 items-center justify-center rounded-lg text-pine hover:bg-pine-tint/40 transition cursor-pointer"
+                      >
+                        <Icon size={16} className="text-pine" />
+                      </button>
+                    )
+                  }
+                  const isActive = item.key === 'dashboard' ? pathname === '/dashboard' : pathname.startsWith(item.path)
                   return (
                     <NavLink
                       key={item.key}
                       to={item.path}
                       onClick={onNavigate}
                       title={item.label}
-                      className={`flex size-8 items-center justify-center rounded-lg transition ${
+                      aria-label={item.label}
+                      className={`flex size-9 items-center justify-center rounded-lg transition ${
                         isActive
                           ? 'bg-gray-200 text-ink font-bold shadow-2xs'
                           : 'text-muted hover:bg-wash hover:text-ink'
                       }`}
                     >
-                      <Icon size={15} />
+                      <Icon size={16} />
                     </NavLink>
                   )
                 })}
@@ -160,6 +157,7 @@ export default function Sidebar({
               <button
                 type="button"
                 onClick={() => toggleGroup(group.key)}
+                aria-label={`Toggle ${group.title} group`}
                 className={`w-full flex items-center justify-between px-2.5 py-1.5 text-left text-[10px] font-extrabold uppercase tracking-wider transition cursor-pointer ${
                   hasActiveChild ? 'text-ink bg-gray-100/70' : 'text-muted hover:text-ink hover:bg-wash/50'
                 }`}

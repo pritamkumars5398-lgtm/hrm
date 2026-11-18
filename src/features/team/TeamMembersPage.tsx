@@ -287,17 +287,21 @@ export default function TeamMembersPage() {
     void load()
   }, [load])
 
-  const onInvite = handleSubmit(async (values) => {
+  const onInvite = (e: React.FormEvent) => {
+    e.preventDefault()
     setFormError(null)
-    setInviteLink(null)
-    setInviteTempPassword(null)
+    handleSubmit(
+      async (values) => {
+        setFormError(null)
+        setInviteLink(null)
+        setInviteTempPassword(null)
 
-    try {
-      const { invite, inviteLink: link, tempPassword } = await teamService.invite({
-        email: values.email,
-        role: values.role as InvitableRole,
-        source: 'team-members',
-      })
+        try {
+          const { invite, inviteLink: link, tempPassword } = await teamService.invite({
+            email: values.email,
+            role: values.role as InvitableRole,
+            source: 'team-members',
+          })
 
       // Trigger system-wide notification
       useNotificationsStore.getState().addNotification(
@@ -325,7 +329,11 @@ export default function TeamMembersPage() {
     } catch (err) {
       setFormError(err instanceof TeamError ? err.message : 'We could not send that invite.')
     }
-  })
+  }, () => {
+    // If validation fails, clear stale server error banner (BUG-036)
+    setFormError(null)
+  })(e)
+}
 
   const onResend = async (id: string) => {
     setBusyId(id)
@@ -445,6 +453,7 @@ export default function TeamMembersPage() {
                       value: /^\S+@\S+\.\S+$/,
                       message: 'That does not look like an email.',
                     },
+                    onChange: () => setFormError(null),
                   })}
                 />
 
@@ -452,12 +461,21 @@ export default function TeamMembersPage() {
                   label="Role"
                   placeholder="Select a role"
                   className="w-full"
-                  options={[
-                    { value: 'HR', label: 'HR' },
-                    { value: 'MANAGER', label: 'Manager' },
-                  ]}
+                  options={
+                    currentUser.role === 'OWNER'
+                      ? [
+                          { value: 'HR', label: 'HR' },
+                          { value: 'MANAGER', label: 'Manager' },
+                        ]
+                      : [
+                          { value: 'MANAGER', label: 'Manager' },
+                        ]
+                  }
                   error={errors.role?.message}
-                  {...register('role', { required: 'Pick a role.' })}
+                  {...register('role', {
+                    required: 'Pick a role.',
+                    onChange: () => setFormError(null),
+                  })}
                 />
               </div>
 

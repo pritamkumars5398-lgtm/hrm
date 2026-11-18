@@ -2,7 +2,8 @@ import { hasBackend } from '@/config/env'
 import { apiClient, apiErrorMessage } from './apiClient'
 import { mockInvites, type Invite, type InvitableRole, type InviteStatus } from '@/mock/mockInvites'
 import { mockUsers } from '@/mock/mockUsers'
-import { deriveRole } from '@/features/auth/store/authStore'
+import { deriveRole, useAuthStore } from '@/features/auth/store/authStore'
+import { employeeService } from './employeeService'
 import type { User } from './authService'
 
 export type { Invite, InvitableRole, InviteStatus }
@@ -154,12 +155,19 @@ export const teamService = {
     await delay()
     const email = payload.email.trim().toLowerCase()
 
+    if (payload.role === 'HR' && useAuthStore.getState().user?.role !== 'OWNER') {
+      throw new TeamError('Only Workspace Owners can invite HR team members.')
+    }
+
     if (mockMemberState.some((m) => m.email === email)) {
       throw new TeamError('That person already has an account.')
     }
     if (mockInviteState.some((i) => i.email === email && i.status === 'PENDING')) {
       throw new TeamError('There is already a pending invite for that email.')
     }
+
+    const randomSuffix = Math.floor(1000 + Math.random() * 9000)
+    const uniquePassword = `Key#${randomSuffix}!`
 
     const invite: Invite = {
       id: `inv-${crypto.randomUUID().slice(0, 8)}`,
@@ -173,7 +181,25 @@ export const teamService = {
     }
 
     mockInviteState = [invite, ...mockInviteState]
-    return { invite, inviteLink: mockLink(invite.id), tempPassword: 'demo-temp-password' }
+
+    // If source is employee-management or firstName is present, also add to employee directory!
+    if (payload.firstName || payload.source === 'employee-management') {
+      void employeeService.create({
+        firstName: payload.firstName || 'Employee',
+        lastName: payload.lastName || '',
+        email,
+        phone: payload.contactNumber,
+        department: payload.department || 'Operations',
+        designation: payload.jobTitle || 'Team Member',
+        employmentType: (payload.employmentType as any) || 'FULL_TIME',
+        location: payload.workLocation || 'Office',
+        joinedAt: payload.startDate || new Date().toISOString().slice(0, 10),
+        employeeId: payload.employeeId || `EMP-${randomSuffix}`,
+        homeAddress: payload.homeAddress,
+      })
+    }
+
+    return { invite, inviteLink: mockLink(invite.id), tempPassword: uniquePassword }
   },
 
   async resendInvite(id: string): Promise<{ invite: Invite; inviteLink: string }> {

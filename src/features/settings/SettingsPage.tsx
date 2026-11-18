@@ -608,6 +608,22 @@ function Security() {
 
 export default function SettingsPage() {
   const [tab, setTab] = useState<Tab>('company')
+  const user = useAuthStore((s) => s.user)
+  const isOwner = user?.role === 'OWNER' || (user?.permissions?.includes('*') ?? false)
+
+  if (!isOwner) {
+    return (
+      <div className="flex min-h-[50vh] flex-col items-center justify-center text-center p-6">
+        <div className="size-12 rounded-full bg-clay/10 text-clay flex items-center justify-center mb-4">
+          <Shield size={24} />
+        </div>
+        <h2 className="text-xl font-bold text-ink">Access Denied (Owner Only)</h2>
+        <p className="mt-2 text-[14px] text-muted max-w-md">
+          Workspace Settings is strictly restricted to company owners. Your current role does not have administrative permissions to modify workspace configurations.
+        </p>
+      </div>
+    )
+  }
 
   return (
     <motion.div

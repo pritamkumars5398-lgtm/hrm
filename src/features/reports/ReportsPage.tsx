@@ -511,12 +511,12 @@ function LeaveSection({ data, isLoading }: { data: ReportsData | null; isLoading
 // ─── Section: Payroll ─────────────────────────────────────────────────────────
 function PayrollSection({ data, isLoading }: { data: ReportsData | null; isLoading: boolean }) {
   const mockPayrollMonths = [
-    { month: 'May', gross: 4280000, net: 3840000 },
-    { month: 'Jun', gross: 4310000, net: 3870000 },
-    { month: 'Jul', gross: 4290000, net: 3855000 },
-    { month: 'Aug', gross: 4350000, net: 3910000 },
-    { month: 'Sep', gross: 4380000, net: 3935000 },
-    { month: 'Oct', gross: 4420000, net: 3965000 },
+    { month: 'Jun', gross: 2980000, net: 2680000 },
+    { month: 'Jul', gross: 3010000, net: 2710000 },
+    { month: 'Aug', gross: 3050000, net: 2740000 },
+    { month: 'Sep', gross: 3080000, net: 2770000 },
+    { month: 'Oct', gross: 3100000, net: 2790000 },
+    { month: 'Nov', gross: 3120000, net: 2810000 },
   ]
   const maxGross = Math.max(...mockPayrollMonths.map(m => m.gross))
 
@@ -525,10 +525,10 @@ function PayrollSection({ data, isLoading }: { data: ReportsData | null; isLoadi
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {isLoading ? [0,1,2,3].map(i => <SkeletonCard key={i} />) : (
           <>
-            <StatCard icon={Banknote}    label="Gross Payroll"     value={formatMoneyCompact(data?.payrollCost ?? 4420000)} hint="current month"                color="indigo" />
+            <StatCard icon={Banknote}    label="Gross Payroll"     value={formatMoneyCompact(data?.payrollCost ?? 3120000)} hint="current month"                color="indigo" />
             <StatCard icon={TrendingUp}  label="YoY Change"        value="+8.4%"                                            hint="vs last year same month"     color="emerald" trend="up" />
             <StatCard icon={Users}       label="Employees Paid"    value={String(data?.activeCount ?? 0)}                   hint="in latest payroll run"       color="teal" />
-            <StatCard icon={Banknote}    label="Avg Salary"        value={formatMoneyCompact(Math.round((data?.payrollCost ?? 4420000) / (data?.activeCount || 1)))} hint="per employee, gross" color="violet" />
+            <StatCard icon={Banknote}    label="Avg Salary"        value={formatMoneyCompact(Math.round((data?.payrollCost ?? 3120000) / (data?.activeCount || 1)))} hint="per employee, gross" color="violet" />
           </>
         )}
       </div>

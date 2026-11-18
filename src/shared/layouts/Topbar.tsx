@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
-import { Sparkles, Bell, LogOut, Menu, Search, Settings, User, Building, Check, CheckCheck, ChevronDown, Plus } from 'lucide-react'
+import { Sparkles, Bell, LogOut, Menu, Settings, User, Building, Check, CheckCheck, ChevronDown, Plus } from 'lucide-react'
 import Card from '@/shared/components/Card'
+import GlobalSearch from '@/shared/components/GlobalSearch'
 import { useAuthStore, type SessionUser } from '@/features/auth/store/authStore'
 import { useNotificationsStore } from '@/features/notifications/store/notificationsStore'
 import { timeAgo } from '@/shared/utils/timeAgo'
@@ -118,19 +119,8 @@ export default function Topbar({
         </button>
       )}
 
-      <div className="relative hidden max-w-sm flex-1 sm:block">
-        <Search
-          size={15}
-          aria-hidden="true"
-          className="absolute top-1/2 left-3 -translate-y-1/2 text-muted"
-        />
-        <input
-          type="search"
-          placeholder="Search people, documents…"
-          aria-label="Search"
-          className="h-9 w-full rounded-ctl border border-hairline bg-surface pr-3 pl-9 text-[13.5px] transition-colors placeholder:text-muted/70 hover:border-muted/40 focus:border-pine"
-        />
-      </div>
+      {/* Global Command / Search bar */}
+      <GlobalSearch userRole={user.role} userPermissions={user.permissions} />
 
       <div ref={ref} className="ml-auto flex items-center gap-1.5">
         {/* Workspace Switcher — always visible so users can add a company */}
@@ -339,42 +329,22 @@ export default function Topbar({
                     Your profile
                   </button>
                 </li>
-                <li>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setOpenMenu(null)
-                      navigate('/dashboard/settings')
-                    }}
-                    className="flex w-full items-center gap-2.5 rounded-ctl px-3 py-2 text-left text-[13px] text-muted transition-colors hover:bg-wash hover:text-ink"
-                  >
-                    <Settings size={15} />
-                    Workspace Settings
-                  </button>
-                </li>
-              </ul>
-
-              <div className="border-t border-hairline p-2 bg-wash/30">
-                <p className="text-[10px] font-bold uppercase tracking-wider text-muted px-2 mb-1">Role Preview Switcher</p>
-                <div className="grid grid-cols-2 gap-1 text-[11px]">
-                  {(['OWNER', 'HR', 'MANAGER', 'EMPLOYEE'] as const).map((r) => (
+                {user.role === 'OWNER' && (
+                  <li>
                     <button
-                      key={r}
+                      type="button"
                       onClick={() => {
-                        useAuthStore.setState((state) => ({
-                          user: state.user ? { ...state.user, role: r } : null
-                        }))
                         setOpenMenu(null)
+                        navigate('/dashboard/settings')
                       }}
-                      className={`px-2 py-1 rounded text-center font-bold cursor-pointer transition ${
-                        user.role === r ? 'bg-emerald-600 text-white shadow-xs' : 'bg-surface border border-hairline text-ink hover:bg-wash'
-                      }`}
+                      className="flex w-full items-center gap-2.5 rounded-ctl px-3 py-2 text-left text-[13px] text-muted transition-colors hover:bg-wash hover:text-ink"
                     >
-                      {r}
+                      <Settings size={15} />
+                      Workspace Settings
                     </button>
-                  ))}
-                </div>
-              </div>
+                  </li>
+                )}
+              </ul>
 
               <div className="border-t border-hairline p-1">
                 <button

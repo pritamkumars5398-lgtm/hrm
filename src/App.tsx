@@ -117,35 +117,35 @@ export default function App() {
         <Route path="former-employees" element={<FormerEmployeesPage />} />
         
         <Route path="add-company" element={<CompanyDetailsStep isAdditional />} />
-        <Route path="team" element={<TeamMembersPage />} />
+        <Route path="team" element={<RequireModule module="team"><TeamMembersPage /></RequireModule>} />
         <Route path="employees" element={<EmployeesPage />} />
-        <Route path="employees/new" element={<AddEmployeePage />} />
+        <Route path="employees/new" element={<RequireModule allowedRoles={['OWNER', 'HR']}><AddEmployeePage /></RequireModule>} />
         
         <Route path="attendance" element={<AttendancePage />} />
         <Route path="leave" element={<LeavePage />} />
-        <Route path="payroll" element={<PayrollPage />} />
-        <Route path="payroll/payslip/:employeeId" element={<PayslipPage />} />
+        <Route path="payroll" element={<RequireModule module="payroll"><PayrollPage /></RequireModule>} />
+        <Route path="payroll/payslip/:employeeId" element={<RequireModule module="payroll"><PayslipPage /></RequireModule>} />
         <Route path="payslip" element={<MyPayslipPage />} />
         <Route path="performance" element={<PerformancePage />} />
         <Route path="documents" element={<DocumentsPage />} />
         <Route path="reports" element={<ReportsPage />} />
-        <Route path="settings" element={<SettingsPage />} />
+        <Route path="settings" element={<RequireModule module="settings" ownerOnly><SettingsPage /></RequireModule>} />
 
         {/* Enterprise Modules */}
-        <Route path="recruitment" element={<RecruitmentPage />} />
+        <Route path="recruitment" element={<RequireModule module="recruitment"><RecruitmentPage /></RequireModule>} />
         <Route path="onboarding-tracker" element={<OnboardingTrackerPage />} />
         <Route path="timesheets" element={<TimesheetsPage />} />
-        <Route path="assets" element={<AssetsPage />} />
-        <Route path="expenses" element={<ExpensesPage />} />
-        <Route path="travel" element={<TravelPage />} />
+        <Route path="assets" element={<RequireModule module="assets"><AssetsPage /></RequireModule>} />
+        <Route path="expenses" element={<RequireModule module="expenses"><ExpensesPage /></RequireModule>} />
+        <Route path="travel" element={<RequireModule module="travel"><TravelPage /></RequireModule>} />
         <Route path="helpdesk" element={<HelpdeskPage />} />
         <Route path="approvals" element={<ApprovalsPage />} />
-        <Route path="audit-logs" element={<AuditLogsPage />} />
+        <Route path="audit-logs" element={<RequireModule ownerOnly><AuditLogsPage /></RequireModule>} />
         <Route path="lms" element={<LMSPage />} />
         <Route path="engagement" element={<EngagementPage />} />
         <Route path="communication" element={<CommunicationPage />} />
-        <Route path="workflows" element={<WorkflowsPage />} />
-        <Route path="compliance" element={<CompliancePage />} />
+        <Route path="workflows" element={<RequireModule module="workflows"><WorkflowsPage /></RequireModule>} />
+        <Route path="compliance" element={<RequireModule module="compliance"><CompliancePage /></RequireModule>} />
         <Route path="ai-copilot" element={<AICopilotPage />} />
         <Route path="holiday-calendar" element={<HolidayCalendarPage />} />
         <Route path="notifications" element={<NotificationsPage />} />
@@ -154,7 +154,7 @@ export default function App() {
 
         {/* Custom Forms */}
         <Route path="forms" element={<FormsListPage />} />
-        <Route path="forms/builder" element={<FormBuilder />} />
+        <Route path="forms/builder" element={<RequireModule allowedRoles={['OWNER', 'HR']}><FormBuilder /></RequireModule>} />
         <Route path="my-forms" element={<MyFormsPage />} />
         <Route path="forms/fill/:formId" element={<FillFormPage />} />
       </Route>

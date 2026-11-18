@@ -197,7 +197,7 @@ export default function CompliancePage() {
         <div className="bg-white p-4 rounded-xl border border-hairline shadow-xs">
           <span className="text-muted text-xs font-medium">Upcoming Deadline</span>
           <p className="text-2xl font-bold text-amber-600 mt-1">
-            {metrics?.upcomingDeadline || '15th August'}
+            {metrics?.upcomingDeadline || new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
           </p>
           <span className="text-[11px] text-amber-600 font-semibold mt-1 inline-block">
             PF & ESIC ECR Filing

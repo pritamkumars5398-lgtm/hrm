@@ -5,6 +5,7 @@ import type { Variants } from 'framer-motion'
 import { X, Crown, Users, Target, CheckCircle2, Sparkles } from 'lucide-react'
 import { useAuthStore } from '@/features/auth/store/authStore'
 import { organizationService, type Organization } from '@/services/organizationService'
+import { getPageTitle } from '@/shared/config/navigation'
 import Sidebar from './Sidebar'
 import Topbar from './Topbar'
 import CopilotSidebarDrawer from '@/features/ai/CopilotSidebarDrawer'
@@ -22,7 +23,7 @@ type RoleContent = {
 const ROLE_WELCOME_CONTENT: Record<'OWNER' | 'HR' | 'MANAGER' | 'EMPLOYEE', RoleContent> = {
   OWNER: {
     title: 'Workspace Control Room',
-    subtitle: 'Welcome back, Owner!',
+    subtitle: 'Full administrative control and executive workspace insights',
     themeClass: 'from-indigo-500/10 to-purple-500/10 text-indigo-700 border-indigo-200/50 bg-indigo-50/50',
     icon: Crown,
     message: 'As the Workspace Owner, you have complete administrative control over the organization. Here is your priority checklist for today:',
@@ -36,7 +37,7 @@ const ROLE_WELCOME_CONTENT: Record<'OWNER' | 'HR' | 'MANAGER' | 'EMPLOYEE', Role
   },
   HR: {
     title: 'People Hub Dashboard',
-    subtitle: 'Welcome back, HR Manager!',
+    subtitle: 'People operations, recruitment, and team records',
     themeClass: 'from-emerald-500/10 to-teal-500/10 text-emerald-700 border-emerald-200/50 bg-emerald-50/50',
     icon: Users,
     message: 'Ready to support the team today? Keep the workspace running smoothly with these HR priority areas:',
@@ -50,7 +51,7 @@ const ROLE_WELCOME_CONTENT: Record<'OWNER' | 'HR' | 'MANAGER' | 'EMPLOYEE', Role
   },
   MANAGER: {
     title: 'Team Performance Portal',
-    subtitle: 'Welcome back, Manager!',
+    subtitle: 'Department leadership, project tasks, and approvals',
     themeClass: 'from-amber-500/10 to-orange-500/10 text-amber-700 border-amber-200/50 bg-amber-50/50',
     icon: Target,
     message: 'Help your department grow and excel. Here are your primary management actions today:',
@@ -64,7 +65,7 @@ const ROLE_WELCOME_CONTENT: Record<'OWNER' | 'HR' | 'MANAGER' | 'EMPLOYEE', Role
   },
   EMPLOYEE: {
     title: 'Your Workspace',
-    subtitle: 'Welcome back!',
+    subtitle: 'Self-service portal, attendance, and personal requests',
     themeClass: 'from-slate-500/10 to-blue-500/10 text-slate-700 border-slate-200/50 bg-slate-50/50',
     icon: CheckCircle2,
     message: 'Here is what you can do from your dashboard today:',
@@ -200,6 +201,12 @@ export default function DashboardLayout() {
   // Close the mobile drawer whenever the route changes.
   useEffect(() => {
     setDrawerOpen(false)
+  }, [pathname])
+
+  // Update browser tab document title dynamically on navigation (BUG-039)
+  useEffect(() => {
+    const title = getPageTitle(pathname)
+    document.title = `${title} | Keystone HRM`
   }, [pathname])
 
   // Show welcome modal once per role per session
@@ -377,7 +384,7 @@ export default function DashboardLayout() {
         >
           {/* Desktop rail */}
           <aside className={`hidden shrink-0 lg:block transition-all duration-200 ${sidebarCollapsed ? 'w-16' : 'w-[210px]'}`}>
-            <div className={`fixed inset-y-0 z-20 transition-all duration-200 ${sidebarCollapsed ? 'w-16' : 'w-[210px]'}`}>
+            <div className={`fixed inset-y-0 left-0 z-20 transition-all duration-200 ${sidebarCollapsed ? 'w-16' : 'w-[210px]'} overflow-hidden`}>
               <Sidebar permissions={user.permissions} role={user.role} organizationName={organizationName} collapsed={sidebarCollapsed} />
             </div>
           </aside>
