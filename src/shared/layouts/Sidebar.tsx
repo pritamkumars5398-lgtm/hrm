@@ -33,7 +33,7 @@ export default function Sidebar({
 }: SidebarProps) {
   const navigate = useNavigate()
   const { pathname } = useLocation()
-  const items = navItemsFor(permissions)
+  const items = navItemsFor(permissions, role)
 
   const groups: GroupConfig[] = [
     {
@@ -66,7 +66,7 @@ export default function Sidebar({
       icon: Layers,
       items: items.filter((i) => i.group === 'admin'),
     },
-  ]
+  ].filter((g) => g.items.length > 0)
 
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>(() => {
     const activeGroup = groups.find((g) => g.items.some((item) => pathname.startsWith(item.path)))?.key
@@ -223,7 +223,7 @@ export default function Sidebar({
                       })}
 
                       {/* Form Builder Quick Action */}
-                      {group.key === 'engagement' && (
+                      {group.key === 'engagement' && role !== 'EMPLOYEE' && (
                         <li className="pt-1 mt-1 border-t border-hairline/40">
                           <NavLink
                             to="/dashboard/forms/builder"

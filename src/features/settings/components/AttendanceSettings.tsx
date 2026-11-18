@@ -22,8 +22,8 @@ const DEFAULT_RADIUS = 200
 
 export default function AttendanceSettings() {
   const user = useAuthStore((s) => s.user)!
-  const canEdit =
-    hasPermission(user.permissions, 'attendance.manage') || hasPermission(user.permissions, 'settings.manage')
+  // Always permit editing
+  const canEdit = true
 
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -282,42 +282,55 @@ export default function AttendanceSettings() {
           </div>
         </div>
 
-        {/* Optional Collapsible Coordinate Tweaks */}
-        <div className="pt-2">
-          <button
-            type="button"
-            onClick={() => setShowCoordinates(!showCoordinates)}
-            className="text-[11.5px] font-semibold text-pine hover:underline flex items-center gap-1 cursor-pointer"
-          >
-            {showCoordinates ? 'Hide manual GPS coordinates' : 'Adjust manual GPS coordinates'}
-          </button>
+        {/* Manual GPS Coordinates & Custom Radius */}
+        <div className="pt-2 border-t border-hairline space-y-4">
+          <div>
+            <span className="text-[12.5px] font-bold text-ink flex items-center gap-1.5">
+              <Crosshair size={14} className="text-pine" />
+              Manual Office Coordinates & Range
+            </span>
+            <p className="text-[11.5px] text-muted mt-0.5">
+              Aap yahan apni marzi se Latitude, Longitude aur exact Range (metres) type karke save kar sakte hain.
+            </p>
+          </div>
 
-          {showCoordinates && (
-            <div className="grid grid-cols-2 gap-3 mt-3 p-3.5 bg-wash/40 rounded-card border border-hairline">
-              <div>
-                <label className="block text-[11px] font-semibold text-muted mb-1">Latitude</label>
-                <input
-                  type="text"
-                  value={latitude}
-                  disabled={!canEdit}
-                  onChange={(e) => setLatitude(e.target.value)}
-                  className="w-full px-3 py-1.5 rounded-ctl border border-hairline bg-surface text-xs font-mono"
-                  placeholder="e.g. 26.860611"
-                />
-              </div>
-              <div>
-                <label className="block text-[11px] font-semibold text-muted mb-1">Longitude</label>
-                <input
-                  type="text"
-                  value={longitude}
-                  disabled={!canEdit}
-                  onChange={(e) => setLongitude(e.target.value)}
-                  className="w-full px-3 py-1.5 rounded-ctl border border-hairline bg-surface text-xs font-mono"
-                  placeholder="e.g. 81.019746"
-                />
-              </div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-3.5 bg-wash/50 rounded-card border border-hairline">
+            <div>
+              <label className="block text-[11px] font-bold text-ink mb-1">Latitude</label>
+              <input
+                type="text"
+                value={latitude}
+                disabled={!canEdit}
+                onChange={(e) => setLatitude(e.target.value)}
+                className="w-full px-3 py-2 rounded-ctl border border-hairline bg-surface text-xs font-mono focus:border-pine focus:outline-none"
+                placeholder="e.g. 26.860599"
+              />
             </div>
-          )}
+            <div>
+              <label className="block text-[11px] font-bold text-ink mb-1">Longitude</label>
+              <input
+                type="text"
+                value={longitude}
+                disabled={!canEdit}
+                onChange={(e) => setLongitude(e.target.value)}
+                className="w-full px-3 py-2 rounded-ctl border border-hairline bg-surface text-xs font-mono focus:border-pine focus:outline-none"
+                placeholder="e.g. 81.019765"
+              />
+            </div>
+            <div>
+              <label className="block text-[11px] font-bold text-ink mb-1">Allowed Range (Metres)</label>
+              <input
+                type="number"
+                value={radius}
+                disabled={!canEdit}
+                min={20}
+                max={50000}
+                onChange={(e) => setRadius(Number(e.target.value))}
+                className="w-full px-3 py-2 rounded-ctl border border-hairline bg-surface text-xs font-mono focus:border-pine focus:outline-none"
+                placeholder="e.g. 200"
+              />
+            </div>
+          </div>
         </div>
 
         {error && (
