@@ -73,9 +73,21 @@ type AuthState = {
  * or can invite/manage the team) > Employee (view-only baseline, matching the
  * Employee preset in §10.3 — e.g. attendance.view + leave.view with nothing else).
  */
-export function deriveRole(permissions: string[]): Role {
+export function deriveRole(permissions: string[], jobTitle?: string): Role {
+  const normTitle = (jobTitle || '').trim().toLowerCase()
+  if (normTitle.includes('owner') || normTitle.includes('founder') || normTitle.includes('ceo')) {
+    return 'OWNER'
+  }
+  if (normTitle.includes('hr')) {
+    return 'HR'
+  }
+  if (normTitle.includes('manager') || normTitle.includes('lead')) {
+    return 'MANAGER'
+  }
+
+  // Fallback to granular permissions matching
   if (permissions.includes('*')) return 'OWNER'
-  if (permissions.some((p) => p.startsWith('employees'))) return 'HR'
+  if (permissions.includes('employees.*') || permissions.includes('employees.manage')) return 'HR'
 
   const hasManagementPower = permissions.some(
     (p) =>
@@ -102,7 +114,7 @@ function toSessionUser(user: User): SessionUser {
       memberships: user.memberships,
       permissions: activeMem.permissions,
       requiresPasswordReset: user.requiresPasswordReset ?? false,
-      role: deriveRole(activeMem.permissions),
+      role: deriveRole(activeMem.permissions, activeMem.jobTitle),
       jobTitle: activeMem.jobTitle,
     }
   }

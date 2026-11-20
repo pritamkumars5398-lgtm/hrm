@@ -276,7 +276,7 @@ export function navItemsFor(permissions?: string[], role?: string): NavItem[] {
     })
   }
 
-  // EMPLOYEE (Exact 11 Sections for Self Service)
+  // EMPLOYEE (Self Service Sections)
   if (role === 'EMPLOYEE') {
     const employeeKeys: Array<{ key: ModuleKey; labelOverride?: string; groupOverride?: NavItem['group'] }> = [
       { key: 'dashboard', labelOverride: '1. Dashboard', groupOverride: 'main' },
@@ -288,7 +288,6 @@ export function navItemsFor(permissions?: string[], role?: string): NavItem[] {
       { key: 'holidays', labelOverride: '7. Holiday Calendar', groupOverride: 'operations' },
       { key: 'notifications', labelOverride: '8. Notifications', groupOverride: 'engagement' },
       { key: 'helpdesk', labelOverride: '9. Help & Support', groupOverride: 'engagement' },
-      { key: 'settings', labelOverride: '10. Settings', groupOverride: 'engagement' },
     ]
 
     return employeeKeys.map(({ key, labelOverride, groupOverride }) => {

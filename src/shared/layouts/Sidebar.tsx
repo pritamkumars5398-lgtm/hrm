@@ -50,7 +50,7 @@ export default function Sidebar({
     },
     {
       key: 'engagement',
-      title: 'Engagement & Forms',
+      title: role === 'EMPLOYEE' ? 'General & Support' : 'Engagement & Forms',
       icon: FormInput,
       items: items.filter((i) => i.group === 'engagement'),
     },
@@ -91,15 +91,9 @@ export default function Sidebar({
 
   return (
     <div className="flex h-full flex-col border-r border-hairline bg-[#f9fafb] text-ink select-none w-[210px]">
-      {/* Top Header: Current Page Title on Left, + Create button on Right (Matching Screenshot UI) */}
+      {/* Top Header: Keystone Logo */}
       <div className={`flex h-14 shrink-0 items-center border-b border-hairline px-3.5 ${collapsed ? 'justify-center' : ''}`}>
-        {!collapsed ? (
-          <div className="flex items-center gap-2">
-            <span className="font-display font-extrabold text-[15px] text-ink tracking-tight truncate max-w-[120px]">{pageTitle}</span>
-          </div>
-        ) : (
-          <Logo className="[&>span:last-child]:hidden" />
-        )}
+        <Logo className={collapsed ? '[&>span:last-child]:hidden' : ''} />
       </div>
 
       {/* Navigation Accordion Sections */}
